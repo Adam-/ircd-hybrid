@@ -47,26 +47,13 @@ relay_kill(struct Client *source_p,
            struct Client *target_p, const char *inpath,
            const char *reason)
 {
-  dlink_node *ptr = NULL;
-
-  DLINK_FOREACH(ptr, serv_list.head)
-  {
-    struct Client *client_p = ptr->data;
-
-    if (client_p == source_p->from)
-      continue;
-
-    if (MyClient(source_p))
-      sendto_one(client_p, ":%s KILL %s :%s!%s!%s!%s (%s)",
-                 ID_or_name(source_p, client_p),
-                 ID_or_name(target_p, client_p),
-                 me.name, source_p->host, source_p->username,
-                 source_p->name, reason);
-    else
-      sendto_one(client_p, ":%s KILL %s :%s %s",
-                 ID_or_name(source_p, client_p),
-                 ID_or_name(target_p, client_p), inpath, reason);
-  }
+  if (MyClient(source_p))
+    sendto_server(source_p, NOCAPS, NOCAPS, ":%s KILL %s :%s!%s!%s!%s (%s)",
+        ID(source_p), ID(target_p), me.name, source_p->host, source_p->username,
+        source_p->name, reason);
+  else
+    sendto_server(source_p, NOCAPS, NOCAPS, ":%s KILL %s :%s %s",
+        ID(source_p), ID(target_p), source_p->from->name, reason);
 }
 
 /* mo_kill()

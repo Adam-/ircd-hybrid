@@ -415,7 +415,6 @@ sendto_channel_butone(struct Client *one, struct Client *from,
   va_start(aremote, pattern);
   send_format(local_buf, pattern, alocal);
   send_format(remote_buf, pattern, aremote);
-
   va_end(aremote);
   va_end(alocal);
 
