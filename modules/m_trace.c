@@ -133,12 +133,12 @@ mo_trace(struct Client *source_p, int parc, char *parv[])
 }
 
 /*
-** ms_trace
+** mc_trace
 **      parv[0] = command
 **      parv[1] = servername
 */
 static int
-ms_trace(struct Client *source_p, int parc, char *parv[])
+mc_trace(struct Client *source_p, int parc, char *parv[])
 {
   if (hunt_server(source_p, ":%s TRACE %s :%s",
                   2, parc, parv) != HUNTED_ISME)
@@ -372,7 +372,7 @@ report_this_status(struct Client *source_p, struct Client *target_p, int dow)
 static struct Message trace_msgtab =
 {
   "TRACE", 0, 0, 0, MAXPARA, MFLG_SLOW, 0,
-  { m_unregistered, m_trace, ms_trace, m_ignore, mo_trace, m_ignore }
+  { m_unregistered, m_trace, mc_trace, m_ignore, m_ignore, mo_trace }
 };
 
 static void

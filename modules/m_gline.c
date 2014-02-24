@@ -278,7 +278,7 @@ check_majority(const struct Client *source_p, const char *user,
   return GLINE_NOT_PLACED;
 }
 
-/* ms_gline()
+/* mc_gline()
  *
  * inputs       - The usual for a m_ function
  * output       -
@@ -291,15 +291,12 @@ check_majority(const struct Client *source_p, const char *user,
  *
  */
 static int
-ms_gline(struct Client *source_p, int parc, char *parv[])
+mc_gline(struct Client *source_p, int parc, char *parv[])
 {
   const char *reason = NULL;      /* reason for "victims" demise       */
   const char *user = NULL;
   const char *host = NULL;        /* user and host of GLINE "victim"   */
   const char *p = NULL;
-
-  if (!IsClient(source_p))
-    return 0;
 
   if (parc != 4 || EmptyString(parv[3]))
     return 0;
@@ -523,13 +520,13 @@ mo_gungline(struct Client *source_p, int parc, char *parv[])
 static struct Message gline_msgtab =
 {
   "GLINE", 0, 0, 3, MAXPARA, MFLG_SLOW, 0,
-  { m_unregistered, m_not_oper, ms_gline, m_ignore, mo_gline, m_ignore }
+  { m_unregistered, m_not_oper, mc_gline, m_ignore, m_ignore, mo_gline }
 };
 
 static struct Message ungline_msgtab =
 {
   "GUNGLINE", 0, 0, 3, MAXPARA, MFLG_SLOW, 0,
-  { m_unregistered, m_not_oper, m_ignore, me_gungline, mo_gungline, m_ignore }
+  { m_unregistered, m_not_oper, m_ignore, m_ignore, me_gungline, mo_gungline }
 };
 
 static void

@@ -136,7 +136,7 @@ mo_whowas(struct Client *source_p, int parc, char *parv[])
 static struct Message whowas_msgtab =
 {
   "WHOWAS", 0, 0, 0, MAXPARA, MFLG_SLOW, 0,
-  { m_unregistered, m_whowas, mo_whowas, m_ignore, mo_whowas, m_ignore }
+  { m_unregistered, m_whowas, mo_whowas, mo_whowas, m_ignore, mo_whowas }
 };
 
 static void

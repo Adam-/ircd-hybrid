@@ -264,10 +264,6 @@ ms_sid(struct Client *source_p, int parc, char *parv[])
   int llined = 0;
   int hop = 0;
 
-  /* Just to be sure -A1kmm. */
-  if (!IsServer(source_p))
-    return 0;
-
   if (EmptyString(parv[4]))
   {
     sendto_one(client_p, "ERROR :No servername");
@@ -451,7 +447,7 @@ static struct Message server_msgtab =
 static struct Message sid_msgtab =
 {
   "SID", 0, 0, 5, MAXPARA, MFLG_SLOW, 0,
-  { m_ignore, m_ignore, ms_sid, m_ignore, m_ignore, m_ignore }
+  { m_ignore, m_ignore, m_ignore, ms_sid, m_ignore, m_ignore }
 };
 
 static void

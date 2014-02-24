@@ -96,7 +96,7 @@ ms_sjoin(struct Client *source_p, int parc, char *parv[])
   const char *servername = (ConfigServerHide.hide_servers || IsHidden(source_p)) ?
                             me.name : source_p->name;
 
-  if (IsClient(source_p) || parc < 5)
+  if (parc < 5)
     return 0;
 
   if (!check_channel_name(parv[2], 0))
@@ -778,7 +778,7 @@ remove_ban_list(struct Channel *chptr, struct Client *source_p,
 static struct Message sjoin_msgtab =
 {
   "SJOIN", 0, 0, 0, MAXPARA, MFLG_SLOW, 0,
-  { m_unregistered, m_ignore, ms_sjoin, m_ignore, m_ignore, m_ignore }
+  { m_unregistered, m_ignore, m_ignore, ms_sjoin, m_ignore, m_ignore }
 };
 
 static void

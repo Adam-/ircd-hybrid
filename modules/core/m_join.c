@@ -260,7 +260,7 @@ m_join(struct Client *source_p, int parc, char *parv[])
   return 0;
 }
 
-/* ms_join()
+/* mc_join()
  *
  * inputs	- parv[0] = command
  *		  parv[1] = ts
@@ -274,7 +274,7 @@ m_join(struct Client *source_p, int parc, char *parv[])
  *		  and use it for the TimeStamp on a new channel.
  */
 static int
-ms_join(struct Client *source_p, int parc, char *parv[])
+mc_join(struct Client *source_p, int parc, char *parv[])
 {
   time_t newts = 0;
   time_t oldts = 0;
@@ -647,7 +647,7 @@ remove_a_mode(struct Channel *chptr, struct Client *source_p,
 
 static struct Message join_msgtab = {
   "JOIN", 0, 0, 2, MAXPARA, MFLG_SLOW, 0,
-  { m_unregistered, m_join, ms_join, m_ignore, m_join, m_ignore }
+  { m_unregistered, m_join, mc_join, m_ignore, m_ignore, m_join }
 };
 
 static void

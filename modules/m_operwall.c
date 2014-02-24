@@ -87,7 +87,7 @@ ms_operwall(struct Client *source_p, int parc, char *parv[])
 static struct Message operwall_msgtab =
 {
   "OPERWALL", 0, 0, 2, MAXPARA, MFLG_SLOW, 0,
-  { m_unregistered, m_not_oper, ms_operwall, m_ignore, mo_operwall, m_ignore }
+  { m_unregistered, m_not_oper, ms_operwall, ms_operwall, m_ignore, mo_operwall }
 };
 
 static void

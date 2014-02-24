@@ -72,7 +72,7 @@ mo_restart(struct Client *source_p, int parc, char *parv[])
 static struct Message restart_msgtab =
 {
   "RESTART", 0, 0, 0, MAXPARA, MFLG_SLOW, 0,
-  { m_unregistered, m_not_oper, m_ignore, m_ignore, mo_restart, m_ignore }
+  { m_unregistered, m_not_oper, m_ignore, m_ignore, m_ignore, mo_restart }
 };
 
 static void

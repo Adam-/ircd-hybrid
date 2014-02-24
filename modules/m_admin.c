@@ -119,7 +119,7 @@ ms_admin(struct Client *source_p, int parc, char *parv[])
 static struct Message admin_msgtab =
 {
   "ADMIN", 0, 0, 0, MAXPARA, MFLG_SLOW, 0,
-  { m_unregistered, m_admin, ms_admin, m_ignore, ms_admin, m_ignore }
+  { m_unregistered, m_admin, ms_admin, ms_admin, m_ignore, ms_admin }
 };
 
 static void

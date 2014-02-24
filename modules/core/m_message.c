@@ -813,13 +813,6 @@ m_message(int p_or_n, const char *command, struct Client *source_p,
 static int
 m_privmsg(struct Client *source_p, int parc, char *parv[])
 {
-  /*
-   * Servers have no reason to send privmsgs, yet sometimes there is cause
-   * for a notice.. (for example remote kline replies) --fl_
-   */
-  if (!IsClient(source_p))
-    return 0;
-
   m_message(PRIVMSG, "PRIVMSG", source_p, parc, parv);
   return 0;
 }
@@ -834,13 +827,13 @@ m_notice(struct Client *source_p, int parc, char *parv[])
 static struct Message privmsg_msgtab =
 {
   "PRIVMSG", 0, 0, 0, MAXPARA, MFLG_SLOW, 0,
-  { m_unregistered, m_privmsg, m_privmsg, m_ignore, m_privmsg, m_ignore }
+  { m_unregistered, m_privmsg, m_privmsg, m_ignore, m_ignore, m_privmsg }
 };
 
 static struct Message notice_msgtab =
 {
   "NOTICE", 0, 0, 0, MAXPARA, MFLG_SLOW, 0,
-  { m_unregistered, m_notice, m_notice, m_ignore, m_notice, m_ignore }
+  { m_unregistered, m_notice, m_notice, m_notice, m_ignore, m_notice }
 };
 
 static void

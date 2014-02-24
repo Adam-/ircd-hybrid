@@ -89,7 +89,7 @@ ms_lusers(struct Client *source_p, int parc, char *parv[])
 static struct Message lusers_msgtab =
 {
   "LUSERS", 0, 0, 0, MAXPARA, MFLG_SLOW, 0,
-  { m_unregistered, m_lusers, ms_lusers, m_ignore, ms_lusers, m_ignore }
+  { m_unregistered, m_lusers, ms_lusers, ms_lusers, m_ignore, ms_lusers }
 };
 
 static void

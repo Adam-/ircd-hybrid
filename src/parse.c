@@ -307,9 +307,12 @@ handle_command(struct Message *mptr, struct Client *source_p,
 
   /* check right amount of params is passed... --is */
   if (i < mptr->args_min)
-    sendto_one_numeric(source_p, &me, ERR_NEEDMOREPARAMS, mptr->cmd);
+  {
+    if (MyClient(source_p))
+      sendto_one_numeric(source_p, &me, ERR_NEEDMOREPARAMS, mptr->cmd);
+  }
   else
-    mptr->handlers[source_p->from->handler](source_p, i, hpara);
+    mptr->handlers[source_p->handler](source_p, i, hpara);
 }
 
 /* add_msg_element()

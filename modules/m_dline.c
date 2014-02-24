@@ -420,7 +420,7 @@ mo_undline(struct Client *source_p, int parc, char *parv[])
 }
 
 static int
-ms_undline(struct Client *source_p, int parc, char *parv[])
+mc_undline(struct Client *source_p, int parc, char *parv[])
 {
   const char *addr = parv[1];
 
@@ -431,7 +431,7 @@ ms_undline(struct Client *source_p, int parc, char *parv[])
                      "UNDLINE %s %s",
                      parv[1], parv[2]);
 
-  if (!IsClient(source_p) || match(parv[1], me.name))
+  if (match(parv[1], me.name))
     return 0;
 
   if (HasFlag(source_p, FLAGS_SERVICE) ||
@@ -458,13 +458,13 @@ ms_undline(struct Client *source_p, int parc, char *parv[])
 static struct Message dline_msgtab =
 {
   "DLINE", 0, 0, 2, MAXPARA, MFLG_SLOW, 0,
-  { m_unregistered, m_not_oper, ms_dline, m_ignore, mo_dline, m_ignore }
+  { m_unregistered, m_not_oper, ms_dline, ms_dline, m_ignore, mo_dline }
 };
 
 static struct Message undline_msgtab =
 {
   "UNDLINE", 0, 0, 2, MAXPARA, MFLG_SLOW, 0,
-  { m_unregistered, m_not_oper, ms_undline, m_ignore, mo_undline, m_ignore }
+  { m_unregistered, m_not_oper, mc_undline, m_ignore, m_ignore, mo_undline }
 };
 
 static void

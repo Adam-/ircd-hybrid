@@ -257,19 +257,19 @@ ms_bmask(struct Client *source_p, int parc, char *parv[])
 static struct Message mode_msgtab =
 {
   "MODE", 0, 0, 2, MAXPARA, MFLG_SLOW, 0,
-  { m_unregistered, m_mode, m_mode, m_ignore, m_mode, m_ignore }
+  { m_unregistered, m_mode, m_mode, m_mode, m_ignore, m_mode }
 };
 
 static struct Message tmode_msgtab =
 {
   "TMODE", 0, 0, 4, MAXPARA, MFLG_SLOW, 0,
-  { m_ignore, m_ignore, ms_tmode, m_ignore, m_ignore, m_ignore }
+  { m_ignore, m_ignore, ms_tmode, ms_tmode, m_ignore, m_ignore }
 };
 
 static struct Message bmask_msgtab =
 {
   "BMASK", 0, 0, 5, MAXPARA, MFLG_SLOW, 0,
-  { m_ignore, m_ignore, ms_bmask, m_ignore, m_ignore, m_ignore }
+  { m_ignore, m_ignore, m_ignore, ms_bmask, m_ignore, m_ignore }
 };
 
 static void

@@ -278,7 +278,7 @@ mo_xline(struct Client *source_p, int parc, char *parv[])
   return 0;
 }
 
-/* ms_xline()
+/* mc_xline()
  *
  * inputs	- oper, target server, xline, {type}, reason
  *
@@ -286,12 +286,9 @@ mo_xline(struct Client *source_p, int parc, char *parv[])
  * side effects	- propagates xline, applies it if we are a target
  */
 static int
-ms_xline(struct Client *source_p, int parc, char *parv[])
+mc_xline(struct Client *source_p, int parc, char *parv[])
 {
   if (parc != 5 || EmptyString(parv[4]))
-    return 0;
-
-  if (!IsClient(source_p))
     return 0;
 
   if (!valid_xline(source_p, parv[2], parv[4], 0))
@@ -369,19 +366,19 @@ mo_unxline(struct Client *source_p, int parc, char *parv[])
   return 0;
 }
 
-/* ms_unxline()
+/* mc_unxline()
  *
  * inputs	- oper, target server, gecos
  * outputs	- none
  * side effects	- propagates unxline, applies it if we are a target
  */
 static int
-ms_unxline(struct Client *source_p, int parc, char *parv[])
+mc_unxline(struct Client *source_p, int parc, char *parv[])
 {
   if (parc != 3)
     return 0;
 
-  if (!IsClient(source_p) || EmptyString(parv[2]))
+  if (EmptyString(parv[2]))
     return 0;
 
   sendto_match_servs(source_p, parv[1], CAP_CLUSTER,
@@ -400,13 +397,13 @@ ms_unxline(struct Client *source_p, int parc, char *parv[])
 static struct Message xline_msgtab =
 {
   "XLINE", 0, 0, 2, MAXPARA, MFLG_SLOW, 0,
-  { m_unregistered, m_not_oper, ms_xline, me_xline, mo_xline, m_ignore }
+  { m_unregistered, m_not_oper, mc_xline, m_ignore, me_xline, mo_xline }
 };
 
 static struct Message unxline_msgtab =
 {
   "UNXLINE", 0, 0, 2, MAXPARA, MFLG_SLOW, 0,
-  { m_unregistered, m_not_oper, ms_unxline, m_ignore, mo_unxline, m_ignore }
+  { m_unregistered, m_not_oper, mc_unxline, m_ignore, m_ignore, mo_unxline }
 };
 
 static void

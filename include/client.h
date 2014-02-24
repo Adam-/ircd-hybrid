@@ -81,8 +81,8 @@ struct MaskItem;
                                  (x)->handler = SERVER_HANDLER; }
 
 #define SetClient(x)            {(x)->status = STAT_CLIENT; \
-                                 (x)->handler = HasUMode(x, UMODE_OPER) ? \
-                                 OPER_HANDLER : CLIENT_HANDLER; }
+                                 (x)->handler = MyConnect(x) ? (HasUMode(x, UMODE_OPER) ? \
+                                 OPER_HANDLER : CLIENT_HANDLER) : RCLIENT_HANDLER; }
 
 #define MyConnect(x)            ((x)->localClient != NULL)
 #define MyClient(x)             (MyConnect(x) && IsClient(x))

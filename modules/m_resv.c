@@ -121,14 +121,14 @@ me_resv(struct Client *source_p, int parc, char *parv[])
   return 0;
 }
 
-/* ms_resv()
+/* mc_resv()
  *   parv[0] = command
  *   parv[1] = target server
  *   parv[2] = channel/nick to resv
  *   parv[3] = reason
  */
 static int
-ms_resv(struct Client *source_p, int parc, char *parv[])
+mc_resv(struct Client *source_p, int parc, char *parv[])
 {
   if ((parc != 4) || EmptyString(parv[3]))
     return 0;
@@ -137,7 +137,7 @@ ms_resv(struct Client *source_p, int parc, char *parv[])
                      "RESV %s %s :%s",
                      parv[1], parv[2], parv[3]);
 
-  if (!IsClient(source_p) || match(parv[1], me.name))
+  if (match(parv[1], me.name))
     return 0;
 
   if (HasFlag(source_p, FLAGS_SERVICE) || find_matching_name_conf(CONF_ULINE, source_p->servptr->name,
@@ -181,13 +181,13 @@ mo_unresv(struct Client *source_p, int parc, char *parv[])
   return 0;
 }
 
-/* ms_unresv()
+/* mc_unresv()
  *     parv[0] = command
  *     parv[1] = target server
  *     parv[2] = resv to remove
  */
 static int
-ms_unresv(struct Client *source_p, int parc, char *parv[])
+mc_unresv(struct Client *source_p, int parc, char *parv[])
 {
   if ((parc != 3) || EmptyString(parv[2]))
     return 0;
@@ -196,7 +196,7 @@ ms_unresv(struct Client *source_p, int parc, char *parv[])
                      "UNRESV %s %s",
                      parv[1], parv[2]);
 
-  if (!IsClient(source_p) || match(parv[1], me.name))
+  if (match(parv[1], me.name))
     return 0;
 
   if (HasFlag(source_p, FLAGS_SERVICE) || find_matching_name_conf(CONF_ULINE, source_p->servptr->name,
@@ -370,13 +370,13 @@ remove_resv(struct Client *source_p, const char *name)
 static struct Message resv_msgtab =
 {
   "RESV", 0, 0, 3, MAXPARA, MFLG_SLOW, 0,
-  { m_ignore, m_not_oper, ms_resv, me_resv, mo_resv, m_ignore }
+  { m_ignore, m_not_oper, mc_resv, m_ignore, me_resv, mo_resv }
 };
 
 static struct Message unresv_msgtab =
 {
   "UNRESV", 0, 0, 2, MAXPARA, MFLG_SLOW, 0,
-  { m_ignore, m_not_oper, ms_unresv, m_ignore, mo_unresv, m_ignore }
+  { m_ignore, m_not_oper, mc_unresv, m_ignore, m_ignore, mo_unresv }
 };
 
 static void

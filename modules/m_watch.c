@@ -237,7 +237,7 @@ m_watch(struct Client *source_p, int parc, char *parv[])
 static struct Message watch_msgtab =
 {
   "WATCH", 0, 0, 0, 1, MFLG_SLOW, 0,
-  { m_unregistered, m_watch, m_ignore, m_ignore, m_watch, m_ignore }
+  { m_unregistered, m_watch, m_ignore, m_ignore, m_ignore, m_watch }
 };
 
 static void

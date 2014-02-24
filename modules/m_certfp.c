@@ -49,9 +49,6 @@
 static int
 ms_certfp(struct Client *source_p, int parc, char *parv[])
 {
-  if (!IsClient(source_p))
-    return 0;
-
   MyFree(source_p->certfp);
   source_p->certfp = strdup(parv[1]);
 

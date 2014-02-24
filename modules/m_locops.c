@@ -66,7 +66,7 @@ mo_locops(struct Client *source_p, int parc, char *parv[])
 }
 
 static int
-ms_locops(struct Client *source_p, int parc, char *parv[])
+mc_locops(struct Client *source_p, int parc, char *parv[])
 {
   if (parc != 3 || EmptyString(parv[2]))
     return 0;
@@ -74,7 +74,7 @@ ms_locops(struct Client *source_p, int parc, char *parv[])
   sendto_match_servs(source_p, parv[1], CAP_CLUSTER, "LOCOPS %s :%s",
                      parv[1], parv[2]);
 
-  if (!IsClient(source_p) || match(parv[1], me.name))
+  if (match(parv[1], me.name))
     return 0;
 
   if (find_matching_name_conf(CONF_ULINE, source_p->servptr->name,
@@ -87,7 +87,7 @@ ms_locops(struct Client *source_p, int parc, char *parv[])
 static struct Message locops_msgtab =
 {
   "LOCOPS", 0, 0, 2, MAXPARA, MFLG_SLOW, 0,
-  { m_unregistered, m_not_oper, ms_locops, m_ignore, mo_locops, m_ignore }
+  { m_unregistered, m_not_oper, mc_locops, m_ignore, m_ignore, mo_locops }
 };
 
 static void

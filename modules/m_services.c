@@ -202,85 +202,85 @@ m_botserv(struct Client *source_p, int parc, char *parv[])
 static struct Message ms_msgtab =
 {
   "MS", 0, 0, 0, 1, MFLG_SLOW, 0,
-  { m_unregistered, m_memoserv, m_ignore, m_ignore, m_memoserv, m_ignore }
+  { m_unregistered, m_memoserv, m_ignore, m_ignore, m_ignore, m_memoserv }
 };
 
 static struct Message ns_msgtab =
 {
   "NS", 0, 0, 0, 1, MFLG_SLOW, 0,
-  { m_unregistered, m_nickserv, m_ignore, m_ignore, m_nickserv, m_ignore }
+  { m_unregistered, m_nickserv, m_ignore, m_ignore, m_ignore, m_nickserv }
 };
 
 static struct Message os_msgtab =
 {
   "OS", 0, 0, 0, 1, MFLG_SLOW, 0,
-  { m_unregistered, m_operserv, m_ignore, m_ignore, m_operserv, m_ignore }
+  { m_unregistered, m_operserv, m_ignore, m_ignore, m_ignore, m_operserv }
 };
 
 static struct Message bs_msgtab =
 {
   "BS", 0, 0, 0, 1, MFLG_SLOW, 0,
-  { m_unregistered, m_botserv, m_ignore, m_ignore, m_botserv, m_ignore }
+  { m_unregistered, m_botserv, m_ignore, m_ignore, m_ignore, m_botserv }
 };
 
 static struct Message cs_msgtab =
 {
   "CS", 0, 0, 0, 1, MFLG_SLOW, 0,
-  { m_unregistered, m_chanserv, m_ignore, m_ignore, m_chanserv, m_ignore }
+  { m_unregistered, m_chanserv, m_ignore, m_ignore, m_ignore, m_chanserv }
 };
 
 static struct Message ss_msgtab =
 {
   "SS", 0, 0, 0, 1, MFLG_SLOW, 0,
-  { m_unregistered, m_statserv, m_ignore, m_ignore, m_statserv, m_ignore }
+  { m_unregistered, m_statserv, m_ignore, m_ignore, m_ignore, m_statserv }
 };
 
 static struct Message hs_msgtab =
 {
   "HS", 0, 0, 0, 1, MFLG_SLOW, 0,
-  { m_unregistered, m_hostserv, m_ignore, m_ignore, m_hostserv, m_ignore }
+  { m_unregistered, m_hostserv, m_ignore, m_ignore, m_ignore, m_hostserv }
 };
 
 static struct Message botserv_msgtab =
 {
   "BOTSERV", 0, 0, 0, 1, MFLG_SLOW, 0,
-  { m_unregistered, m_botserv, m_ignore, m_ignore, m_botserv, m_ignore }
+  { m_unregistered, m_botserv, m_ignore, m_ignore, m_ignore, m_botserv }
 };
 
 static struct Message chanserv_msgtab =
 {
   "CHANSERV", 0, 0, 0, 1, MFLG_SLOW, 0,
-  { m_unregistered, m_chanserv, m_ignore, m_ignore, m_chanserv, m_ignore }
+  { m_unregistered, m_chanserv, m_ignore, m_ignore, m_ignore, m_chanserv }
 };
 
 static struct Message memoserv_msgtab =
 {
   "MEMOSERV", 0, 0, 0, 1, MFLG_SLOW, 0,
-  { m_unregistered, m_memoserv, m_ignore, m_ignore, m_memoserv, m_ignore }
+  { m_unregistered, m_memoserv, m_ignore, m_ignore, m_ignore, m_memoserv }
 };
 
 static struct Message nickserv_msgtab =
 {
   "NICKSERV", 0, 0, 0, 1, MFLG_SLOW, 0,
-  { m_unregistered, m_nickserv, m_ignore, m_ignore, m_nickserv, m_ignore }
+  { m_unregistered, m_nickserv, m_ignore, m_ignore, m_ignore, m_nickserv }
 };
 
 static struct Message operserv_msgtab =
 {
   "OPERSERV", 0, 0, 0, 1, MFLG_SLOW, 0,
-  { m_unregistered, m_operserv, m_ignore, m_ignore, m_operserv, m_ignore }
+  { m_unregistered, m_operserv, m_ignore, m_ignore, m_ignore, m_operserv }
 };
 
 static struct Message statserv_msgtab =
 {
   "STATSERV", 0, 0, 0, 1, MFLG_SLOW, 0,
-  { m_unregistered, m_statserv, m_ignore, m_ignore, m_statserv, m_ignore }
+  { m_unregistered, m_statserv, m_ignore, m_ignore, m_ignore, m_statserv }
 };
 
 static struct Message hostserv_msgtab =
 {
   "HOSTSERV", 0, 0, 0, 1, MFLG_SLOW, 0,
-  { m_unregistered, m_hostserv, m_ignore, m_ignore, m_hostserv, m_ignore }
+  { m_unregistered, m_hostserv, m_ignore, m_ignore, m_ignore, m_hostserv }
 };
 
 

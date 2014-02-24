@@ -41,8 +41,6 @@
 static int
 ms_eob(struct Client *source_p, int parc, char *parv[])
 {
-  assert(IsServer(source_p));
-
   if (MyConnect(source_p))
     sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
                          "End of burst from %s (%u seconds)",
@@ -58,7 +56,7 @@ ms_eob(struct Client *source_p, int parc, char *parv[])
 static struct Message eob_msgtab =
 {
   "EOB", 0, 0, 0, MAXPARA, MFLG_SLOW, 0,
-  { m_unregistered, m_ignore, ms_eob, m_ignore, m_ignore, m_ignore }
+  { m_unregistered, m_ignore, m_ignore, ms_eob, m_ignore, m_ignore }
 };
 
 static void
