@@ -265,8 +265,7 @@ flood_attack_channel(int p_or_n, struct Client *source_p,
  * side effects	- message given channel
  */
 static void
-msg_channel(int p_or_n, const char *command,
-            struct Client *source_p, struct Channel *chptr, char *text)
+msg_channel(int p_or_n, const char *command, struct Client *source_p, struct Channel *chptr, char *text)
 {
   int result = 0;
 
@@ -447,7 +446,8 @@ msg_client(int p_or_n, const char *command, struct Client *source_p,
 
 /* handle_special()
  *
- * inputs	- client pointer
+ * inputs
+ *		- client pointer
  *		- nick stuff to grok for opers
  *		- text to send if grok
  * output	- none
@@ -592,7 +592,8 @@ handle_special(int p_or_n, const char *command, struct Client *source_p,
 
 /* build_target_list()
  *
- * inputs	- pointer to given source (oper/client etc.)
+ * inputs
+ *		- pointer to given source (oper/client etc.)
  *		- pointer to list of nicks/channels
  *		- pointer to table to place results
  *		- pointer to text (only used if source_p is an oper)

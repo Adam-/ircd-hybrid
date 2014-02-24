@@ -1518,7 +1518,7 @@ send_mode_changes_server(struct Client *source_p, struct Channel *chptr)
     sendto_server(source_p, NOCAPS, NOCAPS, "%s %s", modebuf, parabuf);
 }
 
-/* void send_mode_changes(struct Client *client_p,
+/* void send_mode_changes(
  *                        struct Client *source_p,
  *                        struct Channel *chptr)
  * Input: The client sending(client_p), the source client(source_p),
@@ -1622,8 +1622,8 @@ send_mode_changes(struct Client *source_p, struct Channel *chptr)
   send_mode_changes_server(source_p, chptr);
 }
 
-/* 
- * Input: The the client this originated
+/*
+ * Input: The client this originated
  *        from, the channel, the parameter count starting at the modes,
  *        the parameters, the channel name.
  * Output: None.

@@ -628,8 +628,6 @@ m_nick(struct Client *source_p, int parc, char *parv[])
   struct Client *target_p = NULL;
   struct MaskItem *conf = NULL;
 
-  assert(MyClient(source_p));
-
   if (parc < 2 || EmptyString(parv[1]))
   {
     sendto_one_numeric(source_p, &me, ERR_NONICKNAMEGIVEN);
@@ -713,10 +711,6 @@ ms_nick(struct Client *source_p, int parc, char *parv[])
   time_t newts = 0;
 
   if (parc < 3 || EmptyString(parv[parc - 1]))
-    return 0;
-
-  if (IsServer(source_p))
-    /* Servers can't change nicks.. */
     return 0;
 
   if (check_clean_nick(source_p, parv[1], source_p->servptr))

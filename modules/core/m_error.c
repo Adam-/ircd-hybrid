@@ -46,8 +46,6 @@ mr_error(struct Client *source_p, int parc, char *parv[])
 {
   const char *para = (parc > 1 && !EmptyString(parv[1])) ? parv[1] : "<>";
 
-  assert(MyConnect(source_p));
-
   if (!IsHandshake(source_p) && !IsConnecting(source_p))
     return 0;
 
@@ -75,7 +73,7 @@ ms_error(struct Client *source_p, int parc, char *parv[])
   if (MyConnect(source_p))
     sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
                          "ERROR :from %s -- %s",
-                         get_client_name(source_p->from, MASK_IP), para);
+                         get_client_name(source_p, MASK_IP), para);
   else
     sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
                          "ERROR :from %s via %s -- %s",

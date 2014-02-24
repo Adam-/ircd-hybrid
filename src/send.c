@@ -711,7 +711,7 @@ sendto_match_butone(struct Client *one, struct Client *from, const char *mask,
   {
     struct Client *client_p = ptr->data;
 
-    if ((!one || client_p != one->from)&& !IsDefunct(client_p) &&
+    if ((!one || client_p != one->from) && !IsDefunct(client_p) &&
         match_it(client_p, mask, what))
       send_message(client_p, local_buf);
   }

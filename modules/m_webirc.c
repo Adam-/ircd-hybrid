@@ -51,8 +51,6 @@ mr_webirc(struct Client *source_p, int parc, char *parv[])
   struct MaskItem *conf = NULL;
   struct addrinfo hints, *res;
 
-  assert(MyConnect(source_p));
-
   if (!valid_hostname(parv[3]))
   {
     sendto_one_notice(source_p, &me, ":CGI:IRC: Invalid hostname");

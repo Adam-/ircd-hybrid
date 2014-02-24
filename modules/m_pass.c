@@ -50,8 +50,6 @@
 static int
 mr_pass(struct Client *source_p, int parc, char *parv[])
 {
-  assert(MyConnect(source_p));
-
   if (EmptyString(parv[1]))
   {
     sendto_one_numeric(source_p, &me, ERR_NEEDMOREPARAMS, "PASS");
