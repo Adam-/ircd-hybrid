@@ -77,6 +77,8 @@ mr_server(struct Client *source_p, int parc, char *parv[])
   char *name;
   struct Client *target_p;
   int hop;
+  const char *error = NULL;
+  int warn = 1;
 
   if (EmptyString(parv[3]))
   {
@@ -129,65 +131,39 @@ mr_server(struct Client *source_p, int parc, char *parv[])
   }
 
   /* Now we just have to call check_server and everything should
-   * be check for us... -A1kmm.
+   * be checked for us... -A1kmm.
    */
   switch (check_server(name, source_p))
   {
-    case -1:
-      if (ConfigFileEntry.warn_no_nline)
-      {
-        sendto_realops_flags(UMODE_ALL, L_ADMIN, SEND_NOTICE,
-           "Unauthorized server connection attempt from %s: No entry for "
-           "servername %s", get_client_name(source_p, HIDE_IP), name);
-
-        sendto_realops_flags(UMODE_ALL, L_OPER, SEND_NOTICE,
-           "Unauthorized server connection attempt from %s: No entry for "
-           "servername %s", get_client_name(source_p, MASK_IP), name);
-      }
-
-      exit_client(source_p, "No connect{} block.");
-      return 0;
-      /* NOT REACHED */
+    case CHECK_SERVER_NOCONNECT:
+      error = "No connect{} block";
+      warn = ConfigFileEntry.warn_no_nline;
       break;
-
-    case -2:
+    case CHECK_SERVER_INVALID_PASSWORD:
+      error = "Bad password";
+      break;
+    case CHECK_SERVER_INVALID_HOST:
+      error = "Invalid host";
+      break;
+    case CHECK_SERVER_INVALID_CERTIFICATE:
+      error = "Invalid certificate fingerprint";
+      break;
+  }
+  if (error != NULL)
+  {
+    if (warn)
+    {
       sendto_realops_flags(UMODE_ALL, L_ADMIN, SEND_NOTICE,
-           "Unauthorized server connection attempt from %s: Bad password "
-           "for server %s", get_client_name(source_p, HIDE_IP), name);
+         "Unauthorized server connection attempt from %s: %s for server %s",
+         get_client_name(source_p, HIDE_IP), error, name);
 
       sendto_realops_flags(UMODE_ALL, L_OPER, SEND_NOTICE,
-           "Unauthorized server connection attempt from %s: Bad password "
-           "for server %s", get_client_name(source_p, MASK_IP), name);
+         "Unauthorized server connection attempt from %s: %s for server %s",
+         get_client_name(source_p, MASK_IP), error, name);
+    }
 
-      exit_client(source_p, "Invalid password.");
-      return 0;
-      /* NOT REACHED */
-      break;
-
-    case -3:
-      sendto_realops_flags(UMODE_ALL, L_ADMIN, SEND_NOTICE,
-           "Unauthorized server connection attempt from %s: Invalid host "
-           "for server %s", get_client_name(source_p, HIDE_IP), name);
-
-      sendto_realops_flags(UMODE_ALL, L_OPER, SEND_NOTICE,
-           "Unauthorized server connection attempt from %s: Invalid host "
-           "for server %s", get_client_name(source_p, MASK_IP), name);
-
-      exit_client(source_p, "Invalid host.");
-      return 0;
-    case -4:
-      sendto_realops_flags(UMODE_ALL, L_ADMIN, SEND_NOTICE,
-           "Unauthorized server connection attempt from %s: Invalid certificate fingerprint "
-           "for server %s", get_client_name(source_p, HIDE_IP), name);
-
-      sendto_realops_flags(UMODE_ALL, L_OPER, SEND_NOTICE,
-           "Unauthorized server connection attempt from %s: Invalid certificate fingerprint "
-           "for server %s", get_client_name(source_p, MASK_IP), name);
-
-      exit_client(source_p, "Invalid certificate fingerprint.");
-      return 0;
-      /* NOT REACHED */
-      break;
+    exit_client(source_p, error);
+    return 0;
   }
 
   if ((target_p = hash_find_server(name)))

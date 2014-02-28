@@ -376,7 +376,7 @@ check_server(const char *name, struct Client *client_p)
   dlink_node *ptr;
   struct MaskItem *conf        = NULL;
   struct MaskItem *server_conf = NULL;
-  int error = -1;
+  int error = CHECK_SERVER_NOCONNECT;
 
   assert(client_p != NULL);
 
@@ -388,21 +388,19 @@ check_server(const char *name, struct Client *client_p)
     if (match(name, conf->name))
       continue;
 
-    error = -3;
+    error = CHECK_SERVER_INVALID_HOST;
 
     /* XXX: Fix me for IPv6                    */
     /* XXX sockhost is the IPv4 ip as a string */
     if (!match(conf->host, client_p->host) ||
         !match(conf->host, client_p->sockhost))
     {
-      error = -2;
-
       if (!match_conf_password(client_p->localClient->passwd, conf))
-        return -2;
+        return CHECK_SERVER_INVALID_PASSWORD;
 
       if (!EmptyString(conf->certfp))
         if (EmptyString(client_p->certfp) || strcasecmp(client_p->certfp, conf->certfp))
-          return -4;
+          return CHECK_SERVER_INVALID_CERTIFICATE;
 
       server_conf = conf;
     }
@@ -439,7 +437,7 @@ check_server(const char *name, struct Client *client_p)
     }
   }
 
-  return 0;
+  return CHECK_SERVER_OK;
 }
 
 /* add_capability()

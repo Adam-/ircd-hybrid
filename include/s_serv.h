@@ -85,6 +85,15 @@ enum
   HUNTED_PASS    =  1   /* If message passed onwards successfully */
 };
 
+enum
+{
+  CHECK_SERVER_OK                  =  0,
+  CHECK_SERVER_NOCONNECT           = -1,
+  CHECK_SERVER_INVALID_PASSWORD    = -2,
+  CHECK_SERVER_INVALID_HOST        = -3,
+  CHECK_SERVER_INVALID_CERTIFICATE = -4,
+};
+
 extern int valid_servname(const char *);
 extern int check_server(const char *, struct Client *);
 extern int hunt_server(struct Client *, const char *, const int, const int, char *[]);
