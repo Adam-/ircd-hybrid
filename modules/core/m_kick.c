@@ -65,7 +65,7 @@ m_kick(struct Client *source_p, int parc, char *parv[])
     return 0;
   }
 
-  if (MyClient(source_p) && !IsFloodDone(source_p))
+  if (!IsFloodDone(source_p))
     flood_endgrace(source_p);
 
   comment = (EmptyString(parv[3])) ? source_p->name : parv[3];
@@ -84,55 +84,18 @@ m_kick(struct Client *source_p, int parc, char *parv[])
     return 0;
   }
 
-  if (!IsServer(source_p) && !HasFlag(source_p, FLAGS_SERVICE))
+  if ((ms = find_channel_link(source_p, chptr)) == NULL)
   {
-    if ((ms = find_channel_link(source_p, chptr)) == NULL)
-    {
-      if (MyConnect(source_p))
-      {
-        sendto_one_numeric(source_p, &me, ERR_NOTONCHANNEL, name);
-        return 0;
-      }
-    }
+    sendto_one(source_p, form_str(ERR_NOTONCHANNEL),
+               me.name, source_p->name, name);
+    return 0;
+  }
 
-    if (!has_member_flags(ms, CHFL_CHANOP|CHFL_HALFOP))
-    {
-      /* was a user, not a server, and user isn't seen as a chanop here */
-      if (MyConnect(source_p))
-      {
-        /* user on _my_ server, with no chanops.. so go away */
-        sendto_one_numeric(source_p, &me, ERR_CHANOPRIVSNEEDED, name);
-        return 0;
-      }
-
-      if (chptr->channelts == 0)
-      {
-        /* If its a TS 0 channel, do it the old way */
-        sendto_one_numeric(source_p, &me, ERR_CHANOPRIVSNEEDED, name);
-        return 0;
-      }
-
-      /* Its a user doing a kick, but is not showing as chanop locally
-       * its also not a user ON -my- server, and the channel has a TS.
-       * There are two cases we can get to this point then...
-       *
-       *     1) connect burst is happening, and for some reason a legit
-       *        op has sent a KICK, but the SJOIN hasn't happened yet or
-       *        been seen. (who knows.. due to lag...)
-       *
-       *     2) The channel is desynced. That can STILL happen with TS
-       *
-       *     Now, the old code roger wrote, would allow the KICK to
-       *     go through. Thats quite legit, but lets weird things like
-       *     KICKS by users who appear not to be chanopped happen,
-       *     or even neater, they appear not to be on the channel.
-       *     This fits every definition of a desync, doesn't it? ;-)
-       *     So I will allow the KICK, otherwise, things are MUCH worse.
-       *     But I will warn it as a possible desync.
-       *
-       *     -Dianora
-       */
-    }
+  if (!has_member_flags(ms, CHFL_CHANOP|CHFL_HALFOP))
+  {
+      sendto_one(source_p, form_str(ERR_CHANOPRIVSNEEDED),
+                 me.name, source_p->name, name);
+      return 0;
   }
 
   user = parv[2];
@@ -145,50 +108,82 @@ m_kick(struct Client *source_p, int parc, char *parv[])
   if ((who = find_chasing(source_p, user, &chasing)) == NULL)
     return 0;
 
-  if ((ms_target = find_channel_link(who, chptr)) != NULL)
+  if ((ms_target = find_channel_link(who, chptr)) == NULL)
   {
+    sendto_one(source_p, form_str(ERR_USERNOTINCHANNEL), me.name, source_p->name, user, name);
+    return 0;
+  }
+
 #ifdef HALFOPS
-    /* half ops cannot kick other halfops on private channels */
-    if (has_member_flags(ms, CHFL_HALFOP) && !has_member_flags(ms, CHFL_CHANOP))
+  /* half ops cannot kick other halfops on private channels */
+  if (has_member_flags(ms, CHFL_HALFOP) && !has_member_flags(ms, CHFL_CHANOP))
+  {
+    if (((chptr->mode.mode & MODE_PRIVATE) && has_member_flags(ms_target,
+      CHFL_CHANOP|CHFL_HALFOP)) || has_member_flags(ms_target, CHFL_CHANOP))
     {
-      if (((chptr->mode.mode & MODE_PRIVATE) && has_member_flags(ms_target,
-        CHFL_CHANOP|CHFL_HALFOP)) || has_member_flags(ms_target, CHFL_CHANOP))
-      {
-        sendto_one_numeric(source_p, &me, ERR_CHANOPRIVSNEEDED, name);
-        return 0;
-      }
+      sendto_one_numeric(source_p, &me, ERR_CHANOPRIVSNEEDED, name);
+      return 0;
     }
+  }
 #endif
 
-    /* jdc
-     * - In the case of a server kicking a user (i.e. CLEARCHAN),
-     *   the kick should show up as coming from the server which did
-     *   the kick.
-     * - Personally, flame and I believe that server kicks shouldn't
-     *   be sent anyways.  Just waiting for some oper to abuse it...
-     */
-    if (IsServer(source_p))
-      sendto_channel_local(ALL_MEMBERS, 0, chptr, ":%s KICK %s %s :%s",
-                           source_p->name, name, who->name, comment);
-    else
-      sendto_channel_local(ALL_MEMBERS, 0, chptr, ":%s!%s@%s KICK %s %s :%s",
-                           source_p->name, source_p->username,
-                           source_p->host, name, who->name, comment);
+  sendto_channel_local(ALL_MEMBERS, 0, chptr, ":%s!%s@%s KICK %s %s :%s",
+                       source_p->name, source_p->username,
+                       source_p->host, name, who->name, comment);
 
-    sendto_server(source_p, NOCAPS, NOCAPS, ":%s KICK %s %s :%s",
-                  ID(source_p), chptr->chname, ID(who), comment);
-    remove_user_from_channel(ms_target);
-  }
+  sendto_server(source_p, NOCAPS, NOCAPS,
+                ":%s KICK %s %s :%s",
+                ID(source_p), chptr->chname, ID(who), comment);
+
+  remove_user_from_channel(ms_target);
+
+  return 0;
+}
+
+static int
+ms_kick(struct Client *source_p, int parc, char **parv)
+{
+  const char *name = parv[1];
+  const char *target = parv[2];
+  char *comment;
+  struct Channel *chptr;
+  struct Client *who;
+  struct Membership *ms_target;
+
+  chptr = hash_find_channel(name);
+  if (chptr == NULL)
+    return 0;
+
+  who = find_person(source_p, target);
+  if (who == NULL)
+    return 0;
+
+  ms_target = find_channel_link(who, chptr);
+  if (ms_target == NULL)
+    return 0;
+
+  comment = (EmptyString(parv[3])) ? source_p->name : parv[3];
+
+  if (IsServer(source_p))
+    sendto_channel_local(ALL_MEMBERS, 0, chptr, ":%s KICK %s %s :%s",
+                         source_p->name, name, who->name, comment);
   else
-    sendto_one_numeric(source_p, &me, ERR_USERNOTINCHANNEL, user, name);
+    sendto_channel_local(ALL_MEMBERS, 0, chptr, ":%s!%s@%s KICK %s %s :%s",
+                         source_p->name, source_p->username,
+                         source_p->host, name, who->name, comment);
 
+  sendto_server(source_p, NOCAPS, NOCAPS,
+                ":%s KICK %s %s :%s",
+                ID(source_p), chptr->chname, ID(who), comment);
+
+  remove_user_from_channel(ms_target);
   return 0;
 }
 
 static struct Message kick_msgtab =
 {
   "KICK", 0, 0, 3, MAXPARA, MFLG_SLOW, 0,
-  { m_unregistered, m_kick, m_kick, m_kick, m_ignore, m_kick }
+  { m_unregistered, m_kick, ms_kick, ms_kick, m_ignore, m_kick }
 };
 
 static void
