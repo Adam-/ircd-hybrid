@@ -204,6 +204,20 @@ mr_server(struct Client *source_p, int parc, char *parv[])
     return 0;
   }
 
+  if (!IsCapable(source_p, CAP_QS))
+  {
+    sendto_realops_flags(UMODE_ALL, L_ADMIN, SEND_NOTICE,
+                        "Dropping link %s from %s, we require QS",
+                         source_p->name, get_client_name(source_p, HIDE_IP));
+    sendto_realops_flags(UMODE_ALL, L_OPER, SEND_NOTICE,
+                        "Dropping link %s from %s, we require QS",
+                         source_p->name, get_client_name(source_p, MASK_IP));
+
+    sendto_one(source_p, "ERROR :QS is required to link");
+    exit_client(source_p, "ERROR :QS is required to link");
+    return 0;
+  }
+
   /* XXX If somehow there is a connect in progress and
    * a connect comes in with same name toss the pending one,
    * but only if it's not the same client! - Dianora
