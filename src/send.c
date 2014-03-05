@@ -332,7 +332,6 @@ sendto_one_numeric(struct Client *to, struct Client *from, enum irc_numerics num
   const char *dest;
 
   to = to->from;
-
   if (IsDead(to))
     return;
 
@@ -361,7 +360,6 @@ sendto_one_notice(struct Client *to, struct Client *from, const char *pattern, .
   const char *dest;
 
   to = to->from;
-
   if (IsDead(to))
     return;
 

@@ -1493,10 +1493,6 @@ read_conf_files(int cold)
   add_isupport("TOPICLEN", NULL, ServerInfo.max_topic_length);
   add_isupport("CHANMODES", chanmodes, -1);
 
-  /*
-   * message_locale may have changed.  rebuild isupport since it relies
-   * on strlen(form_str(RPL_ISUPPORT))
-   */
   rebuild_isupport_message_line();
 }
 

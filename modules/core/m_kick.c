@@ -86,15 +86,13 @@ m_kick(struct Client *source_p, int parc, char *parv[])
 
   if ((ms = find_channel_link(source_p, chptr)) == NULL)
   {
-    sendto_one(source_p, form_str(ERR_NOTONCHANNEL),
-               me.name, source_p->name, name);
+    sendto_one_numeric(source_p, &me, ERR_NOTONCHANNEL, name);
     return 0;
   }
 
   if (!has_member_flags(ms, CHFL_CHANOP|CHFL_HALFOP))
   {
-      sendto_one(source_p, form_str(ERR_CHANOPRIVSNEEDED),
-                 me.name, source_p->name, name);
+      sendto_one_numeric(source_p, &me, ERR_CHANOPRIVSNEEDED, name);
       return 0;
   }
 
@@ -110,7 +108,7 @@ m_kick(struct Client *source_p, int parc, char *parv[])
 
   if ((ms_target = find_channel_link(who, chptr)) == NULL)
   {
-    sendto_one(source_p, form_str(ERR_USERNOTINCHANNEL), me.name, source_p->name, user, name);
+    sendto_one_numeric(source_p, &me, ERR_USERNOTINCHANNEL, user, name);
     return 0;
   }
 

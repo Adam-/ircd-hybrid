@@ -1003,8 +1003,7 @@ stats_tklines(struct Client *source_p, int parc, char *parv[])
     if (!conf->until)
       return;
 
-    sendto_one_numeric(source_p, &me, RPL_STATSKLINE, 'k',
-                       conf->host, conf->user, conf->reason);
+    sendto_one_numeric(source_p, &me, RPL_STATSKLINE, 'k', conf->host, conf->user, conf->reason);
   }
   /* Theyre opered, or allowed to see all klines */
   else {
@@ -1041,8 +1040,7 @@ stats_klines(struct Client *source_p, int parc, char *parv[])
     if (conf->until)
       return;
 
-    sendto_one_numeric(source_p, &me, RPL_STATSKLINE, 'K',
-                       conf->host, conf->user, conf->reason);
+    sendto_one_numeric(source_p, &me, RPL_STATSKLINE, 'K', conf->host, conf->user, conf->reason);
   }
   /* Theyre opered, or allowed to see all klines */
   else
@@ -1201,12 +1199,12 @@ stats_uptime(struct Client *source_p, int parc, char *parv[])
   {
     time_t now = CurrentTime - me.localClient->since;
 
-    sendto_one_numeric(source_p, &me, RPL_STATSUPTIME, now / 86400,
-                       (now / 3600) % 24, (now / 60) % 60, now % 60);
+    sendto_one_numeric(source_p, &me, RPL_STATSUPTIME,
+               now / 86400, (now / 3600) % 24, (now / 60) % 60, now % 60);
 
     if (!ConfigServerHide.disable_remote_commands || HasUMode(source_p, UMODE_OPER))
-       sendto_one_numeric(source_p, &me, RPL_STATSCONN, Count.max_loc_con,
-                          Count.max_loc_cli, Count.totalrestartcount);
+       sendto_one_numeric(source_p, &me, RPL_STATSCONN,
+                  Count.max_loc_con, Count.max_loc_cli, Count.totalrestartcount);
   }
 }
 

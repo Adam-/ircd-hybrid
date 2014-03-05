@@ -329,8 +329,7 @@ perform_nick_introduction_collide(struct Client *source_p,
     kill_client_serv_butone(NULL, target_p,
                               "%s (Nick collision", me.name);
     ++ServerStats.is_kill;
-    sendto_one(target_p, form_str(ERR_NICKCOLLISION),
-               me.name, target_p->name, target_p->name);
+    sendto_one_numeric(target_p, &me, ERR_NICKCOLLISION, target_p->name);
 
     AddFlag(target_p, FLAGS_KILLED);
     exit_client(target_p, "Nick collision");
@@ -364,8 +363,7 @@ perform_nick_introduction_collide(struct Client *source_p,
                          source_p->from->name, sameuser ? "older" : "newer");
 
   ++ServerStats.is_kill;
-  sendto_one(target_p, form_str(ERR_NICKCOLLISION),
-             me.name, target_p->name, target_p->name);
+  sendto_one_numeric(target_p, &me, ERR_NICKCOLLISION, target_p->name);
 
   /* if it came from a LL server, itd have been source_p,
    * so we dont need to mark target_p as known
@@ -399,6 +397,7 @@ perform_nickchange_collides(struct Client *source_p, struct Client *target_p, ti
                  source_p->from->name);
 
       sendto_one_numeric(target_p, &me, ERR_NICKCOLLISION, target_p->name);
+
       ++ServerStats.is_kill;
 
       kill_client_serv_butone(NULL, source_p, "%s (Nick change collision)",
@@ -448,8 +447,7 @@ perform_nickchange_collides(struct Client *source_p, struct Client *target_p, ti
                           "%s (Nick collision)", me.name);
 
   ++ServerStats.is_kill;
-  sendto_one(target_p, form_str(ERR_NICKCOLLISION),
-             me.name, target_p->name, target_p->name);
+  sendto_one_numeric(target_p, &me, ERR_NICKCOLLISION, target_p->name);
 
   AddFlag(target_p, FLAGS_KILLED);
   exit_client(target_p, "Nick collision");
@@ -576,8 +574,7 @@ m_nick(struct Client *source_p, int parc, char *parv[])
       exit_client(target_p, "Overridden");
     else
     {
-      sendto_one(source_p, form_str(ERR_NICKNAMEINUSE), me.name,
-          source_p->name, nick);
+      sendto_one_numeric(source_p, &me, ERR_NICKNAMEINUSE, nick);
       return 0;
     }
   }
