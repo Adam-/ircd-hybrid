@@ -117,6 +117,8 @@ add_user_to_channel(struct Channel *chptr, struct Client *who,
   ms->flags = flags;
 
   dlinkAdd(ms, &ms->channode, &chptr->members);
+  if (MyConnect(who))
+    dlinkAdd(ms, &ms->locchannode, &chptr->locmembers);
   dlinkAdd(ms, &ms->usernode, &who->channel);
 }
 
@@ -131,6 +133,8 @@ remove_user_from_channel(struct Membership *member)
   struct Channel *chptr = member->chptr;
 
   dlinkDelete(&member->channode, &chptr->members);
+  if (MyConnect(client_p))
+    dlinkDelete(&member->locchannode, &chptr->locmembers);
   dlinkDelete(&member->usernode, &client_p->channel);
 
   mp_pool_release(member);

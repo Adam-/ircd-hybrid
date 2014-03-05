@@ -77,6 +77,7 @@ struct Channel
   int received_number_of_privmsgs;
 
   dlink_list members;
+  dlink_list locmembers;
   dlink_list invites;
   dlink_list banlist;
   dlink_list exceptlist;
@@ -91,6 +92,7 @@ struct Channel
 struct Membership
 {
   dlink_node channode;     /*!< link to chptr->members    */
+  dlink_node locchannode;  /*!< link to chptr->locmembers */
   dlink_node usernode;     /*!< link to source_p->channel */
   struct Channel *chptr;   /*!< Channel pointer */
   struct Client *client_p; /*!< Client pointer */
