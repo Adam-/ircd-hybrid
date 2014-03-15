@@ -268,6 +268,7 @@ mp_pool_get(mp_pool_t *pool)
 {
   mp_chunk_t *chunk;
   mp_allocated_t *allocated;
+  void *ptr;
 
   if (pool->used_chunks != NULL) {
     /*
@@ -348,7 +349,9 @@ mp_pool_get(mp_pool_t *pool)
     pool->full_chunks = chunk;
   }
   /* And return the memory portion of the mp_allocated_t. */
-  return A2M(allocated);
+  ptr = A2M(allocated);
+  memset(ptr, 0, pool->item_size);
+  return ptr;
 }
 
 /** Return an allocated memory item to its memory pool. */
@@ -467,6 +470,7 @@ mp_pool_new(size_t item_size, size_t chunk_capacity)
   assert(new_chunk_cap < INT_MAX);
   pool->new_chunk_capacity = (int)new_chunk_cap;
 
+  pool->item_size = item_size;
   pool->item_alloc_size = alloc_size;
 
   pool->next = mp_allocated_pools;

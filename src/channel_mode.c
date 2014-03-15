@@ -183,7 +183,6 @@ add_id(struct Client *client_p, struct Channel *chptr, char *banid, unsigned int
   }
 
   ban_p = mp_pool_get(ban_pool);
-  memset(ban_p, 0, sizeof(*ban_p));
   ban_p->name = xstrdup(name);
   ban_p->user = xstrdup(user);
   ban_p->host = xstrdup(host);

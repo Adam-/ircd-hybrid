@@ -133,7 +133,6 @@ watch_add_to_hash_table(const char *nick, struct Client *client_p)
   if ((anptr = watch_find_hash(nick)) == NULL)
   {
     anptr = mp_pool_get(watch_pool);
-    memset(anptr, 0, sizeof(*anptr));
     anptr->lasttime = CurrentTime;
     strlcpy(anptr->nick, nick, sizeof(anptr->nick));
 
