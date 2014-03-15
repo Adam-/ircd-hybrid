@@ -165,10 +165,10 @@ set_initial_nick(struct Client *source_p, const char *nick)
   source_p->localClient->registration &= ~REG_NEED_NICK;
 
   if (source_p->name[0])
-    hash_del_client(source_p);
+    hash_del_node(&clientTable, &source_p->hnode);
 
   strlcpy(source_p->name, nick, sizeof(source_p->name));
-  hash_add_client(source_p);
+  hash_add(&clientTable, &source_p->hnode, source_p->name, source_p);
 
   /* fd_desc is long enough */
   fd_note(&source_p->localClient->fd, "Nick: %s", nick);
@@ -244,9 +244,9 @@ change_local_nick(struct Client *source_p, const char *nick)
   sendto_server(source_p, NOCAPS, NOCAPS, ":%s NICK %s :%lu",
                 ID(source_p), nick, (unsigned long)source_p->tsinfo);
 
-  hash_del_client(source_p);
+  hash_del_node(&clientTable, &source_p->hnode);
   strlcpy(source_p->name, nick, sizeof(source_p->name));
-  hash_add_client(source_p);
+  hash_add(&clientTable, &source_p->hnode, source_p->name, source_p);
 
   if (!samenick)
     watch_check_hash(source_p, RPL_LOGON);
@@ -278,8 +278,8 @@ uid_from_server(struct Client *source_p, int parc,
   strlcpy(source_p->sockhost, parv[7], sizeof(source_p->sockhost));
   strlcpy(source_p->info, ugecos, sizeof(source_p->info));
 
-  hash_add_client(source_p);
-  hash_add_id(source_p);
+  hash_add(&clientTable, &source_p->hnode, source_p->name, source_p);
+  hash_add(&idTable, &source_p->idhnode, source_p->id, source_p);
 
   /* parse usermodes */
   for (m = &parv[4][1]; *m; ++m)
@@ -501,7 +501,7 @@ mr_nick(struct Client *source_p, int parc, char *parv[])
     return 0;
   }
 
-  if ((target_p = hash_find_client(nick)) == NULL)
+  if ((target_p = hash_find(&clientTable, nick)) == NULL)
     set_initial_nick(source_p, nick);
   else if (source_p == target_p)
     strlcpy(source_p->name, nick, sizeof(source_p->name));
@@ -562,7 +562,7 @@ m_nick(struct Client *source_p, int parc, char *parv[])
     return 0;
   }
 
-  target_p = hash_find_client(nick);
+  target_p = hash_find(&clientTable, nick);
   if (target_p != NULL)
   {
     if (target_p == source_p)
@@ -616,7 +616,7 @@ ms_nick(struct Client *source_p, int parc, char *parv[])
   nick = parv[1];
   newts = atol(parv[2]);
 
-  target_p = hash_find_client(nick);
+  target_p = hash_find(&clientTable, nick);
   if (target_p != NULL)
   {
     /* change of case? */
@@ -639,7 +639,7 @@ ms_nick(struct Client *source_p, int parc, char *parv[])
       return 0;
 
     /* If we reach here, target_p must be dead, or is source_p */
-    assert(source_p == target_p || hash_find_client(parv[1]) == NULL);
+    assert(source_p == target_p || hash_findt(&clientTable, parv[1]) == NULL);
   }
 
   /* Process nick change */
@@ -664,10 +664,10 @@ ms_nick(struct Client *source_p, int parc, char *parv[])
                 ID(source_p), nick, (unsigned long)source_p->tsinfo);
 
   /* set the new nick name */
-  hash_del_client(source_p);
+  hash_del_node(&clientTable, &source_p->hnode);
 
   strlcpy(source_p->name, nick, sizeof(source_p->name));
-  hash_add_client(source_p);
+  hash_add(&clientTable, &source_p->hnode, source_p->name, source_p);
 
   if (!samenick)
     watch_check_hash(source_p, RPL_LOGON);
@@ -732,7 +732,7 @@ ms_uid(struct Client *source_p, int parc, char *parv[])
    * This may generate 401's, but it ensures that both clients always
    * go, even if the other server refuses to do the right thing.
    */
-  if ((target_p = hash_find_id(parv[8])) != NULL)
+  if ((target_p = hash_find(&idTable, parv[8])) != NULL)
   {
     sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
                          "ID collision on %s(%s <- %s)(both killed)",
@@ -747,7 +747,7 @@ ms_uid(struct Client *source_p, int parc, char *parv[])
     return 0;
   }
 
-  target_p = hash_find_client(parv[1]);
+  target_p = hash_find(&clientTable, parv[1]);
   if (target_p != NULL)
   {
     /* New user collides into target_p */
@@ -760,7 +760,7 @@ ms_uid(struct Client *source_p, int parc, char *parv[])
       return 0;
 
     /* If we reach here, target_p has lost and the new nick is accepted */
-    assert(hash_find_client(parv[1]) == NULL);
+    assert(hash_find(&clientTable, parv[1]) == NULL);
   }
 
   uid_from_server(source_p, parc, parv, newts, svsid, parv[1], parv[parc-1]);

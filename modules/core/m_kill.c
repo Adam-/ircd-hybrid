@@ -86,7 +86,7 @@ mo_kill(struct Client *source_p, int parc, char *parv[])
   else
     reason = def_reason;
 
-  if ((target_p = hash_find_client(user)) == NULL)
+  if ((target_p = find_person(source_p, user)) == NULL)
   {
     /*
      * If the user has recently changed nick, automatically
@@ -114,12 +114,6 @@ mo_kill(struct Client *source_p, int parc, char *parv[])
   if (MyConnect(target_p) && !HasOFlag(source_p, OPER_FLAG_KILL))
   {
     sendto_one_numeric(source_p, &me, ERR_NOPRIVS, "kill");
-    return 0;
-  }
-
-  if (IsServer(target_p) || IsMe(target_p))
-  {
-    sendto_one_numeric(source_p, &me, ERR_CANTKILLSERVER);
     return 0;
   }
 
@@ -224,12 +218,6 @@ ms_kill(struct Client *source_p, int parc, char *parv[])
 
     sendto_one_notice(source_p, &me, ":KILL changed from %s to %s",
                       user, target_p->name);
-  }
-
-  if (IsServer(target_p) || IsMe(target_p))
-  {
-    sendto_one_numeric(source_p, &me, ERR_CANTKILLSERVER);
-    return 0;
   }
 
   if (MyConnect(target_p))

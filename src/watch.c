@@ -38,7 +38,7 @@
 #include "watch.h"
 
 
-static dlink_list watchTable[HASHSIZE];
+HASH(watch_hash, HASHSIZE);
 
 static mp_pool_t *watch_pool = NULL;
 
@@ -68,10 +68,10 @@ watch_init(void)
 void
 watch_count_memory(unsigned int *const count, uint64_t *const bytes)
 {
-  unsigned int idx = 0;
+  unsigned int i;
 
-  for (; idx < HASHSIZE; ++idx)
-    (*count) += dlink_list_length(&watchTable[idx]);
+  for (i = 0; i < watch_hash.size; ++i)
+    (*count) += dlink_list_length(&watch_hash.buckets[i]);
 
   (*bytes) = *count * sizeof(struct Watch);
 }
@@ -106,17 +106,7 @@ watch_check_hash(struct Client *client_p, const enum irc_numerics reply)
 struct Watch *
 watch_find_hash(const char *name)
 {
-  dlink_node *ptr = NULL;
-
-  DLINK_FOREACH(ptr, watchTable[strhash(name)].head)
-  {
-    struct Watch *anptr = ptr->data;
-
-    if (!irccmp(anptr->nick, name))
-      return anptr;
-  }
-
-  return NULL;
+  return hash_find(&watch_hash, name);
 }
 
 /*! \brief Adds a watch entry to client_p's watch list
@@ -136,7 +126,7 @@ watch_add_to_hash_table(const char *nick, struct Client *client_p)
     anptr->lasttime = CurrentTime;
     strlcpy(anptr->nick, nick, sizeof(anptr->nick));
 
-    dlinkAdd(anptr, &anptr->node, &watchTable[strhash(nick)]);
+    hash_add(&watch_hash, &anptr->hnode, anptr->nick, anptr);
   }
   else
   {
@@ -146,7 +136,7 @@ watch_add_to_hash_table(const char *nick, struct Client *client_p)
 
   if (ptr == NULL)
   {
-    /* No it isn't, so add it in the bucket and client addint it */
+    /* No it isn't, so add it in the bucket and client adding it */
     dlinkAdd(client_p, make_dlink_node(), &anptr->watched_by);
     dlinkAdd(anptr, make_dlink_node(), &client_p->localClient->watches);
   }
@@ -175,10 +165,9 @@ watch_del_from_hash_table(const char *nick, struct Client *client_p)
     free_dlink_node(ptr);
 
   /* In case this header is now empty of notices, remove it */
-  if (anptr->watched_by.head == NULL)
+  if (!dlink_list_length(&anptr->watched_by))
   {
-    assert(dlinkFind(&watchTable[strhash(nick)], anptr) != NULL);
-    dlinkDelete(&anptr->node, &watchTable[strhash(nick)]);
+    hash_del_node(&watch_hash, &anptr->hnode);
     mp_pool_release(anptr);
   }
 }
@@ -204,11 +193,9 @@ watch_del_watch_list(struct Client *client_p)
       free_dlink_node(tmp);
 
     /* If this leaves a header without notifies, remove it. */
-    if (anptr->watched_by.head == NULL)
+    if (!dlink_list_length(&anptr->watched_by))
     {
-      assert(dlinkFind(&watchTable[strhash(anptr->nick)], anptr) != NULL);
-      dlinkDelete(&anptr->node, &watchTable[strhash(anptr->nick)]);
-
+      hash_del_node(&watch_hash, &anptr->hnode);
       mp_pool_release(anptr);
     }
 

@@ -56,6 +56,7 @@ ircd_SOURCES = channel.c         \
                s_serv.c          \
                s_user.c          \
                send.c            \
+               userhost.c        \
                version.c         \
                watch.c           \
                whowas.c

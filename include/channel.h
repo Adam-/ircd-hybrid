@@ -28,6 +28,7 @@
 #define INCLUDED_channel_h
 
 #include "ircd_defs.h"        /* KEYLEN, CHANNELLEN */
+#include "hash.h"
 
 /* channel visible */
 #define ShowChannel(v,c)        (PubChannel(c) || IsMember((v),(c)))
@@ -61,8 +62,8 @@ struct Mode
 struct Channel
 {
   dlink_node node;
+  hash_node hnode;
 
-  struct Channel *hnextch;
   struct Mode mode;
 
   char topic[TOPICLEN + 1];
@@ -115,6 +116,7 @@ struct Ban
 };
 
 extern dlink_list global_channel_list;
+extern struct hash_table channelTable;
 
 extern int check_channel_name(const char *, const int);
 extern int can_send(struct Channel *, struct Client *, struct Membership *, const char *);
@@ -142,4 +144,9 @@ extern const char *get_member_status(const struct Membership *, const int);
 
 extern struct Channel *make_channel(const char *);
 extern struct Membership *find_channel_link(struct Client *, struct Channel *);
+
+struct ListTask;
+extern void free_list_task(struct ListTask *, struct Client *);
+extern void safe_list_channels(struct Client *, struct ListTask *, int);
+
 #endif  /* INCLUDED_channel_h */

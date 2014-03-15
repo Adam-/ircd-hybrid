@@ -27,42 +27,53 @@
 #ifndef INCLUDED_hash_h
 #define INCLUDED_hash_h
 
+#include "list.h"
+
 #define FNV1_32_INIT 0x811c9dc5
 #define FNV1_32_BITS 16
-#define FNV1_32_SIZE (1 << FNV1_32_BITS)  /* 2^16 = 65536 */
-#define HASHSIZE FNV1_32_SIZE
+#define HASHSIZE FNV1_32_BITS /* 2^16 = 65536 */
 
-struct Client;
-struct Channel;
-struct UserHost;
+typedef unsigned int (*hash_function)(const unsigned char *);
+typedef int (*hash_compare)(const unsigned char *, const unsigned char *);
 
-enum
+#define HASH(name, sz) \
+  static hash_bucket name ## _buckets[(1 << sz)]; \
+  struct hash_table name = \
+  { \
+    .power = sz, \
+    .size = (1 << sz), \
+    .hash = fnv_hash_ircstring_lower, \
+    .compare = (hash_compare) irccmp, \
+    .buckets = name ## _buckets \
+  }
+
+typedef dlink_list hash_bucket;
+typedef struct hash_node hash_node;
+
+struct hash_table
 {
-  HASH_TYPE_ID,
-  HASH_TYPE_CLIENT,
-  HASH_TYPE_CHANNEL,
-  HASH_TYPE_USERHOST
+  size_t power;
+  size_t size;
+  hash_function hash;
+  hash_compare compare;
+  hash_bucket *buckets;
+};
+
+struct hash_node
+{
+  dlink_node dnode;
+  const unsigned char *key;
+  unsigned int hashv;
+  hash_bucket *bucket;
 };
 
 extern void hash_init(void);
-extern void hash_add_client(struct Client *);
-extern void hash_del_client(struct Client *);
-extern void hash_add_channel(struct Channel *);
-extern void hash_del_channel(struct Channel *);
-extern void hash_add_id(struct Client *);
-extern void hash_del_id(struct Client *);
-extern void hash_add_userhost(struct UserHost *);
-extern void hash_del_userhost(struct UserHost *);
+extern void hash_add(struct hash_table *table, hash_node *node, const unsigned char *key, void *what);
+extern void hash_del_node(struct hash_table *table, hash_node *node);
+extern void hash_del(struct hash_table *table, const unsigned char *key, void *what);
+extern void *hash_find(struct hash_table *table, const unsigned char *key);
+extern void hash_get_stats(struct hash_table *table, unsigned int *restrict entries, unsigned int *restrict buckets, unsigned int *restrict maxchain);
 
-extern struct UserHost *hash_find_userhost(const char *);
-extern struct Client *hash_find_id(const char *);
-extern struct Client *hash_find_client(const char *);
-extern struct Client *hash_find_server(const char *);
-extern struct Channel *hash_find_channel(const char *);
-extern void *hash_get_bucket(int, unsigned int);
-
-extern void free_list_task(struct ListTask *, struct Client *);
-extern void safe_list_channels(struct Client *, struct ListTask *, int);
-
-extern unsigned int strhash(const char *);
+extern unsigned int hash_fold(struct hash_table *table, unsigned int hashv);
+extern unsigned int fnv_hash_ircstring_lower(const unsigned char *name);
 #endif  /* INCLUDED_hash_h */

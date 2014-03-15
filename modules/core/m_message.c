@@ -488,7 +488,7 @@ handle_special(int p_or_n, const char *command, struct Client *source_p,
       return;
     }
 
-    if ((target_p = hash_find_server(server + 1)))
+    if ((target_p = find_server(server + 1)))
     {
       if (!IsMe(target_p))
       {
@@ -631,7 +631,7 @@ build_target_list(int p_or_n, const char *command, struct Client *source_p,
      */
     if (IsChanPrefix(*nick))
     {
-      if ((chptr = hash_find_channel(nick)))
+      if ((chptr = hash_find(&channelTable, nick)))
       {
         if (!duplicate_ptr(chptr))
         {
@@ -707,7 +707,7 @@ build_target_list(int p_or_n, const char *command, struct Client *source_p,
        * At this point, nick+1 should be a channel name i.e. #foo or &foo
        * if the channel is found, fine, if not report an error
        */
-      if ((chptr = hash_find_channel(nick)))
+      if ((chptr = hash_find(&channelTable, nick)))
       {
         if (IsClient(source_p) && !HasFlag(source_p, FLAGS_SERVICE))
         {

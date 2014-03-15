@@ -44,6 +44,7 @@
 #include "resv.h"
 
 dlink_list global_channel_list = { NULL, NULL, 0 };
+HASH(channelTable, HASHSIZE);
 mp_pool_t *ban_pool;    /*! \todo ban_pool shouldn't be a global var */
 
 static mp_pool_t *member_pool = NULL;
@@ -359,7 +360,7 @@ make_channel(const char *chname)
   strlcpy(chptr->chname, chname, sizeof(chptr->chname));
   dlinkAdd(chptr, &chptr->node, &global_channel_list);
 
-  hash_add_channel(chptr);
+  hash_add(&channelTable, &chptr->hnode, chptr->chname, chptr);
 
   return chptr;
 }
@@ -381,7 +382,7 @@ destroy_channel(struct Channel *chptr)
   free_channel_list(&chptr->invexlist);
 
   dlinkDelete(&chptr->node, &global_channel_list);
-  hash_del_channel(chptr);
+  hash_del_node(&channelTable, &chptr->hnode);
 
   mp_pool_release(chptr);
 }
@@ -890,4 +891,179 @@ set_channel_topic(struct Channel *chptr, const char *topic,
 
   strlcpy(chptr->topic_info, topic_info, sizeof(chptr->topic_info));
   chptr->topic_time = topicts;
+}
+
+/*
+ * Safe list code.
+ *
+ * The idea is really quite simple. As the link lists pointed to in
+ * each "bucket" of the channel hash table are traversed atomically
+ * there is no locking needed. Overall, yes, inconsistent reported
+ * state can still happen, but normally this isn't a big deal.
+ * I don't like sticking the code into hash.c but oh well. Moreover,
+ * if a hash isn't used in future, oops.
+ *
+ * - Dianora
+ */
+
+/* exceeding_sendq()
+ *
+ * inputs       - pointer to client to check
+ * output	      - 1 if client is in danger of blowing its sendq
+ *		            0 if it is not.
+ * side effects -
+ *
+ * Sendq limit is fairly conservative at 1/2 (In original anyway)
+ */
+static int
+exceeding_sendq(const struct Client *to)
+{
+  if (dbuf_length(&to->localClient->buf_sendq) > (get_sendq(&to->localClient->confs) / 2))
+    return 1;
+  else
+    return 0;
+}
+
+void
+free_list_task(struct ListTask *lt, struct Client *source_p)
+{
+  dlink_node *dl = NULL, *dln = NULL;
+
+  if ((dl = dlinkFindDelete(&listing_client_list, source_p)) != NULL)
+    free_dlink_node(dl);
+
+  DLINK_FOREACH_SAFE(dl, dln, lt->show_mask.head)
+  {
+    MyFree(dl->data);
+    free_dlink_node(dl);
+  }
+
+  DLINK_FOREACH_SAFE(dl, dln, lt->hide_mask.head)
+  {
+    MyFree(dl->data);
+    free_dlink_node(dl);
+  }
+
+  MyFree(lt);
+
+  if (MyConnect(source_p))
+    source_p->localClient->list_task = NULL;
+}
+
+/* list_allow_channel()
+ *
+ * inputs       - channel name
+ *              - pointer to a list task
+ * output       - 1 if the channel is to be displayed
+ *                0 otherwise
+ * side effects -
+ */
+static int
+list_allow_channel(const char *chname, const struct ListTask *lt)
+{
+  const dlink_node *dl = NULL;
+
+  DLINK_FOREACH(dl, lt->show_mask.head)
+    if (match(dl->data, chname) != 0)
+      return 0;
+
+  DLINK_FOREACH(dl, lt->hide_mask.head)
+    if (match(dl->data, chname) == 0)
+      return 0;
+
+  return 1;
+}
+
+/* list_one_channel()
+ *
+ * inputs       - client pointer to return result to
+ *              - pointer to channel to list
+ *              - pointer to ListTask structure
+ * output	- none
+ * side effects -
+ */
+static void
+list_one_channel(struct Client *source_p, struct Channel *chptr,
+                 struct ListTask *list_task)
+{
+  char listbuf[MODEBUFLEN] = "";
+  char modebuf[MODEBUFLEN] = "";
+  char parabuf[MODEBUFLEN] = "";
+
+  if (SecretChannel(chptr) &&
+      !(IsMember(source_p, chptr) || HasUMode(source_p, UMODE_ADMIN)))
+    return;
+  if (dlink_list_length(&chptr->members) < list_task->users_min ||
+      dlink_list_length(&chptr->members) > list_task->users_max ||
+      (chptr->channelts != 0 &&
+       ((unsigned int)chptr->channelts < list_task->created_min ||
+        (unsigned int)chptr->channelts > list_task->created_max)) ||
+      (unsigned int)chptr->topic_time < list_task->topicts_min ||
+      (chptr->topic_time ? (unsigned int)chptr->topic_time : UINT_MAX) >
+      list_task->topicts_max)
+    return;
+
+  if (!list_allow_channel(chptr->chname, list_task))
+    return;
+
+  if (HasUMode(source_p, UMODE_ADMIN))
+  {
+    channel_modes(chptr, source_p, modebuf, parabuf);
+
+    if (chptr->topic[0])
+      snprintf(listbuf, sizeof(listbuf), "[%s] ", modebuf);
+    else
+      snprintf(listbuf, sizeof(listbuf), "[%s]",  modebuf);
+  }
+
+  sendto_one_numeric(source_p, &me, RPL_LIST, chptr->chname,
+                     dlink_list_length(&chptr->members),
+                     listbuf, chptr->topic);
+}
+
+/* safe_list_channels()
+ *
+ * inputs	- pointer to client requesting list
+ * side effects	- safely list all channels to source_p
+ *
+ * Walk the channel buckets, ensure all pointers in a bucket are
+ * traversed before blocking on a sendq. This means, no locking is needed.
+ *
+ * N.B. This code is "remote" safe, but is not currently used for
+ * remote clients.
+ *
+ * - Dianora
+ */
+void
+safe_list_channels(struct Client *source_p, struct ListTask *list_task,
+                   int only_unmasked_channels)
+{
+  struct Channel *chptr = NULL;
+  dlink_node *dl;
+
+  if (!only_unmasked_channels)
+  {
+    unsigned int i;
+
+    for (i = list_task->hash_index; i < channelTable.size; ++i)
+    {
+      if (exceeding_sendq(source_p->from))
+      {
+        list_task->hash_index = i;
+        return;    /* still more to do */
+      }
+
+      DLINK_FOREACH(dl, channelTable.buckets[i].head)
+        list_one_channel(source_p, dl->data, list_task);
+    }
+  }
+  else
+  {
+    DLINK_FOREACH(dl, list_task->show_mask.head)
+      if ((chptr = hash_find(&channelTable, dl->data)) != NULL)
+        list_one_channel(source_p, chptr, list_task);
+  }
+
+  free_list_task(list_task, source_p);
+  sendto_one_numeric(source_p, &me, RPL_LISTEND);
 }

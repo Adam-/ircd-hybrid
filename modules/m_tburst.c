@@ -62,7 +62,7 @@ ms_tburst(struct Client *source_p, int parc, char *parv[])
    */
 
 
-  if ((chptr = hash_find_channel(parv[2])) == NULL)
+  if ((chptr = hash_find(&channelTable, parv[2])) == NULL)
     return 0;
 
   /*

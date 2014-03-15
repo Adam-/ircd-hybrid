@@ -146,7 +146,7 @@ ms_squit(struct Client *source_p, int parc, char *parv[])
   if (parc < 2 || EmptyString(parv[parc - 1]))
     return 0;
 
-  if ((target_p = hash_find_server(parv[1])) == NULL)
+  if ((target_p = find_server(parv[1])) == NULL)
     return 0;
 
   if (!IsServer(target_p) && !IsMe(target_p))

@@ -183,7 +183,7 @@ hunt_server(struct Client *source_p, const char *command,
    * non-matching lookups.
    */
   if (MyClient(source_p))
-    target_p = hash_find_client(parv[server]);
+    target_p = hash_find(&clientTable, parv[server]);
   else
     target_p = find_person(source_p, parv[server]);
 
@@ -191,7 +191,7 @@ hunt_server(struct Client *source_p, const char *command,
     if (target_p->from == source_p->from && !MyConnect(target_p))
       target_p = NULL;
 
-  if (target_p == NULL && (target_p = hash_find_server(parv[server])))
+  if (target_p == NULL && (target_p = find_server(parv[server])))
     if (target_p->from == source_p->from && !MyConnect(target_p))
       target_p = NULL;
 
@@ -204,7 +204,7 @@ hunt_server(struct Client *source_p, const char *command,
   {
     if (!wilds)
     {
-      if (!(target_p = hash_find_server(parv[server])))
+      if (!(target_p = find_server(parv[server])))
       {
         sendto_one_numeric(source_p, &me, ERR_NOSUCHSERVER, parv[server]);
         return HUNTED_NOSUCH;
@@ -310,7 +310,7 @@ try_connections(void *unused)
     /* Found a CONNECT config with port specified, scan clients
      * and see if this server is already connected?
      */
-    if (hash_find_server(conf->name) != NULL)
+    if (find_server(conf->name) != NULL)
       continue;
 
     if (conf->class->ref_count < conf->class->max_total)
@@ -717,7 +717,7 @@ server_estab(struct Client *client_p)
              (unsigned long)CurrentTime);
 
   if (HasID(client_p))
-    hash_add_id(client_p);
+    hash_add(&idTable, &client_p->idhnode, client_p->id, client_p);
 
   /* XXX Does this ever happen? I don't think so -db */
   detach_conf(client_p, CONF_OPER);
@@ -751,7 +751,7 @@ server_estab(struct Client *client_p)
   Count.myserver++;
 
   dlinkAdd(client_p, make_dlink_node(), &global_serv_list);
-  hash_add_client(client_p);
+  hash_add(&clientTable, &client_p->hnode, client_p->name, client_p);
 
   /* doesnt duplicate client_p->serv if allocated this struct already */
   make_server(client_p);
@@ -1037,7 +1037,7 @@ serv_connect(struct MaskItem *conf, struct Client *by)
   /* Make sure this server isn't already connected
    * Note: conf should ALWAYS be a valid C: line
    */
-  if ((client_p = hash_find_server(conf->name)) != NULL)
+  if ((client_p = find_server(conf->name)) != NULL)
   {
     sendto_realops_flags(UMODE_ALL, L_ADMIN, SEND_NOTICE,
                          "Server %s already present from %s",

@@ -152,7 +152,7 @@ m_join(struct Client *source_p, int parc, char *parv[])
       break;
     }
 
-    if ((chptr = hash_find_channel(chan)) != NULL)
+    if ((chptr = hash_find(&channelTable, chan)) != NULL)
     {
       if (IsMember(source_p, chptr))
         continue;
@@ -306,7 +306,7 @@ mc_join(struct Client *source_p, int parc, char *parv[])
   mode.mode = mode.limit = 0;
   mode.key[0] = '\0';
 
-  if ((chptr = hash_find_channel(parv[2])) == NULL)
+  if ((chptr = hash_find(&channelTable, parv[2])) == NULL)
   {
     isnew = 1;
     chptr = make_channel(parv[2]);

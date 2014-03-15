@@ -78,7 +78,7 @@ m_kick(struct Client *source_p, int parc, char *parv[])
   if (*name == '\0')
     return 0;
 
-  if ((chptr = hash_find_channel(name)) == NULL)
+  if ((chptr = hash_find(&channelTable, name)) == NULL)
   {
     sendto_one_numeric(source_p, &me, ERR_NOSUCHCHANNEL, name);
     return 0;
@@ -148,7 +148,7 @@ ms_kick(struct Client *source_p, int parc, char **parv)
   struct Client *who;
   struct Membership *ms_target;
 
-  chptr = hash_find_channel(name);
+  chptr = hash_find(&channelTable, name);
   if (chptr == NULL)
     return 0;
 

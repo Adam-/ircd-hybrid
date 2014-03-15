@@ -34,17 +34,8 @@
 
 
 static struct Whowas WHOWAS[NICKNAMEHISTORYLENGTH];
-dlink_list WHOWASHASH[HASHSIZE];
+HASH(whowas_hash, HASHSIZE);
 
-
-void
-whowas_init(void)
-{
-  unsigned int idx;
-
-  for (idx = 0; idx < NICKNAMEHISTORYLENGTH; ++idx)
-    WHOWAS[idx].hashv = -1;
-}
 
 void
 whowas_add_history(struct Client *client_p, const int online)
@@ -57,15 +48,14 @@ whowas_add_history(struct Client *client_p, const int online)
   if (++whowas_next == NICKNAMEHISTORYLENGTH)
     whowas_next = 0;
 
-  if (who->hashv != -1)
+  if (who->hnode.bucket != NULL)
   {
     if (who->online)
       dlinkDelete(&who->cnode, &who->online->whowas);
 
-    dlinkDelete(&who->tnode, &WHOWASHASH[who->hashv]);
+    hash_del_node(&whowas_hash, &who->hnode);
   }
 
-  who->hashv = strhash(client_p->name);
   who->shide = IsHidden(client_p->servptr) != 0;
   who->logoff = CurrentTime;
 
@@ -83,7 +73,7 @@ whowas_add_history(struct Client *client_p, const int online)
   else
     who->online = NULL;
 
-  dlinkAdd(who, &who->tnode, &WHOWASHASH[who->hashv]);
+  hash_add(&whowas_hash, &who->hnode, who->name, who);
 }
 
 void
@@ -107,7 +97,7 @@ whowas_get_history(const char *nick, time_t timelimit)
 
   timelimit = CurrentTime - timelimit;
 
-  DLINK_FOREACH(ptr, WHOWASHASH[strhash(nick)].head)
+  DLINK_FOREACH(ptr, whowas_get_bucket(nick)->head)
   {
     struct Whowas *temp = ptr->data;
 
@@ -129,10 +119,18 @@ whowas_count_memory(unsigned int *const count, uint64_t *const bytes)
 
   for (; i < NICKNAMEHISTORYLENGTH; ++i, ++tmp)
   {
-    if (tmp->hashv != -1)
+    if (tmp->hnode.bucket != NULL)
     {
       (*count)++;
       (*bytes) += sizeof(struct Whowas);
     }
   }
+}
+
+hash_bucket *
+whowas_get_bucket(const char *name)
+{
+  unsigned int hashv = whowas_hash.hash(name);
+  unsigned int bucketv = hash_fold(&whowas_hash, hashv);
+  return &whowas_hash.buckets[bucketv];
 }

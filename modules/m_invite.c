@@ -73,7 +73,7 @@ m_invite(struct Client *source_p, int parc, char *parv[])
     return 0;
   }
 
-  if ((chptr = hash_find_channel(parv[2])) == NULL)
+  if ((chptr = hash_find(&channelTable, parv[2])) == NULL)
   {
     sendto_one_numeric(source_p, &me, ERR_NOSUCHCHANNEL, parv[2]);
     return 0;

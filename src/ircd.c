@@ -537,7 +537,6 @@ main(int argc, char *argv[])
   init_host_hash();          /* Host-hashtable. */
   client_init();
   class_init();
-  whowas_init();
   watch_init();
   auth_init();          /* Initialise the auth code */
   init_resolver();      /* Needs to be setup before the io loop */
@@ -587,8 +586,8 @@ main(int argc, char *argv[])
   SetMe(&me);
   make_server(&me);
 
-  hash_add_id(&me);
-  hash_add_client(&me);
+  hash_add(&idTable, &me.idhnode, me.id, &me);
+  hash_add(&clientTable, &me.hnode, me.name, &me);
 
   /* add ourselves to global_serv_list */
   dlinkAdd(&me, make_dlink_node(), &global_serv_list);

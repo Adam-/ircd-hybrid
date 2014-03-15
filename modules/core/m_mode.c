@@ -69,7 +69,7 @@ m_mode(struct Client *source_p, int parc, char *parv[])
     return 0;
   }
 
-  if ((chptr = hash_find_channel(parv[1])) == NULL)
+  if ((chptr = hash_find(&channelTable, parv[1])) == NULL)
   {
     sendto_one_numeric(source_p, &me, ERR_NOSUCHCHANNEL, parv[1]);
     return 0;
@@ -123,7 +123,7 @@ ms_tmode(struct Client *source_p, int parc, char *parv[])
   struct Channel *chptr = NULL;
   struct Membership *member = NULL;
 
-  if ((chptr = hash_find_channel(parv[2])) == NULL)
+  if ((chptr = hash_find(&channelTable, parv[2])) == NULL)
   {
     sendto_one_numeric(source_p, &me, ERR_NOSUCHCHANNEL, parv[2]);
     return 0;
@@ -157,7 +157,7 @@ ms_tmode(struct Client *source_p, int parc, char *parv[])
  *		  parv[3] = type of ban to add ('b' 'I' or 'e')
  *		  parv[4] = space delimited list of masks to add
  * outputs	- none
- * side effects	- propagates unchanged bmask line to servers
+ * side effects	- propagates unchanged bmask line to servers.
  */
 static int
 ms_bmask(struct Client *source_p, int parc, char *parv[])
@@ -171,7 +171,7 @@ ms_bmask(struct Client *source_p, int parc, char *parv[])
   int mlen, tlen;
   int modecount = 0;
 
-  if ((chptr = hash_find_channel(parv[2])) == NULL)
+  if ((chptr = hash_find(&channelTable, parv[2])) == NULL)
     return 0;
 
   /* TS is higher, drop it. */
