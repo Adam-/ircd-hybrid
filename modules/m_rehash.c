@@ -79,7 +79,7 @@ mo_rehash(struct Client *source_p, int parc, char *parv[])
       ilog(LOG_TYPE_IRCD, "REHASH %s From %s",
            parv[1], get_oper_name(source_p));
     else
-      sendto_one_notice(source_p, &me, ":%s is not a valid option. "
+      sendto_one_notice(source_p, &me, "%s is not a valid option. "
                         "Choose from DNS, MOTD", parv[1]);
   }
   else

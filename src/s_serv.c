@@ -1046,7 +1046,7 @@ serv_connect(struct MaskItem *conf, struct Client *by)
                          "Server %s already present from %s",
                          conf->name, get_client_name(client_p, MASK_IP));
     if (by && IsClient(by) && !MyClient(by))
-      sendto_one_notice(by, &me, ":Server %s already present from %s",
+      sendto_one_notice(by, &me, "Server %s already present from %s",
                         conf->name, get_client_name(client_p, MASK_IP));
     return 0;
   }
@@ -1085,7 +1085,7 @@ serv_connect(struct MaskItem *conf, struct Client *by)
                          "Host %s is not enabled for connecting: no connect{} block",
                          conf->name);
     if (by && IsClient(by) && !MyClient(by))
-      sendto_one_notice(by, &me, ":Connect to host %s failed.", client_p->name);
+      sendto_one_notice(by, &me, "Connect to host %s failed.", client_p->name);
 
     SetDead(client_p);
     exit_client(client_p, "Connection failed");

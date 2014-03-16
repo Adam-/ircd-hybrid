@@ -287,7 +287,7 @@ register_local_user(struct Client *source_p)
 
   if (!valid_hostname(source_p->host))
   {
-    sendto_one_notice(source_p, &me, ":*** Notice -- You have an illegal "
+    sendto_one_notice(source_p, &me, "*** Notice -- You have an illegal "
                       "character in your hostname");
     strlcpy(source_p->host, source_p->sockhost,
             sizeof(source_p->host));
@@ -304,7 +304,7 @@ register_local_user(struct Client *source_p)
     if (IsNeedIdentd(conf))
     {
       ++ServerStats.is_ref;
-      sendto_one_notice(source_p, &me, ":*** Notice -- You need to install "
+      sendto_one_notice(source_p, &me, "*** Notice -- You need to install "
                         "identd to use this server");
       exit_client(source_p, "Install identd");
       return;
@@ -701,13 +701,13 @@ report_and_set_user_flags(struct Client *source_p, const struct MaskItem *conf)
 {
   /* If this user is being spoofed, tell them so */
   if (IsConfDoSpoofIp(conf))
-    sendto_one_notice(source_p, &me, ":*** Spoofing your IP. Congrats.");
+    sendto_one_notice(source_p, &me, "*** Spoofing your IP. Congrats.");
 
   /* If this user is in the exception class, Set it "E lined" */
   if (IsConfExemptKline(conf))
   {
     SetExemptKline(source_p);
-    sendto_one_notice(source_p, &me, ":*** You are exempt from K/D/G lines. Congrats.");
+    sendto_one_notice(source_p, &me, "*** You are exempt from K/D/G lines. Congrats.");
   }
 
   /*
@@ -717,26 +717,26 @@ report_and_set_user_flags(struct Client *source_p, const struct MaskItem *conf)
   else if (IsConfExemptGline(conf))
   {
     SetExemptGline(source_p);
-    sendto_one_notice(source_p, &me, ":*** You are exempt from G lines. Congrats.");
+    sendto_one_notice(source_p, &me, "*** You are exempt from G lines. Congrats.");
   }
 
   if (IsConfExemptResv(conf))
   {
     SetExemptResv(source_p);
-    sendto_one_notice(source_p, &me, ":*** You are exempt from resvs. Congrats.");
+    sendto_one_notice(source_p, &me, "*** You are exempt from resvs. Congrats.");
   }
 
   /* If this user is exempt from user limits set it "F lined" */
   if (IsConfExemptLimits(conf))
   {
     SetExemptLimits(source_p);
-    sendto_one_notice(source_p, &me, ":*** You are exempt from user limits. Congrats.");
+    sendto_one_notice(source_p, &me, "*** You are exempt from user limits. Congrats.");
   }
 
   if (IsConfCanFlood(conf))
   {
     SetCanFlood(source_p);
-    sendto_one_notice(source_p, &me, ":*** You are exempt from flood "
+    sendto_one_notice(source_p, &me, "*** You are exempt from flood "
                       "protection, aren't you fearsome.");
   }
 }
@@ -867,7 +867,7 @@ set_user_mode(struct Client *source_p, const int parc, char *parv[])
   if (MyConnect(source_p) && HasUMode(source_p, UMODE_ADMIN) &&
       !HasOFlag(source_p, OPER_FLAG_ADMIN))
   {
-    sendto_one_notice(source_p, &me, ":*** You have no admin flag;");
+    sendto_one_notice(source_p, &me, "*** You have no admin flag;");
     DelUMode(source_p, UMODE_ADMIN);
   }
 
@@ -1078,7 +1078,7 @@ user_welcome(struct Client *source_p)
   if (HasFlag(source_p, FLAGS_SSL))
   {
     AddUMode(source_p, UMODE_SSL);
-    sendto_one_notice(source_p, &me, ":*** Connected securely via %s",
+    sendto_one_notice(source_p, &me, "*** Connected securely via %s",
                       ssl_get_cipher(source_p->localClient->fd.ssl));
   }
 #endif

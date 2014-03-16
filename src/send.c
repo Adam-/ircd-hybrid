@@ -369,7 +369,7 @@ sendto_one_notice(struct Client *to, struct Client *from, const char *pattern, .
 
   buffer = dbuf_alloc();
 
-  dbuf_put_fmt(buffer, ":%s NOTICE %s ", ID_or_name(from, to), dest);
+  dbuf_put_fmt(buffer, ":%s NOTICE %s :", ID_or_name(from, to), dest);
 
   va_start(args, pattern);
   send_format(buffer, pattern, args);

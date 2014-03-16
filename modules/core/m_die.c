@@ -52,13 +52,13 @@ mo_die(struct Client *source_p, int parc, char *parv[])
 
   if (parc < 2 || EmptyString(parv[1]))
   {
-    sendto_one_notice(source_p, &me, ":Need server name /die %s", me.name);
+    sendto_one_notice(source_p, &me, "Need server name /die %s", me.name);
     return 0;
   }
 
   if (irccmp(parv[1], me.name))
   {
-    sendto_one_notice(source_p, &me, ":Mismatch on /die %s", me.name);
+    sendto_one_notice(source_p, &me, "Mismatch on /die %s", me.name);
     return 0;
   }
 

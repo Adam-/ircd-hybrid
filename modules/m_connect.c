@@ -85,7 +85,7 @@ mo_connect(struct Client *source_p, int parc, char *parv[])
 
   if ((target_p = find_server(parv[1])))
   {
-    sendto_one_notice(source_p, &me, ":Connect: Server %s already exists from %s.",
+    sendto_one_notice(source_p, &me, "Connect: Server %s already exists from %s.",
                       parv[1], target_p->from->name);
     return 0;
   }
@@ -97,7 +97,7 @@ mo_connect(struct Client *source_p, int parc, char *parv[])
   {
     if (!(conf = find_matching_name_conf(CONF_SERVER,  NULL, NULL, parv[1], 0)))
     {
-      sendto_one_notice(source_p, &me, ":Connect: Host %s not listed in ircd.conf", parv[1]);
+      sendto_one_notice(source_p, &me, "Connect: Host %s not listed in ircd.conf", parv[1]);
       return 0;
     }
   }
@@ -113,19 +113,19 @@ mo_connect(struct Client *source_p, int parc, char *parv[])
   {
     if ((port = atoi(parv[2])) <= 0)
     {
-      sendto_one_notice(source_p, &me, ":Connect: Illegal port number");
+      sendto_one_notice(source_p, &me, "Connect: Illegal port number");
       return 0;
     }
   }
   else if (port <= 0 && (port = PORTNUM) <= 0)
   {
-    sendto_one_notice(source_p, &me, ":Connect: missing port number");
+    sendto_one_notice(source_p, &me, "Connect: missing port number");
     return 0;
   }
 
   if (find_servconn_in_progress(conf->name))
   {
-    sendto_one_notice(source_p, &me, ":Connect: a connection to %s "
+    sendto_one_notice(source_p, &me, "Connect: a connection to %s "
                       "is already in progress.", conf->name);
     return 0;
   }
@@ -145,14 +145,14 @@ mo_connect(struct Client *source_p, int parc, char *parv[])
   if (serv_connect(conf, source_p))
   {
     if (!ConfigServerHide.hide_server_ips && HasUMode(source_p, UMODE_ADMIN))
-      sendto_one_notice(source_p, &me, ":*** Connecting to %s[%s].%d",
+      sendto_one_notice(source_p, &me, "*** Connecting to %s[%s].%d",
                         conf->host, conf->name, conf->port);
     else
-      sendto_one_notice(source_p, &me, ":*** Connecting to %s.%d",
+      sendto_one_notice(source_p, &me, "*** Connecting to %s.%d",
                         conf->name, conf->port);
   }
   else
-    sendto_one_notice(source_p, &me, ":*** Couldn't connect to %s.%d",
+    sendto_one_notice(source_p, &me, "*** Couldn't connect to %s.%d",
                       conf->name, conf->port);
 
   /*
@@ -194,7 +194,7 @@ ms_connect(struct Client *source_p, int parc, char *parv[])
 
   if ((target_p = find_server(parv[1])))
   {
-    sendto_one_notice(source_p, &me, ":Connect: Server %s already exists from %s.",
+    sendto_one_notice(source_p, &me, "Connect: Server %s already exists from %s.",
                       parv[1], target_p->from->name);
     return 0;
   }
@@ -206,7 +206,7 @@ ms_connect(struct Client *source_p, int parc, char *parv[])
   { 
     if (!(conf = find_matching_name_conf(CONF_SERVER,  NULL, NULL, parv[1], 0)))
     {
-      sendto_one_notice(source_p, &me, ":Connect: Host %s not listed in ircd.conf", parv[1]);
+      sendto_one_notice(source_p, &me, "Connect: Host %s not listed in ircd.conf", parv[1]);
       return 0;
     }
   }
@@ -229,19 +229,19 @@ ms_connect(struct Client *source_p, int parc, char *parv[])
       port = conf->port;
     else if (port <= 0)
     {
-      sendto_one_notice(source_p, &me, ":Connect: Illegal port number");
+      sendto_one_notice(source_p, &me, "Connect: Illegal port number");
       return 0;
     }
   }
   else if (port <= 0 && (port = PORTNUM) <= 0)
   {
-    sendto_one_notice(source_p, &me, ":Connect: missing port number");
+    sendto_one_notice(source_p, &me, "Connect: missing port number");
     return 0;
   }
 
   if (find_servconn_in_progress(conf->name))
   {
-    sendto_one_notice(source_p, &me, ":Connect: a connection to %s "
+    sendto_one_notice(source_p, &me, "Connect: a connection to %s "
                       "is already in progress.", conf->name);
     return 0;
   }
@@ -265,10 +265,10 @@ ms_connect(struct Client *source_p, int parc, char *parv[])
    * C:line and a valid port in the C:line
    */
   if (serv_connect(conf, source_p))
-    sendto_one_notice(source_p, &me, ":*** Connecting to %s.%d",
+    sendto_one_notice(source_p, &me, "*** Connecting to %s.%d",
                       conf->name, conf->port);
   else
-    sendto_one_notice(source_p, &me, ":*** Couldn't connect to %s.%d",
+    sendto_one_notice(source_p, &me, "*** Couldn't connect to %s.%d",
                       conf->name, conf->port);
   /*
    * Client is either connecting with all the data it needs or has been

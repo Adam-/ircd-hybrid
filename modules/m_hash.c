@@ -45,19 +45,19 @@ mo_hash(struct Client *source_p, int parc, char *parv[])
   unsigned int count, buckets, max_chain;
 
   hash_get_stats(&clientTable, &count, &buckets, &max_chain);
-  sendto_one_notice(source_p, &me, ":Client: entries: %u buckets: %u "
+  sendto_one_notice(source_p, &me, "Client: entries: %u buckets: %u "
                     "max chain: %u", count, buckets, max_chain);
 
   hash_get_stats(&channelTable, &count, &buckets, &max_chain);
-  sendto_one_notice(source_p, &me, ":Channel: entries: %u buckets: %u "
+  sendto_one_notice(source_p, &me, "Channel: entries: %u buckets: %u "
                     "max chain: %u", count, buckets, max_chain);
 
   hash_get_stats(&idTable, &count, &buckets, &max_chain);
-  sendto_one_notice(source_p, &me, ":Id: entries: %u buckets: %u "
+  sendto_one_notice(source_p, &me, "Id: entries: %u buckets: %u "
                     "max chain: %u", count, buckets, max_chain);
 
   hash_get_stats(&userhostTable, &count, &buckets, &max_chain);
-  sendto_one_notice(source_p, &me, ":UserHost: entries: %u buckets: %u "
+  sendto_one_notice(source_p, &me, "UserHost: entries: %u buckets: %u "
                     "max chain: %u", count, buckets, max_chain);
   return 0;
 }

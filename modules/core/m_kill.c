@@ -101,7 +101,7 @@ mo_kill(struct Client *source_p, int parc, char *parv[])
       return 0;
     }
 
-    sendto_one_notice(source_p, &me, ":KILL changed from %s to %s",
+    sendto_one_notice(source_p, &me, "KILL changed from %s to %s",
                       user, target_p->name);
   }
 
@@ -216,7 +216,7 @@ ms_kill(struct Client *source_p, int parc, char *parv[])
       return 0;
     }
 
-    sendto_one_notice(source_p, &me, ":KILL changed from %s to %s",
+    sendto_one_notice(source_p, &me, "KILL changed from %s to %s",
                       user, target_p->name);
   }
 

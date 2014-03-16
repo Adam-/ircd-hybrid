@@ -366,8 +366,8 @@ verify_access(struct Client *client_p)
     else if (IsConfKill(conf) || (ConfigFileEntry.glines && IsConfGline(conf)))
     {
       if (IsConfGline(conf))
-        sendto_one_notice(client_p, &me, ":*** G-lined");
-      sendto_one_notice(client_p, &me, ":*** Banned: %s", conf->reason);
+        sendto_one_notice(client_p, &me, "*** G-lined");
+      sendto_one_notice(client_p, &me, "*** Banned: %s", conf->reason);
       return BANNED_CLIENT;
     }
   }
@@ -422,7 +422,7 @@ attach_iline(struct Client *client_p, struct MaskItem *conf)
     if (!IsConfExemptLimits(conf))
       return TOO_MANY;   /* Already at maximum allowed */
 
-    sendto_one_notice(client_p, &me, ":*** Your connection class is full, "
+    sendto_one_notice(client_p, &me, "*** Your connection class is full, "
                       "but you have exceed_limit = yes;");
   }
 
@@ -1808,7 +1808,7 @@ valid_wild_card(struct Client *source_p, int warn, int count, ...)
 
   if (warn)
     sendto_one_notice(source_p, &me,
-                      ":Please include at least %d non-wildcard characters with the mask",
+                      "Please include at least %d non-wildcard characters with the mask",
                       ConfigFileEntry.min_nonwildcard);
   va_end(args);
   return 0;
@@ -1869,7 +1869,7 @@ parse_aline(const char *cmd, struct Client *source_p,
       *tkline_time = found_tkline_time;
     else
     {
-      sendto_one_notice(source_p, &me, ":temp_line not supported by %s", cmd);
+      sendto_one_notice(source_p, &me, "temp_line not supported by %s", cmd);
       return -1;
     }
   }
@@ -1903,7 +1903,7 @@ parse_aline(const char *cmd, struct Client *source_p,
 
       if (target_server == NULL)
       {
-        sendto_one_notice(source_p, &me, ":ON server not supported by %s", cmd);
+        sendto_one_notice(source_p, &me, "ON server not supported by %s", cmd);
         return -1;
       }
 
@@ -1937,7 +1937,7 @@ parse_aline(const char *cmd, struct Client *source_p,
   {
     if (strchr(user, '!') != NULL)
     {
-      sendto_one_notice(source_p, &me, ":Invalid character '!' in kline");
+      sendto_one_notice(source_p, &me, "Invalid character '!' in kline");
       return -1;
     }
 
@@ -2022,7 +2022,7 @@ find_user_host(struct Client *source_p, char *user_host_or_nick,
     if (IsExemptKline(target_p))
     {
       if (!IsServer(source_p))
-        sendto_one_notice(source_p, &me, ":%s is E-lined", target_p->name);
+        sendto_one_notice(source_p, &me, "%s is E-lined", target_p->name);
       return 0;
     }
 

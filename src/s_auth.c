@@ -56,14 +56,14 @@
 
 static const char *HeaderMessages[] =
 {
-  ":*** Looking up your hostname...",
-  ":*** Found your hostname",
-  ":*** Couldn't look up your hostname",
-  ":*** Checking Ident",
-  ":*** Got Ident response",
-  ":*** No Ident response",
-  ":*** Your forward and reverse DNS do not match, ignoring hostname.",
-  ":*** Your hostname is too long, ignoring hostname"
+  "*** Looking up your hostname...",
+  "*** Found your hostname",
+  "*** Couldn't look up your hostname",
+  "*** Checking Ident",
+  "*** Got Ident response",
+  "*** No Ident response",
+  "*** Your forward and reverse DNS do not match, ignoring hostname.",
+  "*** Your hostname is too long, ignoring hostname"
 };
 
 enum

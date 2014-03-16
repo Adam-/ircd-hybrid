@@ -90,7 +90,7 @@ remove_xline(struct Client *source_p, const char *gecos)
 {
   if (remove_xline_match(gecos))
   {
-    sendto_one_notice(source_p, &me, ":X-Line for [%s] is removed", gecos);
+    sendto_one_notice(source_p, &me, "X-Line for [%s] is removed", gecos);
     sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
                          "%s has removed the X-Line for: [%s]",
                          get_oper_name(source_p), gecos);
@@ -98,7 +98,7 @@ remove_xline(struct Client *source_p, const char *gecos)
          get_oper_name(source_p), gecos);
   }
   else
-    sendto_one_notice(source_p, &me, ":No X-Line for %s", gecos);
+    sendto_one_notice(source_p, &me, "No X-Line for %s", gecos);
 }
 
 /* valid_xline()
@@ -120,7 +120,7 @@ valid_xline(struct Client *source_p, const char *gecos, const char *reason, int 
   if (!valid_wild_card_simple(gecos))
   {
     if (warn)
-      sendto_one_notice(source_p, &me, ":Please include at least %d non-wildcard characters with the xline",
+      sendto_one_notice(source_p, &me, "Please include at least %d non-wildcard characters with the xline",
                         ConfigFileEntry.min_nonwildcard_simple);
 
     return 0;
@@ -154,7 +154,7 @@ write_xline(struct Client *source_p, char *gecos, char *reason,
                          "%s added temporary %d min. X-Line for [%s] [%s]",
                          get_oper_name(source_p), (int)tkline_time/60,
                          conf->name, conf->reason);
-    sendto_one_notice(source_p, &me, ":Added temporary %d min. X-Line [%s]",
+    sendto_one_notice(source_p, &me, "Added temporary %d min. X-Line [%s]",
                       (int)tkline_time/60, conf->name);
     ilog(LOG_TYPE_XLINE, "%s added temporary %d min. X-Line for [%s] [%s]",
          source_p->name, (int)tkline_time/60, conf->name, conf->reason);
@@ -166,7 +166,7 @@ write_xline(struct Client *source_p, char *gecos, char *reason,
                          "%s added X-Line for [%s] [%s]",
                          get_oper_name(source_p), conf->name,
                          conf->reason);
-    sendto_one_notice(source_p, &me, ":Added X-Line [%s] [%s]",
+    sendto_one_notice(source_p, &me, "Added X-Line [%s] [%s]",
                       conf->name, conf->reason);
     ilog(LOG_TYPE_XLINE, "%s added X-Line for [%s] [%s]",
          get_oper_name(source_p), conf->name, conf->reason);
@@ -196,7 +196,7 @@ relay_xline(struct Client *source_p, char *parv[])
   {
     if ((conf = find_matching_name_conf(CONF_XLINE, parv[2], NULL, NULL, 0)))
     {
-      sendto_one_notice(source_p, &me, ":[%s] already X-Lined by [%s] - %s",
+      sendto_one_notice(source_p, &me, "[%s] already X-Lined by [%s] - %s",
                         parv[2], conf->name, conf->reason);
       return;
     }
@@ -269,7 +269,7 @@ mo_xline(struct Client *source_p, int parc, char *parv[])
 
   if ((conf = find_matching_name_conf(CONF_XLINE, gecos, NULL, NULL, 0)))
   {
-    sendto_one_notice(source_p, &me, ":[%s] already X-Lined by [%s] - %s",
+    sendto_one_notice(source_p, &me, "[%s] already X-Lined by [%s] - %s",
                       gecos, conf->name, conf->reason);
     return 0;
   }

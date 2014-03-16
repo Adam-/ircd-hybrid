@@ -58,17 +58,17 @@ quote_autoconn(struct Client *source_p, const char *arg, int newval)
       sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
                            "%s has changed AUTOCONN for %s to %i",
                            get_oper_name(source_p), arg, newval);
-      sendto_one_notice(source_p, &me, ":AUTOCONN for %s is now set to %i",
+      sendto_one_notice(source_p, &me, "AUTOCONN for %s is now set to %i",
                         arg, newval);
     }
     else
     {
-      sendto_one_notice(source_p, &me, ":Cannot find %s", arg);
+      sendto_one_notice(source_p, &me, "Cannot find %s", arg);
     }
   }
   else
   {
-    sendto_one_notice(source_p, &me, ":Please specify a server name!");
+    sendto_one_notice(source_p, &me, "Please specify a server name!");
   }
 }
 
@@ -85,7 +85,7 @@ quote_autoconnall(struct Client *source_p, int newval)
     GlobalSetOptions.autoconn = newval;
   }
   else
-    sendto_one_notice(source_p, &me, ":AUTOCONNALL is currently %i",
+    sendto_one_notice(source_p, &me, "AUTOCONNALL is currently %i",
                       GlobalSetOptions.autoconn);
 }
 
@@ -101,7 +101,7 @@ quote_floodcount(struct Client *source_p, int newval)
                          get_oper_name(source_p), GlobalSetOptions.floodcount);
   }
   else
-    sendto_one_notice(source_p, &me, ":FLOODCOUNT is currently %i",
+    sendto_one_notice(source_p, &me, "FLOODCOUNT is currently %i",
                       GlobalSetOptions.floodcount);
 }
 
@@ -123,7 +123,7 @@ quote_identtimeout(struct Client *source_p, int newval)
     GlobalSetOptions.ident_timeout = newval;
   }
   else
-    sendto_one_notice(source_p, &me, ":IDENTTIMEOUT is currently %d",
+    sendto_one_notice(source_p, &me, "IDENTTIMEOUT is currently %d",
                       GlobalSetOptions.ident_timeout);
 }
 
@@ -135,14 +135,14 @@ quote_max(struct Client *source_p, int newval)
   {
     if (newval > MAXCLIENTS_MAX)
     {
-      sendto_one_notice(source_p, &me, ":You cannot set MAXCLIENTS to > %d, restoring to %d",
+      sendto_one_notice(source_p, &me, "You cannot set MAXCLIENTS to > %d, restoring to %d",
                         MAXCLIENTS_MAX, ServerInfo.max_clients);
       return;
     }
 
     if (newval < MAXCLIENTS_MIN)
     {
-      sendto_one_notice(source_p, &me, ":You cannot set MAXCLIENTS to < %d, restoring to %d",
+      sendto_one_notice(source_p, &me, "You cannot set MAXCLIENTS to < %d, restoring to %d",
                         MAXCLIENTS_MIN, ServerInfo.max_clients);
       return;
     }
@@ -154,7 +154,7 @@ quote_max(struct Client *source_p, int newval)
         get_oper_name(source_p), ServerInfo.max_clients, Count.local);
   }
   else
-    sendto_one_notice(source_p, &me, ":Current MAXCLIENTS = %d (%d)",
+    sendto_one_notice(source_p, &me, "Current MAXCLIENTS = %d (%d)",
                       ServerInfo.max_clients, Count.local);
 }
 
@@ -178,7 +178,7 @@ quote_spamnum(struct Client *source_p, int newval)
                          get_oper_name(source_p), GlobalSetOptions.spam_num);
   }
   else
-    sendto_one_notice(source_p, &me, ":SPAMNUM is currently %i",
+    sendto_one_notice(source_p, &me, "SPAMNUM is currently %i",
                       GlobalSetOptions.spam_num);
 }
 
@@ -194,7 +194,7 @@ quote_spamtime(struct Client *source_p, int newval)
                          get_oper_name(source_p), GlobalSetOptions.spam_time);
   }
   else
-    sendto_one_notice(source_p, &me, ":SPAMTIME is currently %i",
+    sendto_one_notice(source_p, &me, "SPAMTIME is currently %i",
                       GlobalSetOptions.spam_time);
 }
 
@@ -270,7 +270,7 @@ quote_splitmode(struct Client *source_p, char *charval)
      * pull values back out of, splitmode can be four states - but you can
      * only set to three, which means we cant use the same table --fl_
      */
-    sendto_one_notice(source_p, &me, ":SPLITMODE is currently %s", 
+    sendto_one_notice(source_p, &me, "SPLITMODE is currently %s", 
                       splitmode_status[(splitchecking + (splitmode * 2))]);
 }
 
@@ -289,7 +289,7 @@ quote_splitnum(struct Client *source_p, int newval)
       check_splitmode(NULL);
   }
   else
-    sendto_one_notice(source_p, &me, ":SPLITNUM is currently %i", 
+    sendto_one_notice(source_p, &me, "SPLITNUM is currently %i", 
                       split_servers);
 }
 
@@ -308,7 +308,7 @@ quote_splitusers(struct Client *source_p, int newval)
       check_splitmode(NULL);
   }
   else
-    sendto_one_notice(source_p, &me, ":SPLITUSERS is currently %i", 
+    sendto_one_notice(source_p, &me, "SPLITUSERS is currently %i", 
                       split_users);
 }
 
@@ -324,7 +324,7 @@ quote_jfloodtime(struct Client *source_p, int newval)
     GlobalSetOptions.joinfloodtime = newval;
   }
   else
-    sendto_one_notice(source_p, &me, ":JFLOODTIME is currently %i", 
+    sendto_one_notice(source_p, &me, "JFLOODTIME is currently %i", 
                       GlobalSetOptions.joinfloodtime);
 }
 
@@ -340,7 +340,7 @@ quote_jfloodcount(struct Client *source_p, int newval)
     GlobalSetOptions.joinfloodcount = newval;
   }
   else
-    sendto_one_notice(source_p, &me, ":JFLOODCOUNT is currently %i", 
+    sendto_one_notice(source_p, &me, "JFLOODCOUNT is currently %i", 
                       GlobalSetOptions.joinfloodcount);
 }
 
@@ -393,7 +393,7 @@ list_quote_commands(struct Client *source_p)
   const struct SetStruct *tab = set_cmd_table;
   const char *names[4] = { "", "", "", "" };
 
-  sendto_one_notice(source_p, &me, ":Available QUOTE SET commands:");
+  sendto_one_notice(source_p, &me, "Available QUOTE SET commands:");
 
   for (; tab->handler; ++tab)
   {
@@ -401,7 +401,7 @@ list_quote_commands(struct Client *source_p)
 
     if (j > 3)
     {
-      sendto_one_notice(source_p, &me, ":%s %s %s %s",
+      sendto_one_notice(source_p, &me, "%s %s %s %s",
                         names[0], names[1],
                         names[2], names[3]);
       j = 0;
@@ -411,7 +411,7 @@ list_quote_commands(struct Client *source_p)
   }
 
   if (j)
-    sendto_one_notice(source_p, &me, ":%s %s %s %s",
+    sendto_one_notice(source_p, &me, "%s %s %s %s",
                       names[0], names[1],
                       names[2], names[3]);
 }
@@ -459,7 +459,7 @@ mo_set(struct Client *source_p, int parc, char *parv[])
         if ((n - 1) > parc)
         {
           if (parc > 2)
-            sendto_one_notice(source_p, &me, ":SET %s expects (\"%s%s\") args",
+            sendto_one_notice(source_p, &me, "SET %s expects (\"%s%s\") args",
                               (tab->wants_char ? "string, " : ""),
                               (tab->wants_char ? "int" : ""));
         }
@@ -492,7 +492,7 @@ mo_set(struct Client *source_p, int parc, char *parv[])
 
           if (newval < 0)
           {
-            sendto_one_notice(source_p, &me, ":Value less than 0 illegal for %s",
+            sendto_one_notice(source_p, &me, "Value less than 0 illegal for %s",
                               tab->name);
 
             return 0;
@@ -526,7 +526,7 @@ mo_set(struct Client *source_p, int parc, char *parv[])
      * Code here will be executed when a /QUOTE SET command is not
      * found within set_cmd_table.
      */
-    sendto_one_notice(source_p, &me, ":Variable not found.");
+    sendto_one_notice(source_p, &me, "Variable not found.");
     return 0;
   }
 
