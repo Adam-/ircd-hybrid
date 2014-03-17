@@ -70,7 +70,8 @@ ms_svsnick(struct Client *source_p, int parc, char *parv[])
   if ((target_p = find_person(source_p, parv[1])) == NULL)
     return 0;
 
-  assert(MyClient(target_p));
+  if (!MyClient(target_p))
+    return 0;
 
   if ((exists_p = hash_find(&clientTable, parv[2])))
   {
