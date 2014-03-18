@@ -135,13 +135,7 @@ send_message_remote(struct Client *to, struct Client *from, struct dbuf_block *b
 {
   to = to->from;
 
-  if (!MyConnect(to))
-  {
-    sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
-                         "Server send message to %s [%s] dropped from %s(Not local server)",
-                         to->name, to->from->name, from->name);
-    return;
-  }
+  assert(MyConnect(to));
 
   /* Optimize by checking if (from && to) before everything */
   /* we set to->from up there.. */
@@ -376,8 +370,7 @@ sendto_one_numeric(struct Client *to, struct Client *from, enum irc_numerics num
   va_list args;
   const char *dest;
 
-  to = to->from;
-  if (IsDead(to))
+  if (IsDead(to->from))
     return;
 
   dest = ID_or_name(to, to);
@@ -392,7 +385,7 @@ sendto_one_numeric(struct Client *to, struct Client *from, enum irc_numerics num
   send_format(buffer, numeric_form(numeric), args);
   va_end(args);
 
-  send_message(to, buffer);
+  send_message(to->from, buffer);
 
   dbuf_ref_free(buffer);
 }
@@ -404,8 +397,7 @@ sendto_one_notice(struct Client *to, struct Client *from, const char *pattern, .
   va_list args;
   const char *dest;
 
-  to = to->from;
-  if (IsDead(to))
+  if (IsDead(to->from))
     return;
 
   dest = ID_or_name(to, to);
@@ -420,7 +412,7 @@ sendto_one_notice(struct Client *to, struct Client *from, const char *pattern, .
   send_format(buffer, pattern, args);
   va_end(args);
 
-  send_message(to, buffer);
+  send_message(to->from, buffer);
 
   dbuf_ref_free(buffer);
 }
@@ -872,13 +864,8 @@ sendto_anywhere(struct Client *to, struct Client *from,
 
   buffer = dbuf_alloc();
 
-  if (MyClient(to))
-  {
-    if (IsServer(from))
-      dbuf_put_fmt(buffer, ":%s %s %s ", from->name, command, to->name);
-    else
-      dbuf_put_fmt(buffer, ":%s!%s@%s %s %s ", from->name, from->username, from->host, command, to->name);
-  }
+  if (MyClient(to) && IsClient(from))
+    dbuf_put_fmt(buffer, ":%s!%s@%s %s %s ", from->name, from->username, from->host, command, to->name);
   else
     dbuf_put_fmt(buffer, ":%s %s %s ", ID_or_name(from, to), command, ID_or_name(to, to));
 
