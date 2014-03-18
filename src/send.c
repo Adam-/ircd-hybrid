@@ -41,6 +41,10 @@
 #include "memory.h"
 #include "packet.h"
 
+#ifndef IOV_MAX
+#define IOV_MAX 64
+#endif
+
 
 static unsigned int current_serial = 0;
 
@@ -187,6 +191,45 @@ sendq_unblocked(fde_t *fd, struct Client *client_p)
   send_queued_write(client_p);
 }
 
+#ifdef HAVE_LIBCRYPTO
+static int send_SSL_writev(SSL *ssl, const struct iovec *vec, int iovcnt)
+{
+  int i, total_written = 0;
+
+  for (i = 0; i < iovcnt; ++i)
+  {
+    const struct iovec *iov = &vec[i];
+
+    int ret = SSL_write(ssl, iov->iov_base, iov->iov_len);
+
+    /* translate openssl error codes, sigh */
+    if (ret <= 0)
+    {
+      switch (SSL_get_error(ssl, i))
+      {
+        case SSL_ERROR_WANT_READ:
+          return -1;
+        case SSL_ERROR_WANT_WRITE:
+          errno = EWOULDBLOCK;
+        case SSL_ERROR_SYSCALL:
+          break;
+        case SSL_ERROR_SSL:
+          if (errno == EAGAIN)
+            break;
+        default:
+          errno = 0;  /* either an SSL-specific error or EOF */
+      }
+
+      return 0;
+    }
+
+    total_written += ret;
+  }
+
+  return total_written;
+}
+#endif
+
 /*
  ** send_queued_write
  **      This is called when there is a chance that some output would
@@ -197,6 +240,9 @@ void
 send_queued_write(struct Client *to)
 {
   int retlen = 0;
+  dlink_node *ptr;
+  struct iovec vec[IOV_MAX];
+  int i = 0;
 
   /*
    ** Once socket is marked dead, we cannot start writing to it,
@@ -205,62 +251,61 @@ send_queued_write(struct Client *to)
   if (IsDead(to))
     return;  /* no use calling send() now */
 
-  /* Next, lets try to write some data */
-  if (dbuf_length(&to->localClient->buf_sendq))
+  if (HasFlag(to, FLAGS_CORK))
+    return;
+
+  /* Nothing to do? */
+  if (!dbuf_length(&to->localClient->buf_sendq))
+    return;
+
+  /* Build iovec */
+  DLINK_FOREACH(ptr, to->localClient->buf_sendq.blocks.head)
   {
-    do
-    {
-      struct dbuf_block *first = to->localClient->buf_sendq.blocks.head->data;
+    struct dbuf_block *block = ptr->data;
+    struct iovec *iov;
+    int offset;
 
+    if (i >= sizeof(vec) / sizeof(struct iovec))
+      break;
+        
+    iov = &vec[i];
+    offset = !i ? to->localClient->buf_sendq.pos : 0;
+
+    iov->iov_base = block->data + offset;
+    iov->iov_len = block->size - offset;
+
+    ++i;
+  }
+
+  /* Next, lets try to write some data */
 #ifdef HAVE_LIBCRYPTO
-      if (to->localClient->fd.ssl)
-      {
-        retlen = SSL_write(to->localClient->fd.ssl, first->data + to->localClient->buf_sendq.pos, first->size - to->localClient->buf_sendq.pos);
-
-        /* translate openssl error codes, sigh */
-        if (retlen < 0)
-        {
-          switch (SSL_get_error(to->localClient->fd.ssl, retlen))
-          {
-            case SSL_ERROR_WANT_READ:
-              return;  /* retry later, don't register for write events */
-            case SSL_ERROR_WANT_WRITE:
-              errno = EWOULDBLOCK;
-            case SSL_ERROR_SYSCALL:
-              break;
-            case SSL_ERROR_SSL:
-              if (errno == EAGAIN)
-                break;
-            default:
-              retlen = errno = 0;  /* either an SSL-specific error or EOF */
-          }
-        }
-      }
-      else
-#endif
-        retlen = send(to->localClient->fd.fd, first->data + to->localClient->buf_sendq.pos, first->size - to->localClient->buf_sendq.pos, 0);
-
-      if (retlen <= 0)
-        break;
-
-      dbuf_delete(&to->localClient->buf_sendq, retlen);
-
-      /* We have some data written .. update counters */
-      to->localClient->send.bytes += retlen;
-      me.localClient->send.bytes += retlen;
-    } while (dbuf_length(&to->localClient->buf_sendq));
-
-    if ((retlen < 0) && (ignoreErrno(errno)))
-    {
-      /* we have a non-fatal error, reschedule a write */
-      comm_setselect(&to->localClient->fd, COMM_SELECT_WRITE,
-                     (PF *)sendq_unblocked, to, 0);
-    }
-    else if (retlen <= 0)
-    {
-      dead_link_on_write(to, errno);
+  if (to->localClient->fd.ssl)
+  {
+    retlen = send_SSL_writev(to->localClient->fd.ssl, vec, i);
+    if (retlen == -1)
       return;
-    }
+  }
+  else
+#endif
+    retlen = writev(to->localClient->fd.fd, vec, i);
+
+  if (retlen > 0)
+  {
+    dbuf_delete(&to->localClient->buf_sendq, retlen);
+
+    /* We have some data written .. update counters */
+    to->localClient->send.bytes += retlen;
+    me.localClient->send.bytes += retlen;
+  }
+  else if (retlen < 0 && ignoreErrno(errno))
+  {
+    /* we have a non-fatal error, reschedule a write */
+    comm_setselect(&to->localClient->fd, COMM_SELECT_WRITE,
+                   (PF *)sendq_unblocked, to, 0);
+  }
+  else if (retlen <= 0)
+  {
+    dead_link_on_write(to, errno);
   }
 }
 

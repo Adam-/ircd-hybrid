@@ -105,7 +105,7 @@ static char *para[MAXPARA + 2]; /* <command> + <params> + NULL */
 static int cancel_clients(struct Client *, struct Client *, char *);
 static void remove_unknown(struct Client *, char *, char *);
 static void handle_numeric(char[], struct Client *, int, char *[]);
-static void handle_command(struct Message *, struct Client *, unsigned int, char *[]);
+static void handle_command(struct Message *, struct Client *, struct Client *, unsigned int, char *[]);
 
 
 /*
@@ -281,7 +281,7 @@ parse(struct Client *client_p, char *pbuffer, char *bufend)
   para[++parc] = NULL;
 
   if (msg_ptr != NULL)
-    handle_command(msg_ptr, from, parc, para);
+    handle_command(msg_ptr, client_p, from, parc, para);
   else
     handle_numeric(numeric, from, parc, para);
 }
@@ -297,10 +297,10 @@ parse(struct Client *client_p, char *pbuffer, char *bufend)
  * side effects	-
  */
 static void
-handle_command(struct Message *mptr, struct Client *source_p,
+handle_command(struct Message *mptr, struct Client *client_p, struct Client *source_p,
                unsigned int i, char *hpara[])
 {
-  if (IsServer(source_p->from))
+  if (IsServer(client_p))
     mptr->rcount++;
 
   mptr->count++;
@@ -312,7 +312,15 @@ handle_command(struct Message *mptr, struct Client *source_p,
       sendto_one_numeric(source_p, &me, ERR_NEEDMOREPARAMS, mptr->cmd);
   }
   else
+  {
+    AddFlag(client_p, FLAGS_CORK);
     mptr->handlers[source_p->handler](source_p, i, hpara);
+    if (HasFlag(client_p, FLAGS_CORK))
+    {
+      DelFlag(client_p, FLAGS_CORK);
+      send_queued_write(client_p);
+    }
+  }
 }
 
 /* add_msg_element()
