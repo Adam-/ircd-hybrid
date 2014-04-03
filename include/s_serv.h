@@ -103,7 +103,6 @@ extern int unsigned find_capability(const char *);
 extern void send_capabilities(struct Client *, int);
 extern void write_links_file(void *);
 extern void read_links_file(void);
-extern void server_estab(struct Client *);
 extern const char *show_capabilities(const struct Client *);
 extern void try_connections(void *);
 extern void burst_channel(struct Client *client_p, struct Channel *);
