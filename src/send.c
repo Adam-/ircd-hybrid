@@ -182,6 +182,7 @@ void
 sendq_unblocked(fde_t *fd, struct Client *client_p)
 {
   assert(fd == &client_p->localClient->fd);
+  ClearSendqBlocked(client_p);
   send_queued_write(client_p);
 }
 
@@ -248,6 +249,9 @@ send_queued_write(struct Client *to)
   if (HasFlag(to, FLAGS_CORK))
     return;
 
+  if (IsSendqBlocked(to))
+    return;
+
   /* Nothing to do? */
   if (!dbuf_length(&to->localClient->buf_sendq))
     return;
@@ -293,6 +297,7 @@ send_queued_write(struct Client *to)
   }
   else if (retlen < 0 && ignoreErrno(errno))
   {
+    SetSendqBlocked(to);
     /* we have a non-fatal error, reschedule a write */
     comm_setselect(&to->localClient->fd, COMM_SELECT_WRITE,
                    (PF *)sendq_unblocked, to, 0);
