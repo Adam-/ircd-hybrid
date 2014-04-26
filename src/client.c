@@ -124,6 +124,8 @@ make_client(struct Client *from)
     client_p->localClient->lasttime     = CurrentTime;
     client_p->localClient->firsttime    = CurrentTime;
     client_p->localClient->registration = REG_INIT;
+    fd_init(&client_p->localClient->fd);
+    fd_init(&client_p->localClient->auth.fd);
 
     /* as good a place as any... */
     dlinkAdd(client_p, &client_p->localClient->lclient_node, &unknown_list);
@@ -185,6 +187,9 @@ free_client(struct Client *client_p)
 
     dbuf_clear(&client_p->localClient->buf_recvq);
     dbuf_clear(&client_p->localClient->buf_sendq);
+
+    fd_free(&client_p->localClient->fd);
+    fd_free(&client_p->localClient->auth.fd);
 
     mp_pool_release(client_p->localClient);
   }

@@ -42,6 +42,7 @@ fde_t *fd_hash[FD_HASH_SIZE];
 fde_t *fd_next_in_loop = NULL;
 int number_fd = LEAKED_FDS;
 int hard_fdlimit = 0;
+int in_comm_select = 0;
 
 
 static int
@@ -96,6 +97,17 @@ lookup_fd(int fd)
   return NULL;
 }
 
+void
+fd_init(fde_t *fd)
+{
+}
+
+void
+fd_free(fde_t *fd)
+{
+  assert(!in_comm_select);
+}
+
 /* Called to open a given filedescriptor */
 void
 fd_open(fde_t *F, int fd, int is_socket, const char *desc)
@@ -138,7 +150,8 @@ fd_close(fde_t *F)
 
   if (fd_hash[hashv] == F)
     fd_hash[hashv] = F->hnext;
-  else {
+  else
+  {
     fde_t *prev;
 
     /* let it core if not found */

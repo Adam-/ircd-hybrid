@@ -223,7 +223,9 @@ io_loop(void)
     while (eventNextTime() <= CurrentTime)
       eventRun();
 
+    in_comm_select = 1;
     comm_select();
+    in_comm_select = 0;
     exit_aborted_clients();
     free_exited_clients();
 

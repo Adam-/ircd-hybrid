@@ -50,6 +50,7 @@ make_listener(int port, struct irc_ssaddr *addr)
 
   listener->port = port;
   memcpy(&listener->addr, addr, sizeof(struct irc_ssaddr));
+  fd_init(&listener->fd);
 
   return listener;
 }
@@ -337,6 +338,8 @@ close_listener(struct Listener *listener)
 
   if (listener->ref_count)
     return;
+
+  fd_free(&listener->fd);
 
   free_listener(listener);
 }

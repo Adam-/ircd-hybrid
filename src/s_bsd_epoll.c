@@ -158,7 +158,7 @@ comm_setselect(fde_t *F, unsigned int type, PF *handler,
       op = EPOLL_CTL_MOD;
 
     ep_event.events = F->evcache = new_events;
-    ep_event.data.fd = F->fd;
+    ep_event.data.ptr = F;
 
     if (epoll_ctl(efd.fd, op, F->fd, &ep_event) != 0)
     {
@@ -198,7 +198,7 @@ comm_select(void)
 
   for (i = 0; i < num; i++)
   {
-    F = lookup_fd(ep_fdlist[i].data.fd);
+    F = ep_fdlist[i].data.ptr;
     if (F == NULL || !F->flags.open)
       continue;
 
