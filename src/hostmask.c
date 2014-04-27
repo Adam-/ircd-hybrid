@@ -363,7 +363,7 @@ init_host_hash(void)
  * Output: A hash value of the IP address.
  * Side effects: None
  */
-static uint32_t
+uint32_t
 hash_ipv4(const struct irc_ssaddr *addr, int bits)
 {
   if (bits != 0)
@@ -371,7 +371,7 @@ hash_ipv4(const struct irc_ssaddr *addr, int bits)
     const struct sockaddr_in *v4 = (const struct sockaddr_in *)addr;
     uint32_t av = ntohl(v4->sin_addr.s_addr) & ~((1 << (32 - bits)) - 1);
 
-    return (av ^ (av >> 12) ^ (av >> 24)) & (ATABLE_SIZE - 1);
+    return av ^ (av >> 12) ^ (av >> 24);
   }
 
   return 0;
@@ -383,7 +383,7 @@ hash_ipv4(const struct irc_ssaddr *addr, int bits)
  * Side effects: None
  */
 #ifdef IPV6
-static uint32_t
+uint32_t
 hash_ipv6(const struct irc_ssaddr *addr, int bits)
 {
   uint32_t v = 0, n;
@@ -399,22 +399,34 @@ hash_ipv6(const struct irc_ssaddr *addr, int bits)
     else if (bits)
     {
       v ^= v6->sin6_addr.s6_addr[n] & ~((1 << (8 - bits)) - 1);
-      return v & (ATABLE_SIZE - 1);
+      return v;
     }
     else
-      return v & (ATABLE_SIZE - 1);
+      return v;
   }
-  return v & (ATABLE_SIZE - 1);
+  return v;
 }
 #endif
 
-/* int hash_text(const char *start)
+static uint32_t
+atable_hash_ipv4(const struct irc_ssaddr *addr, int bits)
+{
+  return hash_ipv4(addr, bits) & (ATABLE_SIZE - 1);
+}
+
+static uint32_t
+atable_hash_ipv6(const struct irc_ssaddr *addr, int bits)
+{
+  return hash_ipv6(addr, bits) & (ATABLE_SIZE - 1);
+}
+
+/* int atable_hash_text(const char *start)
  * Input: The start of the text to hash.
  * Output: The hash of the string between 1 and (TH_MAX-1)
  * Side-effects: None.
  */
 static uint32_t
-hash_text(const char *start)
+atable_hash_text(const char *start)
 {
   const char *p = start;
   uint32_t h = 0;
@@ -438,10 +450,10 @@ get_mask_hash(const char *text)
 
   for (p = text + strlen(text) - 1; p >= text; --p)
     if (IsMWildChar(*p))
-      return hash_text(hp);
+      return atable_hash_text(hp);
     else if (*p == '.')
       hp = p + 1;
-  return hash_text(text);
+  return atable_hash_text(text);
 }
 
 /* struct MaskItem *find_conf_by_address(const char *, struct irc_ssaddr *,
@@ -473,7 +485,7 @@ find_conf_by_address(const char *name, struct irc_ssaddr *addr, unsigned int typ
     {
       for (b = 128; b >= 0; b -= 16)
       {
-        DLINK_FOREACH(ptr, atable[hash_ipv6(addr, b)].head)
+        DLINK_FOREACH(ptr, atable[atable_hash_ipv6(addr, b)].head)
         {
           arec = ptr->data;
 
@@ -498,7 +510,7 @@ find_conf_by_address(const char *name, struct irc_ssaddr *addr, unsigned int typ
     {
       for (b = 32; b >= 0; b -= 8)
       {
-        DLINK_FOREACH(ptr, atable[hash_ipv4(addr, b)].head)
+        DLINK_FOREACH(ptr, atable[atable_hash_ipv4(addr, b)].head)
         {
           arec = ptr->data;
 
@@ -525,7 +537,7 @@ find_conf_by_address(const char *name, struct irc_ssaddr *addr, unsigned int typ
 
     while (1)
     {
-        DLINK_FOREACH(ptr, atable[hash_text(p)].head)
+        DLINK_FOREACH(ptr, atable[atable_hash_text(p)].head)
         {
           arec = ptr->data;
           if ((arec->type == type) &&
@@ -655,13 +667,13 @@ add_conf_by_address(const unsigned int type, struct MaskItem *conf)
     case HM_IPV4:
       /* We have to do this, since we do not re-hash for every bit -A1kmm. */
       bits -= bits % 8;
-      dlinkAdd(arec, &arec->node, &atable[hash_ipv4(&arec->Mask.ipa.addr, bits)]);
+      dlinkAdd(arec, &arec->node, &atable[atable_hash_ipv4(&arec->Mask.ipa.addr, bits)]);
       break;
 #ifdef IPV6
     case HM_IPV6:
       /* We have to do this, since we do not re-hash for every bit -A1kmm. */
       bits -= bits % 16;
-      dlinkAdd(arec, &arec->node, &atable[hash_ipv6(&arec->Mask.ipa.addr, bits)]);
+      dlinkAdd(arec, &arec->node, &atable[atable_hash_ipv6(&arec->Mask.ipa.addr, bits)]);
       break;
 #endif
     default: /* HM_HOST */
@@ -692,13 +704,13 @@ delete_one_address_conf(const char *address, struct MaskItem *conf)
     case HM_IPV4:
       /* We have to do this, since we do not re-hash for every bit -A1kmm. */
       bits -= bits % 8;
-      hv = hash_ipv4(&addr, bits);
+      hv = atable_hash_ipv4(&addr, bits);
       break;
 #ifdef IPV6
     case HM_IPV6:
       /* We have to do this, since we do not re-hash for every bit -A1kmm. */
       bits -= bits % 16;
-      hv = hash_ipv6(&addr, bits);
+      hv = atable_hash_ipv6(&addr, bits);
       break;
 #endif
     default: /* HM_HOST */

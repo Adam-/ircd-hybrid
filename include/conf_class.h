@@ -39,8 +39,6 @@ struct ClassItem
 {
   char *name;
   dlink_node node;
-  dlink_list list_ipv4;         /* base of per cidr ipv4 client link list */
-  dlink_list list_ipv6;         /* base of per cidr ipv6 client link list */
   unsigned int ref_count;
   unsigned int max_sendq;
   unsigned int max_recvq;

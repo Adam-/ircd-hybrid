@@ -198,13 +198,6 @@ struct exempt
   int coid;
 };
 
-struct CidrItem
-{
-  dlink_node node;
-  struct irc_ssaddr mask;
-  unsigned int number_on_this_cidr;
-};
-
 struct config_file_entry
 {
   const char *dpath;          /* DPATH if set from command line */

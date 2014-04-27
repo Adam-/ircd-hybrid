@@ -31,12 +31,25 @@
 #include "hostmask.h"
 #include "irc_string.h"
 #include "memory.h"
+#include "mempool.h"
+ 
+#define CIDR_HASH_SIZE (1 << 16)
+
+struct CidrItem
+{
+  dlink_node node;
+  struct ClassItem *class;
+  struct irc_ssaddr mask;
+  unsigned int number_on_this_cidr;
+};
 
 
 struct ClassItem *class_default;
 
 static dlink_list class_list;
 
+static dlink_list cidrs[CIDR_HASH_SIZE];
+static mp_pool_t *cidr_pool;
 
 const dlink_list *
 class_get_list(void)
@@ -77,6 +90,7 @@ void
 class_init(void)
 {
   (class_default = class_make())->name = xstrdup("default");
+  cidr_pool = mp_pool_new(sizeof(struct CidrItem), sizeof(struct CidrItem) * 1024);
 }
 
 struct ClassItem *
@@ -235,59 +249,68 @@ cidr_limit_reached(int over_rule, struct irc_ssaddr *ip, struct ClassItem *class
 {
   dlink_node *ptr = NULL;
   struct CidrItem *cidr = NULL;
+  unsigned int bitlen;
+  unsigned int hashv = 0;
+  int match = 0;
 
   if (class->number_per_cidr == 0)
     return 0;
 
-  if (ip->ss.ss_family == AF_INET)
-  {
-    if (class->cidr_bitlen_ipv4 == 0)
-      return 0;
-
-    DLINK_FOREACH(ptr, class->list_ipv4.head)
-    {
-      cidr = ptr->data;
-
-      if (match_ipv4(ip, &cidr->mask, class->cidr_bitlen_ipv4))
-      {
-        if (!over_rule && (cidr->number_on_this_cidr >= class->number_per_cidr))
-          return -1;
-
-        cidr->number_on_this_cidr++;
-        return 0;
-      }
-    }
-
-    cidr = MyMalloc(sizeof(struct CidrItem));
-    cidr->number_on_this_cidr = 1;
-    cidr->mask = *ip;
-    mask_addr(&cidr->mask, class->cidr_bitlen_ipv4);
-    dlinkAdd(cidr, &cidr->node, &class->list_ipv4);
-  }
-#ifdef IPV6
-  else if (class->cidr_bitlen_ipv6 > 0)
-  {
-    DLINK_FOREACH(ptr, class->list_ipv6.head)
-    {
-      cidr = ptr->data;
-
-      if (match_ipv6(ip, &cidr->mask, class->cidr_bitlen_ipv6))
-      {
-        if (!over_rule && (cidr->number_on_this_cidr >= class->number_per_cidr))
-          return -1;
-
-        cidr->number_on_this_cidr++;
-        return 0;
-      }
-    }
-
-    cidr = MyMalloc(sizeof(struct CidrItem));
-    cidr->number_on_this_cidr = 1;
-    cidr->mask = *ip;
-    mask_addr(&cidr->mask, class->cidr_bitlen_ipv6);
-    dlinkAdd(cidr, &cidr->node, &class->list_ipv6);
-  }
+#ifndef IPV6
+  if (ip->ss.ss_family != AF_INET)
+    return 0;
 #endif
+
+  if (ip->ss.ss_family == AF_INET)
+    bitlen = class->cidr_bitlen_ipv4;
+  else
+    bitlen = class->cidr_bitlen_ipv6;
+
+  if (!bitlen)
+    return 0;
+
+  if (ip->ss.ss_family == AF_INET)
+    hashv = hash_ipv4(ip, class->cidr_bitlen_ipv4) & (CIDR_HASH_SIZE - 1);
+#ifdef IPV6
+  else
+    hashv = hash_ipv6(ip, class->cidr_bitlen_ipv6) & (CIDR_HASH_SIZE - 1);
+#endif
+
+  DLINK_FOREACH(ptr, cidrs[hashv].head)
+  {
+    cidr = ptr->data;
+
+    if (ip->ss.ss_family != cidr->mask.ss.ss_family)
+      continue;
+
+    if (class != cidr->class)
+      continue;
+
+    if (ip->ss.ss_family == AF_INET)
+      match = match_ipv4(ip, &cidr->mask, class->cidr_bitlen_ipv4);
+#ifdef IPV6
+    else
+      match = match_ipv6(ip, &cidr->mask, class->cidr_bitlen_ipv6);
+#endif
+
+    if (match)
+    {
+        if (!over_rule && (cidr->number_on_this_cidr >= class->number_per_cidr))
+          return -1;
+
+        cidr->number_on_this_cidr++;
+        return 0;
+    }
+  }
+
+  cidr = mp_pool_get(cidr_pool);
+  memset(cidr, 0, sizeof(*cidr));
+  cidr->class = class;
+  cidr->number_on_this_cidr = 1;
+  cidr->mask = *ip;
+  mask_addr(&cidr->mask, bitlen);
+  dlinkAdd(cidr, &cidr->node, &cidrs[hashv]);
+
   return 0;
 }
 
@@ -303,55 +326,63 @@ void
 remove_from_cidr_check(struct irc_ssaddr *ip, struct ClassItem *aclass)
 {
   dlink_node *ptr = NULL;
-  dlink_node *next_ptr = NULL;
   struct CidrItem *cidr;
+  unsigned int bitlen;
+  unsigned int hashv = 0;
+  int match = 0;
 
   if (aclass->number_per_cidr == 0)
     return;
 
-  if (ip->ss.ss_family == AF_INET)
-  {
-    if (aclass->cidr_bitlen_ipv4 == 0)
-      return;
-
-    DLINK_FOREACH_SAFE(ptr, next_ptr, aclass->list_ipv4.head)
-    {
-      cidr = ptr->data;
-
-      if (match_ipv4(ip, &cidr->mask, aclass->cidr_bitlen_ipv4))
-      {
-        cidr->number_on_this_cidr--;
-
-        if (cidr->number_on_this_cidr == 0)
-        {
-          dlinkDelete(ptr, &aclass->list_ipv4);
-          MyFree(cidr);
-          return;
-        }
-      }
-    }
-  }
-#ifdef IPV6
-  else if (aclass->cidr_bitlen_ipv6 > 0)
-  {
-    DLINK_FOREACH_SAFE(ptr, next_ptr, aclass->list_ipv6.head)
-    {
-      cidr = ptr->data;
-
-      if (match_ipv6(ip, &cidr->mask, aclass->cidr_bitlen_ipv6))
-      {
-        cidr->number_on_this_cidr--;
-
-        if (cidr->number_on_this_cidr == 0)
-        {
-          dlinkDelete(ptr, &aclass->list_ipv6);
-          MyFree(cidr);
-          return;
-        }
-      }
-    }
-  }
+#ifndef IPV6
+  if (ip->ss.ss_family != AF_INET)
+    return 0;
 #endif
+
+  if (ip->ss.ss_family == AF_INET)
+    bitlen = aclass->cidr_bitlen_ipv4;
+  else
+    bitlen = aclass->cidr_bitlen_ipv6;
+
+  if (!bitlen)
+    return;
+
+  if (ip->ss.ss_family == AF_INET)
+    hashv = hash_ipv4(ip, aclass->cidr_bitlen_ipv4) & (CIDR_HASH_SIZE - 1);
+#ifdef IPV6
+  else
+    hashv = hash_ipv6(ip, aclass->cidr_bitlen_ipv6) & (CIDR_HASH_SIZE - 1);
+#endif
+
+  DLINK_FOREACH(ptr, cidrs[hashv].head)
+  {
+    cidr = ptr->data;
+
+    if (ip->ss.ss_family != cidr->mask.ss.ss_family)
+      continue;
+
+    if (aclass != cidr->class)
+      continue;
+
+    if (ip->ss.ss_family != AF_INET)
+      match = match_ipv4(ip, &cidr->mask, aclass->cidr_bitlen_ipv4);
+#ifdef IPV6
+    else
+      match = match_ipv6(ip, &cidr->mask, aclass->cidr_bitlen_ipv6);
+#endif
+
+    if (match)
+    {
+      cidr->number_on_this_cidr--;
+
+      if (cidr->number_on_this_cidr == 0)
+      {
+        dlinkDelete(ptr, &cidrs[hashv]);
+        mp_pool_release(cidr);
+        break;
+      }
+    }
+  }
 }
 
 void
@@ -373,25 +404,6 @@ rebuild_cidr_list(struct ClassItem *class)
 }
 
 /*
- * destroy_cidr_list
- *
- * inputs	- pointer to class dlink list of cidr blocks
- * output	- none
- * side effects	- completely destroys the class link list of cidr blocks
- */
-static void
-destroy_cidr_list(dlink_list *list)
-{
-  dlink_node *ptr = NULL, *ptr_next = NULL;
-
-  DLINK_FOREACH_SAFE(ptr, ptr_next, list->head)
-  {
-    dlinkDelete(ptr, list);
-    MyFree(ptr->data);
-  }
-}
-
-/*
  * destroy_cidr_class
  *
  * inputs	- pointer to class
@@ -401,6 +413,18 @@ destroy_cidr_list(dlink_list *list)
 void
 destroy_cidr_class(struct ClassItem *class)
 {
-  destroy_cidr_list(&class->list_ipv4);
-  destroy_cidr_list(&class->list_ipv6);
+  int i;
+  dlink_node *ptr, *next_ptr;
+
+  for (i = 0; i < CIDR_HASH_SIZE; ++i)
+    DLINK_FOREACH_SAFE(ptr, next_ptr, cidrs[i].head)
+    {
+      struct CidrItem *cidr = ptr->data;
+
+      if (cidr->class == class)
+      {
+        dlinkDelete(ptr, &cidrs[i]);
+        mp_pool_release(cidr);
+      }
+    }
 }
