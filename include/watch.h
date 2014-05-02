@@ -32,7 +32,7 @@
 /*! \brief Watch structure */
 struct Watch
 {
-  dlink_node node;  /**< Embedded dlink_node used to link into watchTable */
+  hash_node hnode;  /**< Embedded dlink_node used to link into watchTable */
   dlink_list watched_by;  /**< List of clients that have this
                               entry on their watch list */
   time_t lasttime;  /**< Last time the client was seen */

@@ -268,7 +268,7 @@ m_who(struct Client *source_p, int parc, char *parv[])
   if (IsChanPrefix(*mask))
   {
     /* List all users on a given channel */
-    if ((chptr = hash_find_channel(mask)))
+    if ((chptr = find_channel(mask)))
     {
       if (IsMember(source_p, chptr) || HasUMode(source_p, UMODE_ADMIN))
         do_who_on_channel(source_p, chptr, chptr->chname, 1, server_oper);
@@ -281,8 +281,7 @@ m_who(struct Client *source_p, int parc, char *parv[])
   }
 
   /* '/who nick' */
-  if (((target_p = hash_find_client(mask))) &&
-      IsClient(target_p) && (!server_oper || HasUMode(target_p, UMODE_OPER)))
+  if (((target_p = find_person(source_p, mask))) && (!server_oper || HasUMode(target_p, UMODE_OPER)))
   {
     DLINK_FOREACH(ptr, target_p->channel.head)
     {

@@ -100,7 +100,7 @@ mo_trace(struct Client *source_p, int parc, char *parv[])
     {
       struct Client *ac2ptr = NULL;
 
-      if ((ac2ptr = hash_find_client(tname)) == NULL)
+      if ((ac2ptr = hash_find(&clientTable, tname)) == NULL)
       {
         DLINK_FOREACH(ptr, global_client_list.head)
         {
@@ -184,9 +184,9 @@ do_actual_trace(struct Client *source_p, int parc, char *parv[])
                               /* lets also do this for opers tracing nicks */
   {
     const char *name;
-    target_p = hash_find_client(tname);
+    target_p = find_person(source_p, name);
 
-    if (target_p && IsClient(target_p))
+    if (target_p)
     {
       name = get_client_name(target_p, HIDE_IP);
 

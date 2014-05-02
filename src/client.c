@@ -60,6 +60,22 @@ dlink_list serv_list = {NULL, NULL, 0};
 dlink_list global_serv_list = {NULL, NULL, 0};
 dlink_list oper_list = {NULL, NULL, 0};
 
+struct hash_table clientTable = {
+  .buckets = NULL,
+  .power = FNV1_32_BITS,
+  .size = FNV1_32_SIZE,
+  .hash = fnv_hash_ircstring_lower,
+  .compare = (hash_compare) irccmp
+};
+
+struct hash_table idTable = {
+  .buckets = NULL,
+  .power = FNV1_32_BITS,
+  .size = FNV1_32_SIZE,
+  .hash = fnv_hash_ircstring_lower,
+  .compare = (hash_compare) irccmp
+};
+
 static EVH check_pings;
 
 static mp_pool_t *client_pool  = NULL;
@@ -131,8 +147,6 @@ make_client(struct Client *from)
   else
     client_p->from = from; /* 'from' of local client is self! */
 
-  client_p->idhnext = client_p;
-  client_p->hnext  = client_p;
   SetUnknown(client_p);
   strcpy(client_p->username, "unknown");
   strcpy(client_p->svid, "0");
@@ -508,12 +522,26 @@ find_person(const struct Client *const source_p, const char *name)
   if (IsDigit(*name))
   {
     if (IsServer(source_p->from))
-      target_p = hash_find_id(name);
+      target_p = hash_find(&idTable, name);
   }
   else
-    target_p = hash_find_client(name);
+    target_p = hash_find(&clientTable, name);
 
   return (target_p && IsClient(target_p)) ? target_p : NULL;
+}
+
+
+struct Client *
+find_server(const char *name)
+{
+  struct Client *client_p;
+
+  if (IsDigit(*name) && strlen(name) == IRC_MAXSID)
+    client_p = hash_find(&idTable, name);
+  else
+    client_p = hash_find(&clientTable, name);
+
+  return client_p && (IsServer(client_p) || IsMe(client_p)) ? client_p : NULL;
 }
 
 /*
@@ -674,9 +702,9 @@ exit_one_client(struct Client *source_p, const char *quitmsg)
 
   /* Remove source_p from the client lists */
   if (source_p->id[0])
-    hash_del_id(source_p);
+    hash_del_node(&idTable, &source_p->idhnode);
   if (source_p->name[0])
-    hash_del_client(source_p);
+    hash_del_node(&clientTable, &source_p->hnode);
 
   if (IsUserHostIp(source_p))
     delete_user_host(source_p->username, source_p->host, !MyConnect(source_p));

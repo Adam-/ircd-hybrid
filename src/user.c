@@ -546,11 +546,11 @@ register_local_user(struct Client *source_p)
   if (check_xline(source_p))
     return;
 
-  while (hash_find_id((id = uid_get())))
+  while (hash_find(&idTable, (id = uid_get())))
     ;
 
   strlcpy(source_p->id, id, sizeof(source_p->id));
-  hash_add_id(source_p);
+  hash_add(&idTable, &source_p->idhnode, source_p->id, source_p);
 
   sendto_realops_flags(UMODE_CCONN, L_ALL, SEND_NOTICE,
                        "Client connecting: %s (%s@%s) [%s] {%s} [%s] <%s>",
@@ -622,7 +622,7 @@ register_remote_user(struct Client *source_p, const char *username,
   /*
    * Coming from another server, take the servers word for it
    */
-  source_p->servptr = hash_find_server(server);
+  source_p->servptr = find_server(server);
 
   /*
    * Super GhostDetect:

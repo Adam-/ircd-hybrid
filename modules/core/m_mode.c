@@ -209,7 +209,7 @@ m_mode(struct Client *source_p, int parc, char *parv[])
     return 0;
   }
 
-  if ((chptr = hash_find_channel(parv[1])) == NULL)
+  if ((chptr = find_channel(parv[1])) == NULL)
   {
     sendto_one_numeric(source_p, &me, ERR_NOSUCHCHANNEL, parv[1]);
     return 0;

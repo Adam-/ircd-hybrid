@@ -106,7 +106,7 @@ do_etrace(struct Client *source_p, int parc, char *parv[])
 
   if (!wilds && !do_all)
   {
-    target_p = hash_find_client(tname);
+    target_p = find_person(source_p, tname);
 
     if (target_p && MyClient(target_p))
       report_this_status(source_p, target_p);

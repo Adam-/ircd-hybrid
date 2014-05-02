@@ -50,7 +50,7 @@ part_one_client(struct Client *target_p, const char *name, const char *reason)
   struct Channel *chptr = NULL;
   struct Membership *ms = NULL;
 
-  if ((chptr = hash_find_channel(name)) == NULL)
+  if ((chptr = find_channel(name)) == NULL)
   {
     sendto_one_numeric(target_p, &me, ERR_NOSUCHCHANNEL, name);
     return;

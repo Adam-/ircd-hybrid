@@ -388,10 +388,10 @@ struct Client
 {
   dlink_node node;
   dlink_node lnode;             /**< Used for Server->servers/users */
+  hash_node  hnode;             /**< For client hash table lookups by name */
+  hash_node  idhnode;           /**< For ID hash table lookups by ID */
 
   struct LocalUser *localClient;
-  struct Client    *hnext;      /**< For client hash table lookups by name */
-  struct Client    *idhnext;    /**< For SID hash table lookups by sid */
   struct Server    *serv;       /**< ...defined, if this is a server */
   struct Client    *servptr;    /**< Points to server this Client is on */
   struct Client    *from;       /**< == self, if Local Client, *NEVER* NULL! */
@@ -455,6 +455,8 @@ extern dlink_list serv_list;          /* local servers to this server ONLY      
 extern dlink_list global_serv_list;   /* global servers on the network              */
 extern dlink_list oper_list;          /* our opers, duplicated in local_client_list */
 
+extern struct hash_table clientTable, idTable;
+
 extern int accept_message(struct Client *, struct Client *);
 extern unsigned int idle_time_get(const struct Client *, const struct Client *);
 extern struct split_nuh_item *find_accept(const char *, const char *,
@@ -473,6 +475,7 @@ extern void free_exited_clients(void);
 extern struct Client *make_client(struct Client *);
 extern struct Client *find_chasing(struct Client *, const char *);
 extern struct Client *find_person(const struct Client *const, const char *);
+extern struct Client *find_server(const char *);
 extern const char *get_client_name(const struct Client *, enum addr_mask_type);
 
 #endif /* INCLUDED_client_h */

@@ -150,7 +150,7 @@ parse(struct Client *client_p, char *pbuffer, char *bufend)
     if (*sender && IsServer(client_p))
     {
       if ((from = find_person(client_p, sender)) == NULL)
-        from = hash_find_server(sender);
+        from = find_server(sender);
 
       /*
        * Hmm! If the client corresponding to the prefix is not found--what is
@@ -660,7 +660,7 @@ handle_numeric(char numeric[], struct Client *source_p, int parc, char *parv[])
    * Ahem... it can be a channel actually, csc bots use it :\ --Nem
    */
   if (IsChanPrefix(*parv[1]))
-    chptr = hash_find_channel(parv[1]);
+    chptr = find_channel(parv[1]);
   else
     target_p = find_person(source_p, parv[1]);
 

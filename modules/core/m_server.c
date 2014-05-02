@@ -324,8 +324,8 @@ server_estab(struct Client *client_p)
   Count.myserver++;
 
   dlinkAdd(client_p, make_dlink_node(), &global_serv_list);
-  hash_add_client(client_p);
-  hash_add_id(client_p);
+  hash_add(&clientTable, &client_p->hnode, client_p->name, client_p);
+  hash_add(&idTable, &client_p->idhnode, client_p->id, client_p);
 
   /* doesnt duplicate client_p->serv if allocated this struct already */
   make_server(client_p);
@@ -567,7 +567,7 @@ mr_server(struct Client *source_p, int parc, char *parv[])
       break;
   }
 
-  if ((target_p = hash_find_server(name)))
+  if ((target_p = find_server(name)))
   {
     /* This link is trying feed me a server that I already have
      * access through another path -- multiple paths not accepted
@@ -590,7 +590,7 @@ mr_server(struct Client *source_p, int parc, char *parv[])
     return 0;
   }
 
-  if ((target_p = hash_find_id(source_p->id)))
+  if ((target_p = find_server(source_p->id)))
   {
     sendto_realops_flags(UMODE_ALL, L_ADMIN, SEND_NOTICE,
                          "Attempt to re-introduce server %s SID %s from %s",
@@ -677,7 +677,7 @@ ms_sid(struct Client *source_p, int parc, char *parv[])
   }
 
   /* collision on SID? */
-  if ((target_p = hash_find_id(parv[3])))
+  if ((target_p = find_server(parv[3])))
   {
     sendto_one(client_p, "ERROR :SID %s already exists", parv[3]);
     sendto_realops_flags(UMODE_ALL, L_ADMIN, SEND_NOTICE,
@@ -691,7 +691,7 @@ ms_sid(struct Client *source_p, int parc, char *parv[])
   }
 
   /* collision on name? */
-  if ((target_p = hash_find_server(parv[1])))
+  if ((target_p = find_server(parv[1])))
   {
     sendto_one(client_p, "ERROR :Server %s already exists", parv[1]);
     sendto_realops_flags(UMODE_ALL, L_ADMIN, SEND_NOTICE,
@@ -804,8 +804,8 @@ ms_sid(struct Client *source_p, int parc, char *parv[])
   dlinkAdd(target_p, make_dlink_node(), &global_serv_list);
   dlinkAdd(target_p, &target_p->lnode, &target_p->servptr->serv->server_list);
 
-  hash_add_client(target_p);
-  hash_add_id(target_p);
+  hash_add(&clientTable, &target_p->hnode, target_p->name, target_p);
+  hash_add(&idTable, &target_p->idhnode, target_p->id, target_p);
 
   sendto_server(client_p, NOCAPS, NOCAPS, ":%s SID %s %d %s :%s%s",
                 source_p->id, target_p->name, target_p->hopcount + 1,

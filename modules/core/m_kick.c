@@ -64,7 +64,7 @@ m_kick(struct Client *source_p, int parc, char *parv[])
   if (!IsFloodDone(source_p))
     flood_endgrace(source_p);
 
-  if ((chptr = hash_find_channel(parv[1])) == NULL)
+  if ((chptr = find_channel(parv[1])) == NULL)
   {
     sendto_one_numeric(source_p, &me, ERR_NOSUCHCHANNEL, parv[1]);
     return 0;
@@ -136,7 +136,7 @@ ms_kick(struct Client *source_p, int parc, char *parv[])
   if (EmptyString(parv[2]))
     return 0;
 
-  if ((chptr = hash_find_channel(parv[1])) == NULL)
+  if ((chptr = find_channel(parv[1])) == NULL)
     return 0;
 
   if ((target_p = find_person(source_p, parv[2])) == NULL)

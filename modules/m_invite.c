@@ -74,7 +74,7 @@ m_invite(struct Client *source_p, int parc, char *parv[])
     return 0;
   }
 
-  if ((chptr = hash_find_channel(parv[2])) == NULL)
+  if ((chptr = find_channel(parv[2])) == NULL)
   {
     sendto_one_numeric(source_p, &me, ERR_NOSUCHCHANNEL, parv[2]);
     return 0;
@@ -153,7 +153,7 @@ ms_invite(struct Client *source_p, int parc, char *parv[])
   if ((target_p = find_person(source_p, parv[1])) == NULL)
     return 0;
 
-  if ((chptr = hash_find_channel(parv[2])) == NULL)
+  if ((chptr = find_channel(parv[2])) == NULL)
     return 0;
 
   if (IsMember(target_p, chptr))

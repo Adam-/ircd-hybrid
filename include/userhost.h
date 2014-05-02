@@ -39,9 +39,11 @@ struct NameHost
 struct UserHost
 {
   dlink_list list;  /* List of names on this hostname */
-  struct UserHost *next;
+  hash_node hnode;
   char host[HOSTLEN + 1];
 };
+
+extern struct hash_table userhostTable;
 
 extern void count_user_host(const char *, const char *, unsigned int *, unsigned int *, unsigned int *);
 extern void add_user_host(const char *, const char *, int);

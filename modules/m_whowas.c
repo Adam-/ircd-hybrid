@@ -46,13 +46,15 @@ do_whowas(struct Client *source_p, const int parc, char *parv[])
 {
   int cur = 0;
   int max = -1;
+  hash_bucket *bucket;
   const dlink_node *ptr = NULL;
 
   if (parc > 2 && !EmptyString(parv[2]))
     if ((max = atoi(parv[2])) > 20 && !MyConnect(source_p))
       max = 20;
 
-  DLINK_FOREACH(ptr, WHOWASHASH[strhash(parv[1])].head)
+  bucket = whowas_get_bucket(parv[1]);
+  DLINK_FOREACH(ptr, bucket->head)
   {
     const struct Whowas *temp = ptr->data;
 

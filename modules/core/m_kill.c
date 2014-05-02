@@ -69,7 +69,7 @@ mo_kill(struct Client *source_p, int parc, char *parv[])
   else
     reason = def_reason;
 
-  if ((target_p = hash_find_client(parv[1])) == NULL)
+  if ((target_p = hash_find(&clientTable, parv[1])) == NULL)
   {
     /*
      * If the user has recently changed nick, automatically

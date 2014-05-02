@@ -171,16 +171,13 @@ hunt_server(struct Client *source_p, const char *command,
    * message to go in the wrong direction while doing quick fast
    * non-matching lookups.
    */
-  if (MyClient(source_p))
-    target_p = hash_find_client(parv[server]);
-  else
-    target_p = find_person(source_p, parv[server]);
+  target_p = find_person(source_p, parv[server]);
 
   if (target_p)
     if (target_p->from == source_p->from && !MyConnect(target_p))
       target_p = NULL;
 
-  if (target_p == NULL && (target_p = hash_find_server(parv[server])))
+  if (target_p == NULL && (target_p = find_server(parv[server])))
     if (target_p->from == source_p->from && !MyConnect(target_p))
       target_p = NULL;
 
@@ -191,7 +188,7 @@ hunt_server(struct Client *source_p, const char *command,
   {
     if (!has_wildcards(parv[server]))
     {
-      if (!(target_p = hash_find_server(parv[server])))
+      if (!(target_p = find_server(parv[server])))
       {
         sendto_one_numeric(source_p, &me, ERR_NOSUCHSERVER, parv[server]);
         return HUNTED_NOSUCH;
@@ -297,7 +294,7 @@ try_connections(void *unused)
      * Found a CONNECT config with port specified, scan clients
      * and see if this server is already connected?
      */
-    if (hash_find_server(conf->name))
+    if (find_server(conf->name))
       continue;
 
     if (conf->class->ref_count < conf->class->max_total)
@@ -636,7 +633,7 @@ serv_connect(struct MaskItem *conf, struct Client *by)
   /* Make sure this server isn't already connected
    * Note: conf should ALWAYS be a valid C: line
    */
-  if ((client_p = hash_find_server(conf->name)))
+  if ((client_p = find_server(conf->name)))
   {
     sendto_realops_flags(UMODE_ALL, L_ADMIN, SEND_NOTICE,
                          "Server %s already present from %s",

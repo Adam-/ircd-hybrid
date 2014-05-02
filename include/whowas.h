@@ -34,7 +34,6 @@
 
 struct Whowas
 {
-  int hashv;
   int shide;
   time_t logoff;
   char name[NICKLEN + 1];
@@ -43,14 +42,9 @@ struct Whowas
   char realname[REALLEN + 1];
   char servername[HOSTLEN + 1];
   struct Client *online; /* Pointer to new nickname for chasing or NULL */
-  dlink_node tnode;      /* for hash table...                           */
+  hash_node hnode;       /* for hash table...                           */
   dlink_node cnode;      /* for client struct linked list               */
 };
-
-/*
-** initwhowas
-*/
-extern void whowas_init(void);
 
 /*
 ** whowas_add_history
@@ -81,5 +75,8 @@ extern struct Client *whowas_get_history(const char *, time_t);
 ** for debugging...counts related structures stored in whowas array.
 */
 extern void whowas_count_memory(unsigned int *const, uint64_t *const);
-extern dlink_list WHOWASHASH[];
+
+extern hash_bucket *whowas_get_bucket(const char *name);
+
+struct hash_table WHOWASHASH;
 #endif /* INCLUDED_whowas_h */

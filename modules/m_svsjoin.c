@@ -202,7 +202,7 @@ ms_svsjoin(struct Client *source_p, int parc, char *parv[])
       break;
     }
 
-    if ((chptr = hash_find_channel(chan)))
+    if ((chptr = find_channel(chan)))
     {
       if (IsMember(target_p, chptr))
         continue;

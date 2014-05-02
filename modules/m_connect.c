@@ -85,7 +85,7 @@ mo_connect(struct Client *source_p, int parc, char *parv[])
     return 0;
   }
 
-  if ((target_p = hash_find_server(parv[1])))
+  if ((target_p = find_server(parv[1])))
   {
     sendto_one_notice(source_p, &me, ":Connect: Server %s already exists from %s.",
                       parv[1], target_p->from->name);
@@ -196,7 +196,7 @@ ms_connect(struct Client *source_p, int parc, char *parv[])
     return 0;
   }
 
-  if ((target_p = hash_find_server(parv[1])))
+  if ((target_p = find_server(parv[1])))
   {
     sendto_one_notice(source_p, &me, ":Connect: Server %s already exists from %s.",
                       parv[1], target_p->from->name);

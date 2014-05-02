@@ -164,10 +164,10 @@ set_initial_nick(struct Client *source_p, const char *nick)
   source_p->localClient->registration &= ~REG_NEED_NICK;
 
   if (source_p->name[0])
-    hash_del_client(source_p);
+    hash_del_node(&clientTable, &source_p->hnode);
 
   strlcpy(source_p->name, nick, sizeof(source_p->name));
-  hash_add_client(source_p);
+  hash_add(&clientTable, &source_p->hnode, source_p->name, source_p);
 
   /* fd_desc is long enough */
   fd_note(&source_p->localClient->fd, "Nick: %s", nick);
@@ -243,9 +243,9 @@ change_local_nick(struct Client *source_p, const char *nick)
   sendto_server(source_p, NOCAPS, NOCAPS, ":%s NICK %s :%lu",
                 source_p->id, nick, (unsigned long)source_p->tsinfo);
 
-  hash_del_client(source_p);
+  hash_del_node(&clientTable, &source_p->hnode);
   strlcpy(source_p->name, nick, sizeof(source_p->name));
-  hash_add_client(source_p);
+  hash_add(&clientTable, &source_p->hnode, source_p->name, source_p);
 
   if (!samenick)
     watch_check_hash(source_p, RPL_LOGON);
@@ -284,7 +284,7 @@ nick_from_server(struct Client *source_p, int parc,
     strlcpy(source_p->info, ngecos, sizeof(source_p->info));
     /* copy the nick in place */
     strlcpy(source_p->name, nick, sizeof(source_p->name));
-    hash_add_client(source_p);
+    hash_add(&clientTable, &source_p->hnode, source_p->name, source_p);
 
     if (parc > 8)
     {
@@ -328,10 +328,10 @@ nick_from_server(struct Client *source_p, int parc,
 
   /* set the new nick name */
   if (source_p->name[0])
-    hash_del_client(source_p);
+    hash_del_node(&clientTable, &source_p->hnode);
 
   strlcpy(source_p->name, nick, sizeof(source_p->name));
-  hash_add_client(source_p);
+  hash_add(&clientTable, &source_p->hnode, source_p->name, source_p);
 
   if (!samenick)
     watch_check_hash(source_p, RPL_LOGON);
@@ -359,8 +359,8 @@ uid_from_server(struct Client *source_p, int parc,
   strlcpy(source_p->sockhost, parv[7], sizeof(source_p->sockhost));
   strlcpy(source_p->info, ugecos, sizeof(source_p->info));
 
-  hash_add_client(source_p);
-  hash_add_id(source_p);
+  hash_add(&clientTable, &source_p->hnode, source_p->name, source_p);
+  hash_add(&idTable, &source_p->idhnode, source_p->id, source_p);
 
   /* parse usermodes */
   for (const char *m = &parv[4][1]; *m; ++m)
@@ -595,7 +595,7 @@ mr_nick(struct Client *source_p, int parc, char *parv[])
     return 0;
   }
 
-  if ((target_p = hash_find_client(nick)) == NULL)
+  if ((target_p = find_person(source_p, nick)) == NULL)
     set_initial_nick(source_p, nick);
   else if (source_p == target_p)
     strlcpy(source_p->name, nick, sizeof(source_p->name));
@@ -657,7 +657,7 @@ m_nick(struct Client *source_p, int parc, char *parv[])
     return 0;
   }
 
-  if ((target_p = hash_find_client(nick)) == NULL)
+  if ((target_p = find_person(source_p, nick)) == NULL)
     change_local_nick(source_p, nick);
   else if (target_p == source_p)
   {
@@ -718,7 +718,7 @@ ms_nick(struct Client *source_p, int parc, char *parv[])
   newts = atol(parv[2]);
 
   /* If the nick doesnt exist, allow it and process like normal */
-  if ((target_p = hash_find_client(parv[1])) == NULL)
+  if ((target_p = find_person(source_p, parv[1])) == NULL)
     nick_from_server(source_p, parc, parv, newts, NULL, parv[1], parv[parc-1]);
   else if (IsUnknown(target_p))
   {
@@ -794,7 +794,7 @@ ms_uid(struct Client *source_p, int parc, char *parv[])
    * This may generate 401's, but it ensures that both clients always
    * go, even if the other server refuses to do the right thing.
    */
-  if ((target_p = hash_find_id(parv[8])) != NULL)
+  if ((target_p = hash_find(&idTable, parv[8])) != NULL)
   {
     sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
                          "ID collision on %s(%s <- %s)(both killed)",
@@ -810,7 +810,7 @@ ms_uid(struct Client *source_p, int parc, char *parv[])
     return 0;
   }
 
-  if ((target_p = hash_find_client(parv[1])) == NULL)
+  if ((target_p = find_person(source_p, parv[1])) == NULL)
     uid_from_server(source_p, parc, parv, newts, svsid, parv[1], parv[parc-1]);
   else if (IsUnknown(target_p))
   {

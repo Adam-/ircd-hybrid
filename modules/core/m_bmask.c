@@ -65,7 +65,7 @@ ms_bmask(struct Client *source_p, int parc, char *parv[])
   int mlen, tlen;
   int modecount = 0;
 
-  if ((chptr = hash_find_channel(parv[2])) == NULL)
+  if ((chptr = find_channel(parv[2])) == NULL)
     return 0;
 
   /* TS is higher, drop it. */

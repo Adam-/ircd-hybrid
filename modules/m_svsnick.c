@@ -72,7 +72,7 @@ ms_svsnick(struct Client *source_p, int parc, char *parv[])
 
   assert(MyClient(target_p));
 
-  if ((exists_p = hash_find_client(parv[2])))
+  if ((exists_p = hash_find(&clientTable, parv[2])))
   {
     if (target_p == exists_p)
     {
@@ -109,9 +109,9 @@ ms_svsnick(struct Client *source_p, int parc, char *parv[])
 
   sendto_server(NULL, NOCAPS, NOCAPS, ":%s NICK %s :%lu",
                 target_p->id, parv[2], (unsigned long)target_p->tsinfo);
-  hash_del_client(target_p);
+  hash_del_node(&clientTable, &target_p->hnode);
   strlcpy(target_p->name, parv[2], sizeof(target_p->name));
-  hash_add_client(target_p);
+  hash_add(&clientTable, &target_p->hnode, target_p->name, target_p);
 
   watch_check_hash(target_p, RPL_LOGON);
 
