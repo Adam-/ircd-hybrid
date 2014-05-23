@@ -82,7 +82,7 @@ m_oper(struct Client *source_p, int parc, char *parv[])
 
   if (EmptyString(password))
   {
-    sendto_one_numeric(source_p, &me, ERR_NEEDMOREPARAMS, "OPER");
+    sendto_one_numeric(source_p, &me.client, ERR_NEEDMOREPARAMS, "OPER");
     return 0;
   }
 
@@ -92,7 +92,7 @@ m_oper(struct Client *source_p, int parc, char *parv[])
 
   if ((conf = find_exact_name_conf(CONF_OPER, source_p, name, NULL, NULL)) == NULL)
   {
-    sendto_one_numeric(source_p, &me, ERR_NOOPERHOST);
+    sendto_one_numeric(source_p, &me.client, ERR_NOOPERHOST);
     conf = find_exact_name_conf(CONF_OPER, NULL, name, NULL, NULL);
     failed_oper_notice(source_p, name, (conf != NULL) ?
                        "host mismatch" : "no oper {} block");
@@ -101,7 +101,7 @@ m_oper(struct Client *source_p, int parc, char *parv[])
 
   if (IsConfSSL(conf) && !HasUMode(source_p, UMODE_SSL))
   {
-    sendto_one_numeric(source_p, &me, ERR_NOOPERHOST);
+    sendto_one_numeric(source_p, &me.client, ERR_NOOPERHOST);
     failed_oper_notice(source_p, name, "requires SSL/TLS");
     return 0;
   }
@@ -110,7 +110,7 @@ m_oper(struct Client *source_p, int parc, char *parv[])
   {
     if (EmptyString(source_p->certfp) || strcasecmp(source_p->certfp, conf->certfp))
     {
-      sendto_one_numeric(source_p, &me, ERR_NOOPERHOST);
+      sendto_one_numeric(source_p, &me.client, ERR_NOOPERHOST);
       failed_oper_notice(source_p, name, "client certificate fingerprint mismatch");
       return 0;
     }
@@ -120,7 +120,7 @@ m_oper(struct Client *source_p, int parc, char *parv[])
   {
     if (attach_conf(source_p, conf) != 0)
     {
-      sendto_one_notice(source_p, &me, ":Can't attach conf!");
+      sendto_one_notice(source_p, &me.client, ":Can't attach conf!");
       failed_oper_notice(source_p, name, "can't attach conf!");
       return 0;
     }
@@ -132,7 +132,7 @@ m_oper(struct Client *source_p, int parc, char *parv[])
   }
   else
   {
-    sendto_one_numeric(source_p, &me, ERR_PASSWDMISMATCH);
+    sendto_one_numeric(source_p, &me.client, ERR_PASSWDMISMATCH);
     failed_oper_notice(source_p, name, "password mismatch");
   }
 
@@ -154,7 +154,7 @@ m_oper(struct Client *source_p, int parc, char *parv[])
 static int
 mo_oper(struct Client *source_p, int parc, char *parv[])
 {
-  sendto_one_numeric(source_p, &me, RPL_YOUREOPER);
+  sendto_one_numeric(source_p, &me.client, RPL_YOUREOPER);
   return 0;
 }
 

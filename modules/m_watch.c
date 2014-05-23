@@ -51,11 +51,11 @@ show_watch(struct Client *source_p, const char *name,
   const struct Client *target_p = NULL;
 
   if ((target_p = find_person(source_p, name)))
-    sendto_one_numeric(source_p, &me, rpl1,
+    sendto_one_numeric(source_p, &me.client, rpl1,
                        target_p->name, target_p->username,
                        target_p->host, target_p->tsinfo);
   else
-    sendto_one_numeric(source_p, &me, rpl2, name, "*", "*", 0);
+    sendto_one_numeric(source_p, &me.client, rpl2, name, "*", "*", 0);
 }
 
 /*! \brief WATCH command handler
@@ -102,7 +102,7 @@ m_watch(struct Client *source_p, int parc, char *parv[])
         if (dlink_list_length(&source_p->localClient->watches) >=
             ConfigFileEntry.max_watch)
         {
-          sendto_one_numeric(source_p, &me, ERR_TOOMANYWATCH, s + 1, ConfigFileEntry.max_watch);
+          sendto_one_numeric(source_p, &me.client, ERR_TOOMANYWATCH, s + 1, ConfigFileEntry.max_watch);
           continue;
         }
 
@@ -158,7 +158,7 @@ m_watch(struct Client *source_p, int parc, char *parv[])
       if ((anptr = watch_find_hash(source_p->name)))
         count = dlink_list_length(&anptr->watched_by);
 
-      sendto_one_numeric(source_p, &me, RPL_WATCHSTAT,
+      sendto_one_numeric(source_p, &me.client, RPL_WATCHSTAT,
                  dlink_list_length(&source_p->localClient->watches), count);
 
       /*
@@ -167,14 +167,14 @@ m_watch(struct Client *source_p, int parc, char *parv[])
        */
       if ((ptr = source_p->localClient->watches.head) == NULL)
       {
-        sendto_one_numeric(source_p, &me, RPL_ENDOFWATCHLIST, *s);
+        sendto_one_numeric(source_p, &me.client, RPL_ENDOFWATCHLIST, *s);
         continue;
       }
 
       anptr = ptr->data;
       strlcpy(buf, anptr->nick, sizeof(buf));
 
-      count = strlen(source_p->name) + strlen(me.name) + 10 +
+      count = strlen(source_p->name) + strlen(me.client.name) + 10 +
               strlen(buf);
 
       while ((ptr = ptr->next))
@@ -183,9 +183,9 @@ m_watch(struct Client *source_p, int parc, char *parv[])
 
         if (count + strlen(anptr->nick) + 1 > IRCD_BUFSIZE - 2)
         {
-          sendto_one_numeric(source_p, &me, RPL_WATCHLIST, buf);
+          sendto_one_numeric(source_p, &me.client, RPL_WATCHLIST, buf);
           buf[0] = '\0';
-          count = strlen(source_p->name) + strlen(me.name) + 10;
+          count = strlen(source_p->name) + strlen(me.client.name) + 10;
         }
 
         strlcat(buf, " ", sizeof(buf));
@@ -193,8 +193,8 @@ m_watch(struct Client *source_p, int parc, char *parv[])
         count += (strlen(anptr->nick) + 1);
       }
 
-      sendto_one_numeric(source_p, &me, RPL_WATCHLIST, buf);
-      sendto_one_numeric(source_p, &me, RPL_ENDOFWATCHLIST, *s);
+      sendto_one_numeric(source_p, &me.client, RPL_WATCHLIST, buf);
+      sendto_one_numeric(source_p, &me.client, RPL_ENDOFWATCHLIST, *s);
       continue;
     }
 
@@ -217,7 +217,7 @@ m_watch(struct Client *source_p, int parc, char *parv[])
         const struct Watch *anptr = ptr->data;
 
         if ((target_p = find_person(source_p, anptr->nick)))
-          sendto_one_numeric(source_p, &me, RPL_NOWON,
+          sendto_one_numeric(source_p, &me.client, RPL_NOWON,
                              target_p->name, target_p->username,
                              target_p->host, target_p->tsinfo);
 
@@ -226,11 +226,11 @@ m_watch(struct Client *source_p, int parc, char *parv[])
          * 'L' (full list wanted).
          */
         else if (*s == 'L')
-          sendto_one_numeric(source_p, &me, RPL_NOWOFF, anptr->nick,
+          sendto_one_numeric(source_p, &me.client, RPL_NOWOFF, anptr->nick,
                              "*", "*", anptr->lasttime);
       }
 
-      sendto_one_numeric(source_p, &me, RPL_ENDOFWATCHLIST, *s);
+      sendto_one_numeric(source_p, &me.client, RPL_ENDOFWATCHLIST, *s);
       continue;
     }
 

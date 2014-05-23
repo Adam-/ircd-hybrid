@@ -86,7 +86,7 @@ m_challenge(struct Client *source_p, int parc, char *parv[])
 
     if (irccmp(source_p->localClient->response, ++parv[1]))
     {
-      sendto_one_numeric(source_p, &me, ERR_PASSWDMISMATCH);
+      sendto_one_numeric(source_p, &me.client, ERR_PASSWDMISMATCH);
       failed_challenge_notice(source_p, source_p->localClient->auth_oper,
                               "challenge failed");
       return 0;
@@ -96,7 +96,7 @@ m_challenge(struct Client *source_p, int parc, char *parv[])
                                 source_p->localClient->auth_oper, NULL, NULL);
     if (conf == NULL)
     {
-      sendto_one_numeric(source_p, &me, ERR_NOOPERHOST);
+      sendto_one_numeric(source_p, &me.client, ERR_NOOPERHOST);
       conf = find_exact_name_conf(CONF_OPER, NULL, source_p->localClient->auth_oper, NULL, NULL);
       failed_challenge_notice(source_p, source_p->localClient->auth_oper, (conf != NULL) ?
                               "host mismatch" : "no oper {} block");
@@ -105,7 +105,7 @@ m_challenge(struct Client *source_p, int parc, char *parv[])
 
     if (attach_conf(source_p, conf) != 0)
     {
-      sendto_one_notice(source_p, &me, ":Can't attach conf!");   
+      sendto_one_notice(source_p, &me.client, ":Can't attach conf!");   
       failed_challenge_notice(source_p, conf->name, "can't attach conf!");
       return 0;
     }
@@ -132,7 +132,7 @@ m_challenge(struct Client *source_p, int parc, char *parv[])
 
   if (!conf)
   {
-    sendto_one_numeric(source_p, &me, ERR_NOOPERHOST);
+    sendto_one_numeric(source_p, &me.client, ERR_NOOPERHOST);
     conf = find_exact_name_conf(CONF_OPER, NULL, parv[1], NULL, NULL);
     failed_challenge_notice(source_p, parv[1], (conf != NULL)
                             ? "host mismatch" : "no oper {} block");
@@ -141,14 +141,14 @@ m_challenge(struct Client *source_p, int parc, char *parv[])
 
   if (conf->rsa_public_key == NULL)
   {
-    sendto_one_notice(source_p, &me, ":I'm sorry, PK authentication "
+    sendto_one_notice(source_p, &me.client, ":I'm sorry, PK authentication "
                       "is not enabled for your oper{} block.");
     return 0;
   }
 
   if (IsConfSSL(conf) && !HasUMode(source_p, UMODE_SSL))
   {
-    sendto_one_numeric(source_p, &me, ERR_NOOPERHOST);
+    sendto_one_numeric(source_p, &me.client, ERR_NOOPERHOST);
     failed_challenge_notice(source_p, conf->name, "requires SSL/TLS");
     return 0;
   }
@@ -157,7 +157,7 @@ m_challenge(struct Client *source_p, int parc, char *parv[])
   {
     if (EmptyString(source_p->certfp) || strcasecmp(source_p->certfp, conf->certfp))
     {
-      sendto_one_numeric(source_p, &me, ERR_NOOPERHOST);
+      sendto_one_numeric(source_p, &me.client, ERR_NOOPERHOST);
       failed_challenge_notice(source_p, conf->name, "client certificate fingerprint mismatch");
       return 0;
     }
@@ -165,7 +165,7 @@ m_challenge(struct Client *source_p, int parc, char *parv[])
 
   if (!generate_challenge(&challenge, &(source_p->localClient->response),
                           conf->rsa_public_key))
-    sendto_one_numeric(source_p, &me, RPL_RSACHALLENGE, challenge);
+    sendto_one_numeric(source_p, &me.client, RPL_RSACHALLENGE, challenge);
 
   source_p->localClient->auth_oper = xstrdup(conf->name);
   MyFree(challenge);
@@ -186,7 +186,7 @@ m_challenge(struct Client *source_p, int parc, char *parv[])
 static int
 mo_challenge(struct Client *source_p, int parc, char *parv[])
 {
-  sendto_one_numeric(source_p, &me, RPL_YOUREOPER);
+  sendto_one_numeric(source_p, &me.client, RPL_YOUREOPER);
   return 0;
 }
 

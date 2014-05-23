@@ -69,8 +69,7 @@ struct Counter Count;
 struct ServerState_t server_state;
 struct ServerStatistics ServerStats;
 struct timeval SystemTime;
-struct Client me;             /* That's me */
-struct LocalUser meLocalUser; /* That's also part of me */
+struct LocalClient me;             /* That's me */
 
 const char *logFileName = LPATH;
 const char *pidFileName = PPATH;
@@ -470,8 +469,7 @@ main(int argc, char *argv[])
   /* It ain't random, but it ought to be a little harder to guess */
   init_genrand(SystemTime.tv_sec ^ (SystemTime.tv_usec | (getpid() << 20)));
 
-  me.localClient = &meLocalUser;
-  dlinkAdd(&me, &me.node, &global_client_list);  /* Pointer to beginning
+  dlinkAdd(&me.client, &me.client.node, &global_client_list);  /* Pointer to beginning
 						   of Client list */
   ConfigFileEntry.dpath      = DPATH;
   ConfigFileEntry.spath      = SPATH;
@@ -555,7 +553,7 @@ main(int argc, char *argv[])
     exit(EXIT_FAILURE);
   }
 
-  strlcpy(me.id, ServerInfo.sid, sizeof(me.id));
+  strlcpy(me.client.id, ServerInfo.sid, sizeof(me.client.id));
 
   if (EmptyString(ServerInfo.name))
   {
@@ -563,7 +561,7 @@ main(int argc, char *argv[])
     exit(EXIT_FAILURE);
   }
 
-  strlcpy(me.name, ServerInfo.name, sizeof(me.name));
+  strlcpy(me.client.name, ServerInfo.name, sizeof(me.client.name));
 
   /* serverinfo{} description must exist.  If not, error out.*/
   if (EmptyString(ServerInfo.description))
@@ -572,22 +570,22 @@ main(int argc, char *argv[])
     exit(EXIT_FAILURE);
   }
 
-  strlcpy(me.info, ServerInfo.description, sizeof(me.info));
+  strlcpy(me.client.info, ServerInfo.description, sizeof(me.client.info));
 
-  me.from                   = &me;
-  me.servptr                = &me;
-  me.localClient->lasttime  = CurrentTime;
-  me.localClient->since     = CurrentTime;
-  me.localClient->firsttime = CurrentTime;
+  me.client.from      = &me.client;
+  me.client.servptr   = &me.client;
+  me.lasttime         = CurrentTime;
+  me.since            = CurrentTime;
+  me.firsttime        = CurrentTime;
 
-  SetMe(&me);
-  make_server(&me);
+  SetMe(&me.client);
+  make_server(&me.client);
 
-  hash_add_id(&me);
-  hash_add_client(&me);
+  hash_add_id(&me.client);
+  hash_add_client(&me.client);
 
   /* add ourselves to global_serv_list */
-  dlinkAdd(&me, make_dlink_node(), &global_serv_list);
+  dlinkAdd(&me.client, make_dlink_node(), &global_serv_list);
 
   load_kline_database();
   load_dline_database();

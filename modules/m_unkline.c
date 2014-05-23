@@ -102,13 +102,13 @@ mo_unkline(struct Client *source_p, int parc, char *parv[])
 
   if (!HasOFlag(source_p, OPER_FLAG_UNKLINE))
   {
-    sendto_one_numeric(source_p, &me, ERR_NOPRIVS, "unkline");
+    sendto_one_numeric(source_p, &me.client, ERR_NOPRIVS, "unkline");
     return 0;
   }
 
   if (EmptyString(parv[1]))
   {
-    sendto_one_numeric(source_p, &me, ERR_NEEDMOREPARAMS, "UNKLINE");
+    sendto_one_numeric(source_p, &me.client, ERR_NEEDMOREPARAMS, "UNKLINE");
     return 0;
   }
 
@@ -123,7 +123,7 @@ mo_unkline(struct Client *source_p, int parc, char *parv[])
                         target_server, user, host);
 
     /* Allow ON to apply local unkline as well if it matches */
-    if (match(target_server, me.name))
+    if (match(target_server, me.client.name))
       return 0;
   }
   else
@@ -132,7 +132,7 @@ mo_unkline(struct Client *source_p, int parc, char *parv[])
 
   if (remove_kline_match(host, user))
   {
-    sendto_one_notice(source_p, &me, ":K-Line for [%s@%s] is removed", user, host);
+    sendto_one_notice(source_p, &me.client, ":K-Line for [%s@%s] is removed", user, host);
     sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
                          "%s has removed the K-Line for: [%s@%s]",
                          get_oper_name(source_p), user, host);
@@ -140,7 +140,7 @@ mo_unkline(struct Client *source_p, int parc, char *parv[])
          get_oper_name(source_p), user, host);
   }
   else
-    sendto_one_notice(source_p, &me, ":No K-Line for [%s@%s] found", 
+    sendto_one_notice(source_p, &me.client, ":No K-Line for [%s@%s] found", 
 	              user, host);
   return 0;
 }
@@ -169,7 +169,7 @@ me_unkline(struct Client *source_p, int parc, char *parv[])
   kuser = parv[2];
   khost = parv[3];
 
-  if (!IsClient(source_p) || match(parv[1], me.name))
+  if (!IsClient(source_p) || match(parv[1], me.client.name))
     return 0;
 
   if (HasFlag(source_p, FLAGS_SERVICE) ||
@@ -179,7 +179,7 @@ me_unkline(struct Client *source_p, int parc, char *parv[])
   {
     if (remove_kline_match(khost, kuser))
     {
-      sendto_one_notice(source_p, &me, ":K-Line for [%s@%s] is removed",
+      sendto_one_notice(source_p, &me.client, ":K-Line for [%s@%s] is removed",
                         kuser, khost);
       sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
                            "%s has removed the K-Line for: [%s@%s]",
@@ -188,7 +188,7 @@ me_unkline(struct Client *source_p, int parc, char *parv[])
            get_oper_name(source_p), kuser, khost);
     }
     else
-      sendto_one_notice(source_p, &me, ":No K-Line for [%s@%s] found",
+      sendto_one_notice(source_p, &me.client, ":No K-Line for [%s@%s] found",
                         kuser, khost);
   }
 

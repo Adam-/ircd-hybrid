@@ -57,7 +57,7 @@ m_ping(struct Client *source_p, int parc, char *parv[])
 
   if (parc < 2 || EmptyString(parv[1]))
   {
-    sendto_one_numeric(source_p, &me, ERR_NOORIGIN);
+    sendto_one_numeric(source_p, &me.client, ERR_NOORIGIN);
     return 0;
   }
 
@@ -66,12 +66,12 @@ m_ping(struct Client *source_p, int parc, char *parv[])
 
   if (ConfigServerHide.disable_remote_commands && !HasUMode(source_p, UMODE_OPER))
   {
-    sendto_one(source_p, ":%s PONG %s :%s", me.name,
-              (destination) ? destination : me.name, origin);
+    sendto_one(source_p, ":%s PONG %s :%s", me.client.name,
+              (destination) ? destination : me.client.name, origin);
     return 0;
   }
 
-  if (!EmptyString(destination) && irccmp(destination, me.name))
+  if (!EmptyString(destination) && irccmp(destination, me.client.name))
   {
     /* We're sending it across servers.. origin == source_p->name --fl_ */
     origin = source_p->name;
@@ -80,11 +80,11 @@ m_ping(struct Client *source_p, int parc, char *parv[])
       sendto_one(target_p, ":%s PING %s :%s", source_p->name,
                  origin, destination);
     else
-      sendto_one_numeric(source_p, &me, ERR_NOSUCHSERVER, destination);
+      sendto_one_numeric(source_p, &me.client, ERR_NOSUCHSERVER, destination);
   }
   else
-    sendto_one(source_p, ":%s PONG %s :%s", me.name,
-               (destination) ? destination : me.name, origin);
+    sendto_one(source_p, ":%s PONG %s :%s", me.client.name,
+               (destination) ? destination : me.client.name, origin);
   return 0;
 }
 
@@ -108,24 +108,24 @@ ms_ping(struct Client *source_p, int parc, char *parv[])
 
   if (parc < 2 || EmptyString(parv[1]))
   {
-    sendto_one_numeric(source_p, &me, ERR_NOORIGIN);
+    sendto_one_numeric(source_p, &me.client, ERR_NOORIGIN);
     return 0;
   }
 
   origin = source_p->name;
   destination = parv[2];  /* Will get NULL or pointer (parc >= 2!!) */
 
-  if (!EmptyString(destination) && irccmp(destination, me.name) && irccmp(destination, me.id))
+  if (!EmptyString(destination) && irccmp(destination, me.client.name) && irccmp(destination, me.client.id))
   {
     if ((target_p = hash_find_server(destination)))
       sendto_one(target_p, ":%s PING %s :%s", source_p->name,
                  origin, destination);
     else
-      sendto_one_numeric(source_p, &me, ERR_NOSUCHSERVER, destination);
+      sendto_one_numeric(source_p, &me.client, ERR_NOSUCHSERVER, destination);
   }
   else
-    sendto_one(source_p, ":%s PONG %s :%s", ID_or_name(&me, source_p),
-               (destination) ? destination : me.name, origin);
+    sendto_one(source_p, ":%s PONG %s :%s", ID_or_name(&me.client, source_p),
+               (destination) ? destination : me.client.name, origin);
   return 0;
 }
 

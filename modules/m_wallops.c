@@ -53,13 +53,13 @@ mo_wallops(struct Client *source_p, int parc, char *parv[])
 
   if (!HasOFlag(source_p, OPER_FLAG_WALLOPS))
   {
-    sendto_one_numeric(source_p, &me, ERR_NOPRIVS, "wallops");
+    sendto_one_numeric(source_p, &me.client, ERR_NOPRIVS, "wallops");
     return 0;
   }
 
   if (EmptyString(message))
   {
-    sendto_one_numeric(source_p, &me, ERR_NEEDMOREPARAMS, "WALLOPS");
+    sendto_one_numeric(source_p, &me.client, ERR_NEEDMOREPARAMS, "WALLOPS");
     return 0;
   }
 

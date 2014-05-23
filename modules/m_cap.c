@@ -157,7 +157,7 @@ send_caplist(struct Client *source_p, unsigned int set,
   unsigned int i, loc, len, flags, pfx_len, clen;
 
   /* Set up the buffer for the final LS message... */
-  clen = snprintf(cmdbuf, sizeof(capbuf), ":%s CAP %s %s ", me.name,
+  clen = snprintf(cmdbuf, sizeof(capbuf), ":%s CAP %s %s ", me.client.name,
                   source_p->name[0] ? source_p->name : "*", subcmd);
 
   for (i = 0, loc = 0; i < CAPAB_LIST_LEN; ++i)
@@ -236,7 +236,7 @@ cap_req(struct Client *source_p, const char *caplist)
     if (!(cap = find_cap(&cl, &neg)) /* Look up capability... */
         || (!neg && (cap->flags & CAPFL_PROHIBIT))  /* Is it prohibited? */
         || (neg && (cap->flags & CAPFL_STICKY))) {  /* Is it sticky? */
-      sendto_one(source_p, ":%s CAP %s NAK :%s", me.name,
+      sendto_one(source_p, ":%s CAP %s NAK :%s", me.client.name,
                  source_p->name[0] ? source_p->name : "*", caplist);
       return 0;  /* Can't complete requested op... */
     }
@@ -401,7 +401,7 @@ m_cap(struct Client *source_p, int parc, char *parv[])
                       sizeof(cmdlist) / sizeof(struct subcmd),
                       sizeof(struct subcmd), (bqcmp)subcmd_search)))
   {
-    sendto_one_numeric(source_p, &me, ERR_INVALIDCAPCMD, subcmd);
+    sendto_one_numeric(source_p, &me.client, ERR_INVALIDCAPCMD, subcmd);
     return 0;
   }
 

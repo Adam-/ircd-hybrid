@@ -101,10 +101,10 @@ write_links_file(void *notused)
      * - madmax
      */
     snprintf(buff, sizeof(buff), "%s %s :1 %s",   target_p->name,
-             me.name, target_p->info);
+             me.client.name, target_p->info);
     dlinkAddTail(xstrdup(buff), make_dlink_node(), &flatten_links);
     snprintf(buff, sizeof(buff), "%s %s :1 %s\n", target_p->name,
-             me.name, target_p->info);
+             me.client.name, target_p->info);
 
     fputs(buff, file);
   }
@@ -164,7 +164,7 @@ hunt_server(struct Client *source_p, const char *command,
   if (parc <= server || EmptyString(parv[server]))
     return HUNTED_ISME;
 
-  if (!strcmp(parv[server], me.id) || !match(parv[server], me.name))
+  if (!strcmp(parv[server], me.client.id) || !match(parv[server], me.client.name))
     return HUNTED_ISME;
 
   /* These are to pickup matches that would cause the following
@@ -193,7 +193,7 @@ hunt_server(struct Client *source_p, const char *command,
     {
       if (!(target_p = hash_find_server(parv[server])))
       {
-        sendto_one_numeric(source_p, &me, ERR_NOSUCHSERVER, parv[server]);
+        sendto_one_numeric(source_p, &me.client, ERR_NOSUCHSERVER, parv[server]);
         return HUNTED_NOSUCH;
       }
     }
@@ -220,7 +220,7 @@ hunt_server(struct Client *source_p, const char *command,
   {
     if (!IsRegistered(target_p))
     {
-      sendto_one_numeric(source_p, &me, ERR_NOSUCHSERVER, parv[server]);
+      sendto_one_numeric(source_p, &me.client, ERR_NOSUCHSERVER, parv[server]);
       return HUNTED_NOSUCH;
     }
 
@@ -237,7 +237,7 @@ hunt_server(struct Client *source_p, const char *command,
     return HUNTED_PASS;
   }
 
-  sendto_one_numeric(source_p, &me, ERR_NOSUCHSERVER, parv[server]);
+  sendto_one_numeric(source_p, &me.client, ERR_NOSUCHSERVER, parv[server]);
   return HUNTED_NOSUCH;
 }
 
@@ -645,7 +645,7 @@ serv_connect(struct MaskItem *conf, struct Client *by)
                          "Server %s already present from %s",
                          conf->name, get_client_name(client_p, MASK_IP));
     if (by && IsClient(by) && !MyClient(by))
-      sendto_one_notice(by, &me, ":Server %s already present from %s",
+      sendto_one_notice(by, &me.client, ":Server %s already present from %s",
                         conf->name, get_client_name(client_p, MASK_IP));
     return 0;
   }
@@ -683,7 +683,7 @@ serv_connect(struct MaskItem *conf, struct Client *by)
                          "Host %s is not enabled for connecting: no connect{} block",
                          conf->name);
     if (by && IsClient(by) && !MyClient(by))
-      sendto_one_notice(by, &me, ":Connect to host %s failed.", client_p->name);
+      sendto_one_notice(by, &me.client, ":Connect to host %s failed.", client_p->name);
 
     SetDead(client_p);
     exit_client(client_p, "Connection failed");
@@ -808,13 +808,13 @@ finish_ssl_server_handshake(struct Client *client_p)
     return;
   }
 
-  sendto_one(client_p, "PASS %s TS %d %s", conf->spasswd, TS_CURRENT, me.id);
+  sendto_one(client_p, "PASS %s TS %d %s", conf->spasswd, TS_CURRENT, me.client.id);
 
   send_capabilities(client_p, 0);
 
   sendto_one(client_p, "SERVER %s 1 :%s%s",
-             me.name, ConfigServerHide.hidden ? "(H) " : "",
-             me.info);
+             me.client.name, ConfigServerHide.hidden ? "(H) " : "",
+             me.client.info);
 
   /* If we've been marked dead because a send failed, just exit
    * here now and save everyone the trouble of us ever existing.
@@ -988,12 +988,12 @@ serv_connect_callback(fde_t *fd, int status, void *data)
   }
 #endif
 
-  sendto_one(client_p, "PASS %s TS %d %s", conf->spasswd, TS_CURRENT, me.id);
+  sendto_one(client_p, "PASS %s TS %d %s", conf->spasswd, TS_CURRENT, me.client.id);
 
   send_capabilities(client_p, 0);
 
-  sendto_one(client_p, "SERVER %s 1 :%s%s", me.name,
-             ConfigServerHide.hidden ? "(H) " : "", me.info);
+  sendto_one(client_p, "SERVER %s 1 :%s%s", me.client.name,
+             ConfigServerHide.hidden ? "(H) " : "", me.client.info);
 
   /* If we've been marked dead because a send failed, just exit
    * here now and save everyone the trouble of us ever existing.

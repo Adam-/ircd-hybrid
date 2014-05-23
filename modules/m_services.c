@@ -52,7 +52,7 @@ do_service_alias(struct Client *source_p, const char *name, const char *msg)
 
   if (EmptyString(msg))
   {
-    sendto_one_numeric(source_p, &me, ERR_NOTEXTTOSEND);
+    sendto_one_numeric(source_p, &me.client, ERR_NOTEXTTOSEND);
     return;
   }
 
@@ -66,7 +66,7 @@ do_service_alias(struct Client *source_p, const char *name, const char *msg)
     return;
   }
 
-  sendto_one_numeric(source_p, &me, ERR_SERVICESDOWN, name);
+  sendto_one_numeric(source_p, &me.client, ERR_SERVICESDOWN, name);
 }
 
 static int

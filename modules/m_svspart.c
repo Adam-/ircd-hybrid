@@ -52,13 +52,13 @@ part_one_client(struct Client *target_p, const char *name, const char *reason)
 
   if ((chptr = hash_find_channel(name)) == NULL)
   {
-    sendto_one_numeric(target_p, &me, ERR_NOSUCHCHANNEL, name);
+    sendto_one_numeric(target_p, &me.client, ERR_NOSUCHCHANNEL, name);
     return;
   }
 
   if ((ms = find_channel_link(target_p, chptr)) == NULL)
   {
-    sendto_one_numeric(target_p, &me, ERR_NOTONCHANNEL, chptr->chname);
+    sendto_one_numeric(target_p, &me.client, ERR_NOTONCHANNEL, chptr->chname);
     return;
   }
 

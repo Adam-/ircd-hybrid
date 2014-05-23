@@ -57,7 +57,7 @@ parse_resv(struct Client *source_p, char *name, int tkline_time, char *reason)
 
     if ((conf = create_resv(name, reason, NULL)) == NULL)
     {
-      sendto_one_notice(source_p, &me, ":A RESV has already been placed on channel: %s",
+      sendto_one_notice(source_p, &me.client, ":A RESV has already been placed on channel: %s",
                         name);
       return;
     }
@@ -67,7 +67,7 @@ parse_resv(struct Client *source_p, char *name, int tkline_time, char *reason)
 
     if (tkline_time)
     {
-      sendto_one_notice(source_p, &me, ":A %d minute %s RESV has been placed on channel: %s",
+      sendto_one_notice(source_p, &me.client, ":A %d minute %s RESV has been placed on channel: %s",
                         tkline_time/60, (MyClient(source_p) ? "local" : "remote"), name);
       sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
                            "%s has placed a %d minute %s RESV on channel: %s [%s]",
@@ -82,7 +82,7 @@ parse_resv(struct Client *source_p, char *name, int tkline_time, char *reason)
     }
     else
     {
-      sendto_one_notice(source_p, &me, ":A %s RESV has been placed on channel %s",
+      sendto_one_notice(source_p, &me.client, ":A %s RESV has been placed on channel %s",
                         (MyClient(source_p) ? "local" : "remote"), name);
       sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
                            "%s has placed a %s RESV on channel %s : [%s]",
@@ -97,20 +97,20 @@ parse_resv(struct Client *source_p, char *name, int tkline_time, char *reason)
 
     if (!valid_wild_card_simple(name))
     {
-      sendto_one_notice(source_p, &me, ":Please include at least %d non-wildcard characters with the resv",
+      sendto_one_notice(source_p, &me.client, ":Please include at least %d non-wildcard characters with the resv",
                         ConfigFileEntry.min_nonwildcard_simple);
       return;
     }
 
     if (!HasUMode(source_p, UMODE_ADMIN) && has_wildcards(name))
     {
-      sendto_one_notice(source_p, &me, ":You must be an admin to perform a wildcard RESV");
+      sendto_one_notice(source_p, &me.client, ":You must be an admin to perform a wildcard RESV");
       return;
     }
 
     if ((conf = create_resv(name, reason, NULL)) == NULL)
     {
-      sendto_one_notice(source_p, &me, ":A RESV has already been placed on nick %s",
+      sendto_one_notice(source_p, &me.client, ":A RESV has already been placed on nick %s",
                         name);
       return;
     }
@@ -120,7 +120,7 @@ parse_resv(struct Client *source_p, char *name, int tkline_time, char *reason)
 
     if (tkline_time)
     {
-      sendto_one_notice(source_p, &me, ":A %d minute %s RESV has been placed on nick %s : [%s]",
+      sendto_one_notice(source_p, &me.client, ":A %d minute %s RESV has been placed on nick %s : [%s]",
                         tkline_time/60, (MyClient(source_p) ? "local" : "remote"),
                         conf->name, conf->reason);
       sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
@@ -134,7 +134,7 @@ parse_resv(struct Client *source_p, char *name, int tkline_time, char *reason)
     }
     else
     {
-      sendto_one_notice(source_p, &me, ":A %s RESV has been placed on nick %s : [%s]",
+      sendto_one_notice(source_p, &me.client, ":A %s RESV has been placed on nick %s : [%s]",
                         (MyClient(source_p) ? "local" : "remote"), conf->name, conf->reason);
       sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
                            "%s has placed a %s RESV on nick %s : [%s]",
@@ -176,7 +176,7 @@ mo_resv(struct Client *source_p, int parc, char *parv[])
                          "RESV %s %s :%s",
                          target_server, resv, reason);
     /* Allow ON to apply local resv as well if it matches */
-    if (match(target_server, me.name))
+    if (match(target_server, me.client.name))
       return 0;
   }
   else
@@ -239,7 +239,7 @@ ms_resv(struct Client *source_p, int parc, char *parv[])
                      "RESV %s %s :%s",
                      parv[1], parv[2], parv[3]);
 
-  if (!IsClient(source_p) || match(parv[1], me.name))
+  if (!IsClient(source_p) || match(parv[1], me.client.name))
     return 0;
 
   if (HasFlag(source_p, FLAGS_SERVICE) || find_matching_name_conf(CONF_ULINE, source_p->servptr->name,

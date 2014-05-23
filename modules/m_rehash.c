@@ -57,7 +57,7 @@ mo_rehash(struct Client *source_p, int parc, char *parv[])
 
   if (!HasOFlag(source_p, OPER_FLAG_REHASH))
   {
-    sendto_one_numeric(source_p, &me, ERR_NOPRIVS, "rehash");
+    sendto_one_numeric(source_p, &me.client, ERR_NOPRIVS, "rehash");
     return 0;
   }
 
@@ -65,7 +65,7 @@ mo_rehash(struct Client *source_p, int parc, char *parv[])
   {
     if (irccmp(parv[1], "DNS") == 0)
     {
-      sendto_one_numeric(source_p, &me, RPL_REHASHING, "DNS");
+      sendto_one_numeric(source_p, &me.client, RPL_REHASHING, "DNS");
       sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
                            "%s is rehashing DNS",
                            get_oper_name(source_p));
@@ -86,12 +86,12 @@ mo_rehash(struct Client *source_p, int parc, char *parv[])
       ilog(LOG_TYPE_IRCD, "REHASH %s From %s",
            parv[1], get_oper_name(source_p));
     else
-      sendto_one_notice(source_p, &me, ":%s is not a valid option. "
+      sendto_one_notice(source_p, &me.client, ":%s is not a valid option. "
                         "Choose from DNS, MOTD", parv[1]);
   }
   else
   {
-    sendto_one_numeric(source_p, &me, RPL_REHASHING, ConfigFileEntry.configfile);
+    sendto_one_numeric(source_p, &me.client, RPL_REHASHING, ConfigFileEntry.configfile);
     sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
                          "%s is rehashing configuration file(s)",
                          get_oper_name(source_p));

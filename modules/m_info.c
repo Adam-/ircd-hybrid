@@ -535,9 +535,9 @@ static const struct InfoStruct info_table[] =
 static void
 send_birthdate_online_time(struct Client *source_p)
 {
-  sendto_one_numeric(source_p, &me, RPL_INFO|SND_EXPLICIT,
+  sendto_one_numeric(source_p, &me.client, RPL_INFO|SND_EXPLICIT,
                      ":On-line since %s",
-                     myctime(me.localClient->firsttime));
+                     myctime(me.firsttime));
 }
 
 /* send_conf_options()
@@ -561,7 +561,7 @@ send_conf_options(struct Client *source_p)
       {
         const char *option = *((const char *const *)iptr->option);
 
-        sendto_one_numeric(source_p, &me, RPL_INFO|SND_EXPLICIT,
+        sendto_one_numeric(source_p, &me.client, RPL_INFO|SND_EXPLICIT,
                            ":%-30s %-5s [%-30s]",
                            iptr->name, option ? option : "NONE",
                            iptr->desc ? iptr->desc : "<none>");
@@ -573,7 +573,7 @@ send_conf_options(struct Client *source_p)
       {
         const char *option = iptr->option;
 
-        sendto_one_numeric(source_p, &me, RPL_INFO|SND_EXPLICIT,
+        sendto_one_numeric(source_p, &me.client, RPL_INFO|SND_EXPLICIT,
                            ":%-30s %-5s [%-30s]",
                            iptr->name, option ? option : "NONE",
                            iptr->desc ? iptr->desc : "<none>");
@@ -585,7 +585,7 @@ send_conf_options(struct Client *source_p)
       {
         const int option = *((const int *const)iptr->option);
 
-        sendto_one_numeric(source_p, &me, RPL_INFO|SND_EXPLICIT,
+        sendto_one_numeric(source_p, &me.client, RPL_INFO|SND_EXPLICIT,
                            ":%-30s %-5d [%-30s]",
                            iptr->name, option, iptr->desc ? iptr->desc : "<none>");
         break;
@@ -596,7 +596,7 @@ send_conf_options(struct Client *source_p)
       {
         const int option = *((const int *const)iptr->option);
 
-        sendto_one_numeric(source_p, &me, RPL_INFO|SND_EXPLICIT,
+        sendto_one_numeric(source_p, &me.client, RPL_INFO|SND_EXPLICIT,
                            ":%-30s %-5s [%-30s]",
                            iptr->name, option ? "ON" : "OFF",
                            iptr->desc ? iptr->desc : "<none>");
@@ -609,7 +609,7 @@ send_conf_options(struct Client *source_p)
       {
         const int option = *((const int *const)iptr->option);
 
-        sendto_one_numeric(source_p, &me, RPL_INFO|SND_EXPLICIT,
+        sendto_one_numeric(source_p, &me.client, RPL_INFO|SND_EXPLICIT,
                            ":%-30s %-5s [%-30s]",
                            iptr->name, option ? "YES" : "NO",
                            iptr->desc ? iptr->desc : "<none>");
@@ -620,7 +620,7 @@ send_conf_options(struct Client *source_p)
       {
         const int option = *((const int *const)iptr->option);
 
-        sendto_one_numeric(source_p, &me, RPL_INFO|SND_EXPLICIT,
+        sendto_one_numeric(source_p, &me.client, RPL_INFO|SND_EXPLICIT,
                            ":%-30s %-5s [%-30s]",
                            iptr->name, option ? ((option == 1) ? "MASK" : "YES") : "NO",
                            iptr->desc ? iptr->desc : "<none>");
@@ -629,7 +629,7 @@ send_conf_options(struct Client *source_p)
     }
   }
 
-  sendto_one_numeric(source_p, &me, RPL_INFO, "");
+  sendto_one_numeric(source_p, &me.client, RPL_INFO, "");
 }
 
 /* send_info_text()
@@ -655,7 +655,7 @@ send_info_text(struct Client *source_p)
     if (*line == '\0')
       line = " ";
 
-    sendto_one_numeric(source_p, &me, RPL_INFO, line);
+    sendto_one_numeric(source_p, &me.client, RPL_INFO, line);
   }
 
   if (HasUMode(source_p, UMODE_OPER))
@@ -663,7 +663,7 @@ send_info_text(struct Client *source_p)
 
   send_birthdate_online_time(source_p);
 
-  sendto_one_numeric(source_p, &me, RPL_ENDOFINFO);
+  sendto_one_numeric(source_p, &me.client, RPL_ENDOFINFO);
 }
 
 /*! \brief INFO command handler
@@ -684,7 +684,7 @@ m_info(struct Client *source_p, int parc, char *parv[])
 
   if ((last_used + ConfigFileEntry.pace_wait) > CurrentTime)
   {
-    sendto_one_numeric(source_p, &me, RPL_LOAD2HI);
+    sendto_one_numeric(source_p, &me.client, RPL_LOAD2HI);
     return 0;
   }
 

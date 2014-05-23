@@ -73,7 +73,7 @@ mo_hash(struct Client *source_p, int parc, char *parv[])
     }
   }
 
-  sendto_one_notice(source_p, &me, ":Client: entries: %u buckets: %u "
+  sendto_one_notice(source_p, &me.client, ":Client: entries: %u buckets: %u "
                     "max chain: %u", count, buckets, max_chain);
 
   count     = 0;
@@ -95,7 +95,7 @@ mo_hash(struct Client *source_p, int parc, char *parv[])
     }
   }
 
-  sendto_one_notice(source_p, &me, ":Channel: entries: %u buckets: %u "
+  sendto_one_notice(source_p, &me.client, ":Channel: entries: %u buckets: %u "
                     "max chain: %u", count, buckets, max_chain);
 
   count     = 0;
@@ -117,7 +117,7 @@ mo_hash(struct Client *source_p, int parc, char *parv[])
     }
   }
 
-  sendto_one_notice(source_p, &me, ":Id: entries: %u buckets: %u "
+  sendto_one_notice(source_p, &me.client, ":Id: entries: %u buckets: %u "
                     "max chain: %u", count, buckets, max_chain);
 
   count     = 0;
@@ -139,7 +139,7 @@ mo_hash(struct Client *source_p, int parc, char *parv[])
     }
   }
 
-  sendto_one_notice(source_p, &me, ":UserHost: entries: %u buckets: %u "
+  sendto_one_notice(source_p, &me.client, ":UserHost: entries: %u buckets: %u "
                     "max chain: %u", count, buckets, max_chain);
   return 0;
 }

@@ -96,7 +96,7 @@ m_kline_add_kline(struct Client *source_p, struct MaskItem *conf,
                          get_oper_name(source_p), tkline_time/60,
                          conf->user, conf->host,
                          conf->reason);
-    sendto_one_notice(source_p, &me, ":Added temporary %d min. K-Line [%s@%s]",
+    sendto_one_notice(source_p, &me.client, ":Added temporary %d min. K-Line [%s@%s]",
                       tkline_time/60, conf->user, conf->host);
     ilog(LOG_TYPE_KLINE, "%s added temporary %d min. K-Line for [%s@%s] [%s]",
          get_oper_name(source_p), tkline_time/60,
@@ -108,7 +108,7 @@ m_kline_add_kline(struct Client *source_p, struct MaskItem *conf,
                          "%s added K-Line for [%s@%s] [%s]",
                          get_oper_name(source_p),
                          conf->user, conf->host, conf->reason);
-    sendto_one_notice(source_p, &me, ":Added K-Line [%s@%s]",
+    sendto_one_notice(source_p, &me.client, ":Added K-Line [%s@%s]",
                       conf->user, conf->host);
     ilog(LOG_TYPE_KLINE, "%s added K-Line for [%s@%s] [%s]",
          get_oper_name(source_p), conf->user, conf->host, conf->reason);
@@ -157,7 +157,7 @@ already_placed_kline(struct Client *source_p, const char *luser, const char *lho
     if (warn)
     {
       reason = conf->reason ? conf->reason : CONF_NOREASON;
-      sendto_one_notice(source_p, &me, ":[%s@%s] already K-Lined by [%s@%s] - %s",
+      sendto_one_notice(source_p, &me.client, ":[%s@%s] already K-Lined by [%s@%s] - %s",
                         luser, lhost, conf->user, conf->host, reason);
     }
 
@@ -190,7 +190,7 @@ mo_kline(struct Client *source_p, int parc, char *parv[])
 
   if (!HasOFlag(source_p, OPER_FLAG_K))
   {
-    sendto_one_numeric(source_p, &me, ERR_NOPRIVS, "kline");
+    sendto_one_numeric(source_p, &me.client, ERR_NOPRIVS, "kline");
     return 0;
   }
 
@@ -205,7 +205,7 @@ mo_kline(struct Client *source_p, int parc, char *parv[])
                        user, host, reason);
 
     /* Allow ON to apply local kline as well if it matches */
-    if (match(target_server, me.name))
+    if (match(target_server, me.client.name))
       return 0;
   }
   else
@@ -245,7 +245,7 @@ me_kline(struct Client *source_p, int parc, char *parv[])
   if (parc != 6 || EmptyString(parv[5]))
     return 0;
 
-  if (match(parv[1], me.name))
+  if (match(parv[1], me.client.name))
     return 0;
 
   tkline_time = valid_tkline(parv[2], TK_SECONDS);

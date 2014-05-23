@@ -54,13 +54,13 @@ mo_locops(struct Client *source_p, int parc, char *parv[])
 
   if (!HasOFlag(source_p, OPER_FLAG_LOCOPS))
   {
-    sendto_one_numeric(source_p, &me, ERR_NOPRIVS, "locops");
+    sendto_one_numeric(source_p, &me.client, ERR_NOPRIVS, "locops");
     return 0;
   }
 
   if (EmptyString(message))
   {
-    sendto_one_numeric(source_p, &me, ERR_NEEDMOREPARAMS, "LOCOPS");
+    sendto_one_numeric(source_p, &me.client, ERR_NEEDMOREPARAMS, "LOCOPS");
     return 0;
   }
 
@@ -91,7 +91,7 @@ ms_locops(struct Client *source_p, int parc, char *parv[])
   sendto_match_servs(source_p, parv[1], CAP_CLUSTER, "LOCOPS %s :%s",
                      parv[1], parv[2]);
 
-  if (match(parv[1], me.name))
+  if (match(parv[1], me.client.name))
     return 0;
 
   if (find_matching_name_conf(CONF_ULINE, source_p->servptr->name,

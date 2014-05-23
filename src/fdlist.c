@@ -165,7 +165,7 @@ fd_dump(struct Client *source_p)
 {
   for (unsigned int i = 0; i < FD_HASH_SIZE; ++i)
     for (fde_t *F = fd_hash[i]; F; F = F->hnext)
-      sendto_one_numeric(source_p, &me, RPL_STATSDEBUG|SND_EXPLICIT,
+      sendto_one_numeric(source_p, &me.client, RPL_STATSDEBUG|SND_EXPLICIT,
                          "F :fd %-5d desc '%s'", F->fd, F->desc);
 }
 

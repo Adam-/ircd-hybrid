@@ -124,7 +124,7 @@ parse_client_queued(struct Client *client_p)
 {
   int dolen = 0;
   int checkflood = 1;
-  struct LocalUser *lclient_p = client_p->localClient;
+  struct LocalClient *lclient_p = client_p->localClient;
 
   if (IsUnknown(client_p))
   {
@@ -249,7 +249,7 @@ void
 flood_recalc(fde_t *fd, void *data)
 {
   struct Client *client_p = data;
-  struct LocalUser *lclient_p = client_p->localClient;
+  struct LocalClient *lclient_p = client_p->localClient;
 
   /* allow a bursting client their allocation per second, allow
    * a client whos flooding an extra 2 per second
@@ -388,14 +388,14 @@ client_dopacket(struct Client *client_p, char *buffer, size_t length)
   /*
    * Update messages received
    */
-  ++me.localClient->recv.messages;
+  ++me.recv.messages;
   ++client_p->localClient->recv.messages;
 
   /*
    * Update bytes received
    */
   client_p->localClient->recv.bytes += length;
-  me.localClient->recv.bytes += length;
+  me.recv.bytes += length;
 
   parse(client_p, buffer, buffer + length);
 }

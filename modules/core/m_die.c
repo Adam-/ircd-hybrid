@@ -54,19 +54,19 @@ mo_die(struct Client *source_p, int parc, char *parv[])
 
   if (!HasOFlag(source_p, OPER_FLAG_DIE))
   {
-    sendto_one_numeric(source_p, &me, ERR_NOPRIVS, "die");
+    sendto_one_numeric(source_p, &me.client, ERR_NOPRIVS, "die");
     return 0;
   }
 
   if (parc < 2 || EmptyString(parv[1]))
   {
-    sendto_one_notice(source_p, &me, ":Need server name /die %s", me.name);
+    sendto_one_notice(source_p, &me.client, ":Need server name /die %s", me.client.name);
     return 0;
   }
 
-  if (irccmp(parv[1], me.name))
+  if (irccmp(parv[1], me.client.name))
   {
-    sendto_one_notice(source_p, &me, ":Mismatch on /die %s", me.name);
+    sendto_one_notice(source_p, &me.client, ":Mismatch on /die %s", me.client.name);
     return 0;
   }
 

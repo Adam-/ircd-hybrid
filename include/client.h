@@ -307,13 +307,77 @@ struct ListTask
   unsigned int topicts_max;
 };
 
-/*! \brief LocalUser structure
+/*! \brief Client structure */
+struct Client
+{
+  dlink_node node;
+  dlink_node lnode;             /**< Used for Server->servers/users */
+
+  struct LocalClient *localClient;
+  struct Client    *hnext;      /**< For client hash table lookups by name */
+  struct Client    *idhnext;    /**< For SID hash table lookups by sid */
+  struct Server    *serv;       /**< ...defined, if this is a server */
+  struct Client    *servptr;    /**< Points to server this Client is on */
+  struct Client    *from;       /**< == self, if Local Client, *NEVER* NULL! */
+
+  time_t            tsinfo;     /**< TS on the nick, SVINFO on server */
+
+  unsigned int      flags;      /**< Client flags */
+  unsigned int      umodes;     /**< Opers, normal users subset */
+  unsigned int      hopcount;   /**< Number of servers to this 0 = local */
+  unsigned int      status;     /**< Client type */
+  unsigned int      handler;    /**< Handler index */
+
+  dlink_list        whowas;
+  dlink_list        channel;   /**< Chain of channel pointer blocks */
+
+  char away[AWAYLEN + 1]; /**< Client's AWAY message. Can be set/unset via AWAY command */
+  char name[HOSTLEN + 1]; /**< Unique name for a client nick or host */
+  char svid[SVIDLEN + 1]; /**< Services ID */
+  char id[IDLEN + 1];       /**< Client ID, unique ID per client */
+
+  /*
+   * client->username is the username from ident or the USER message,
+   * If the client is idented the USER message is ignored, otherwise
+   * the username part of the USER message is put here prefixed with a
+   * tilde depending on the auth{} block. Once a client has registered,
+   * this field should be considered read-only.
+   */
+  char              username[USERLEN + 1]; /* client's username */
+
+  /*
+   * client->host contains the resolved name or ip address
+   * as a string for the user, it may be fiddled with for oper spoofing etc.
+   * once it's changed the *real* address goes away. This should be
+   * considered a read-only field after the client has registered.
+   */
+  char              host[HOSTLEN + 1];     /* client's hostname */
+
+  /*
+   * client->info for unix clients will normally contain the info from the
+   * gcos field in /etc/passwd but anything can go here.
+   */
+  char              info[REALLEN + 1]; /* Free form additional client info */
+
+  /*
+   * client->sockhost contains the ip address gotten from the socket as a
+   * string, this field should be considered read-only once the connection
+   * has been made. (set in s_bsd.c only)
+   */
+  char              sockhost[HOSTIPLEN + 1]; /* This is the host name from the
+                                                socket ip address as string */
+  char             *certfp;
+};
+
+/*! \brief LocalClient structure
  *
  * Allocated only for local clients, that are directly connected
  * to \b this server with a socket.
  */
-struct LocalUser
+struct LocalClient
 {
+  struct Client client;
+
   dlink_node   lclient_node;
 
   unsigned int registration;
@@ -380,70 +444,8 @@ struct LocalUser
   char*          auth_oper; /**< Operator to become if they supply the response */
 };
 
-/*! \brief Client structure */
-struct Client
-{
-  dlink_node node;
-  dlink_node lnode;             /**< Used for Server->servers/users */
 
-  struct LocalUser *localClient;
-  struct Client    *hnext;      /**< For client hash table lookups by name */
-  struct Client    *idhnext;    /**< For SID hash table lookups by sid */
-  struct Server    *serv;       /**< ...defined, if this is a server */
-  struct Client    *servptr;    /**< Points to server this Client is on */
-  struct Client    *from;       /**< == self, if Local Client, *NEVER* NULL! */
-
-  time_t            tsinfo;     /**< TS on the nick, SVINFO on server */
-
-  unsigned int      flags;      /**< Client flags */
-  unsigned int      umodes;     /**< Opers, normal users subset */
-  unsigned int      hopcount;   /**< Number of servers to this 0 = local */
-  unsigned int      status;     /**< Client type */
-  unsigned int      handler;    /**< Handler index */
-
-  dlink_list        whowas;
-  dlink_list        channel;   /**< Chain of channel pointer blocks */
-
-  char away[AWAYLEN + 1]; /**< Client's AWAY message. Can be set/unset via AWAY command */
-  char name[HOSTLEN + 1]; /**< Unique name for a client nick or host */
-  char svid[SVIDLEN + 1]; /**< Services ID */
-  char id[IDLEN + 1];       /**< Client ID, unique ID per client */
-
-  /*
-   * client->username is the username from ident or the USER message,
-   * If the client is idented the USER message is ignored, otherwise
-   * the username part of the USER message is put here prefixed with a
-   * tilde depending on the auth{} block. Once a client has registered,
-   * this field should be considered read-only.
-   */
-  char              username[USERLEN + 1]; /* client's username */
-
-  /*
-   * client->host contains the resolved name or ip address
-   * as a string for the user, it may be fiddled with for oper spoofing etc.
-   * once it's changed the *real* address goes away. This should be
-   * considered a read-only field after the client has registered.
-   */
-  char              host[HOSTLEN + 1];     /* client's hostname */
-
-  /*
-   * client->info for unix clients will normally contain the info from the
-   * gcos field in /etc/passwd but anything can go here.
-   */
-  char              info[REALLEN + 1]; /* Free form additional client info */
-
-  /*
-   * client->sockhost contains the ip address gotten from the socket as a
-   * string, this field should be considered read-only once the connection
-   * has been made. (set in s_bsd.c only)
-   */
-  char              sockhost[HOSTIPLEN + 1]; /* This is the host name from the
-                                                socket ip address as string */
-  char             *certfp;
-};
-
-
-extern struct Client me;
+extern struct LocalClient me;
 extern dlink_list listing_client_list;
 extern dlink_list global_client_list;
 extern dlink_list unknown_list;       /* unknown clients ON this server only        */

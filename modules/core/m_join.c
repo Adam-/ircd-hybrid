@@ -111,7 +111,7 @@ m_join(struct Client *source_p, int parc, char *parv[])
 
   if (EmptyString(parv[1]))
   {
-    sendto_one_numeric(source_p, &me, ERR_NEEDMOREPARAMS, "JOIN");
+    sendto_one_numeric(source_p, &me.client, ERR_NEEDMOREPARAMS, "JOIN");
     return 0;
   }
 
@@ -133,7 +133,7 @@ m_join(struct Client *source_p, int parc, char *parv[])
 
     if (!check_channel_name(chan, 1))
     {
-      sendto_one_numeric(source_p, &me, ERR_BADCHANNAME, chan);
+      sendto_one_numeric(source_p, &me.client, ERR_BADCHANNAME, chan);
       continue;
     }
 
@@ -142,7 +142,7 @@ m_join(struct Client *source_p, int parc, char *parv[])
         ((conf = match_find_resv(chan)) && !resv_find_exempt(source_p, conf)))
     {
       ++conf->count;
-      sendto_one_numeric(source_p, &me, ERR_CHANBANREASON,
+      sendto_one_numeric(source_p, &me.client, ERR_CHANBANREASON,
                          chan, conf->reason ? conf->reason : "Reserved channel");
       sendto_realops_flags(UMODE_SPY, L_ALL, SEND_NOTICE,
                            "Forbidding reserved channel %s from user %s",
@@ -155,7 +155,7 @@ m_join(struct Client *source_p, int parc, char *parv[])
          ConfigChannel.max_chans_per_oper :
          ConfigChannel.max_chans_per_user))
     {
-      sendto_one_numeric(source_p, &me, ERR_TOOMANYCHANNELS, chan);
+      sendto_one_numeric(source_p, &me.client, ERR_TOOMANYCHANNELS, chan);
       break;
     }
 
@@ -167,7 +167,7 @@ m_join(struct Client *source_p, int parc, char *parv[])
       if (splitmode && !HasUMode(source_p, UMODE_OPER) &&
           ConfigChannel.no_join_on_split)
       {
-        sendto_one_numeric(source_p, &me, ERR_UNAVAILRESOURCE, chan);
+        sendto_one_numeric(source_p, &me.client, ERR_UNAVAILRESOURCE, chan);
         continue;
       }
 
@@ -176,7 +176,7 @@ m_join(struct Client *source_p, int parc, char *parv[])
        */
       if ((i = can_join(source_p, chptr, key)))
       {
-        sendto_one_numeric(source_p, &me, i, chptr->chname);
+        sendto_one_numeric(source_p, &me.client, i, chptr->chname);
         continue;
       }
 
@@ -194,7 +194,7 @@ m_join(struct Client *source_p, int parc, char *parv[])
       if (splitmode && !HasUMode(source_p, UMODE_OPER) &&
           (ConfigChannel.no_create_on_split || ConfigChannel.no_join_on_split))
       {
-        sendto_one_numeric(source_p, &me, ERR_UNAVAILRESOURCE, chan);
+        sendto_one_numeric(source_p, &me.client, ERR_UNAVAILRESOURCE, chan);
         continue;
       }
 
@@ -217,7 +217,7 @@ m_join(struct Client *source_p, int parc, char *parv[])
       chptr->mode.mode |= MODE_NOPRIVMSGS;
 
       sendto_server(source_p, NOCAPS, NOCAPS, ":%s SJOIN %lu %s +nt :@%s",
-                    me.id, (unsigned long)chptr->channelts,
+                    me.client.id, (unsigned long)chptr->channelts,
                     chptr->chname, source_p->id);
       /*
        * Notify all other users on the new channel
@@ -226,7 +226,7 @@ m_join(struct Client *source_p, int parc, char *parv[])
                            source_p->name, source_p->username,
                            source_p->host, chptr->chname);
       sendto_channel_local(ALL_MEMBERS, 0, chptr, ":%s MODE %s +nt",
-                           me.name, chptr->chname);
+                           me.client.name, chptr->chname);
 
       if (source_p->away[0])
         sendto_channel_local_butone(source_p, 0, CAP_AWAY_NOTIFY, chptr,
@@ -254,8 +254,8 @@ m_join(struct Client *source_p, int parc, char *parv[])
 
     if (chptr->topic[0])
     {
-      sendto_one_numeric(source_p, &me, RPL_TOPIC, chptr->chname, chptr->topic);
-      sendto_one_numeric(source_p, &me, RPL_TOPICWHOTIME, chptr->chname,
+      sendto_one_numeric(source_p, &me.client, RPL_TOPIC, chptr->chname, chptr->topic);
+      sendto_one_numeric(source_p, &me.client, RPL_TOPICWHOTIME, chptr->chname,
                          chptr->topic_info, chptr->topic_time);
     }
 
@@ -344,7 +344,7 @@ ms_join(struct Client *source_p, int parc, char *parv[])
     {
       sendto_channel_local(ALL_MEMBERS, 0, chptr,
                            ":%s NOTICE %s :*** Notice -- TS for %s changed from %lu to 0",
-                           me.name, chptr->chname, chptr->chname, (unsigned long)oldts);
+                           me.client.name, chptr->chname, chptr->chname, (unsigned long)oldts);
       sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
                            "Server %s changing TS on %s from %lu to 0",
                            source_p->name, chptr->chname, (unsigned long)oldts);
@@ -390,19 +390,19 @@ ms_join(struct Client *source_p, int parc, char *parv[])
       sendto_channel_local(ALL_MEMBERS, 0, chptr, ":%s TOPIC %s :",
                            (IsHidden(source_p) ||
                            ConfigServerHide.hide_servers) ?
-                           me.name : source_p->name, chptr->chname);
+                           me.client.name : source_p->name, chptr->chname);
     }
 
     sendto_channel_local(ALL_MEMBERS, 0, chptr,
                          ":%s NOTICE %s :*** Notice -- TS for %s changed from %lu to %lu",
-                          me.name, chptr->chname, chptr->chname,
+                          me.client.name, chptr->chname, chptr->chname,
                          (unsigned long)oldts, (unsigned long)newts);
   }
 
   if (*modebuf != '\0')
   {
     servername = (ConfigServerHide.hide_servers || IsHidden(source_p)) ?
-                  me.name : source_p->name;
+                  me.client.name : source_p->name;
 
     /* This _SHOULD_ be to ALL_MEMBERS
      * It contains only +imnpstlk, etc */
@@ -627,7 +627,7 @@ remove_a_mode(struct Channel *chptr, struct Client *source_p,
                            ":%s MODE %s %s%s",
                            (IsHidden(source_p) ||
                            ConfigServerHide.hide_servers) ?
-                           me.name : source_p->name,
+                           me.client.name : source_p->name,
                            chptr->chname, lmodebuf, sendbuf);
       mbuf = lmodebuf;
       *mbuf++ = '-';
@@ -651,7 +651,7 @@ remove_a_mode(struct Channel *chptr, struct Client *source_p,
     sendto_channel_local(ALL_MEMBERS, 0, chptr,
                          ":%s MODE %s %s%s",
                          (IsHidden(source_p) || ConfigServerHide.hide_servers) ?
-                         me.name : source_p->name,
+                         me.client.name : source_p->name,
                          chptr->chname, lmodebuf, sendbuf);
   }
 }

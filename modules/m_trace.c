@@ -69,9 +69,9 @@ m_trace(struct Client *source_p, int parc, char *parv[])
   if (parc > 1)
     tname = parv[1];
   else
-    tname = me.name;
+    tname = me.client.name;
 
-  sendto_one_numeric(source_p, &me, RPL_ENDOFTRACE, tname);
+  sendto_one_numeric(source_p, &me.client, RPL_ENDOFTRACE, tname);
   return 0;
 }
 
@@ -92,7 +92,7 @@ mo_trace(struct Client *source_p, int parc, char *parv[])
   if (parc > 1)
     tname = parv[1];
   else
-    tname = me.name;
+    tname = me.client.name;
 
   switch (hunt_server(source_p, ":%s TRACE :%s", 1, parc, parv))
   {
@@ -114,10 +114,10 @@ mo_trace(struct Client *source_p, int parc, char *parv[])
      }
 
       if (ac2ptr)
-        sendto_one_numeric(source_p, &me, RPL_TRACELINK,
+        sendto_one_numeric(source_p, &me.client, RPL_TRACELINK,
                            ircd_version, tname, ac2ptr->from->name);
       else
-        sendto_one_numeric(source_p, &me, RPL_TRACELINK,
+        sendto_one_numeric(source_p, &me.client, RPL_TRACELINK,
                            ircd_version, tname, "ac2ptr_is_NULL!!");
       return 0;
     }
@@ -161,19 +161,19 @@ do_actual_trace(struct Client *source_p, int parc, char *parv[])
   if (parc > 1)
     tname = parv[1];
   else
-    tname = me.name;
+    tname = me.client.name;
 
   sendto_realops_flags(UMODE_SPY, L_ALL, SEND_NOTICE,
                        "TRACE requested by %s (%s@%s) [%s]",
                        source_p->name, source_p->username,
                        source_p->host, source_p->servptr->name);
 
-  if (!match(tname, me.name))
+  if (!match(tname, me.client.name))
     doall = 1;
-  else if (!MyClient(source_p) && !strcmp(tname, me.id))
+  else if (!MyClient(source_p) && !strcmp(tname, me.client.id))
   {
     doall = 1;
-    tname = me.name;
+    tname = me.client.name;
   }
 
   wilds = !parv[1] || has_wildcards(tname);
@@ -191,7 +191,7 @@ do_actual_trace(struct Client *source_p, int parc, char *parv[])
 
       if (HasUMode(target_p, UMODE_OPER))
       {
-        sendto_one_numeric(source_p, &me, RPL_TRACEOPERATOR,
+        sendto_one_numeric(source_p, &me.client, RPL_TRACEOPERATOR,
                    get_client_class(&target_p->localClient->confs), name,
                    IsIPSpoof(target_p) ? "255.255.255.255" : target_p->sockhost,
                    CurrentTime - target_p->localClient->lasttime,
@@ -199,7 +199,7 @@ do_actual_trace(struct Client *source_p, int parc, char *parv[])
       }
       else
       {
-        sendto_one_numeric(source_p, &me, RPL_TRACEUSER,
+        sendto_one_numeric(source_p, &me.client, RPL_TRACEUSER,
                    get_client_class(&target_p->localClient->confs), name,
                    IsIPSpoof(target_p) ? "255.255.255.255" : target_p->sockhost,
                    CurrentTime - target_p->localClient->lasttime,
@@ -207,7 +207,7 @@ do_actual_trace(struct Client *source_p, int parc, char *parv[])
       }
     }
 
-    sendto_one_numeric(source_p, &me, RPL_ENDOFTRACE, tname);
+    sendto_one_numeric(source_p, &me.client, RPL_ENDOFTRACE, tname);
     return;
   }
 
@@ -258,10 +258,10 @@ do_actual_trace(struct Client *source_p, int parc, char *parv[])
     const struct ClassItem *class = ptr->data;
 
     if (class->ref_count > 0)
-      sendto_one_numeric(source_p, &me, RPL_TRACECLASS, class->name, class->ref_count);
+      sendto_one_numeric(source_p, &me.client, RPL_TRACECLASS, class->name, class->ref_count);
   }
 
-  sendto_one_numeric(source_p, &me, RPL_ENDOFTRACE, tname);
+  sendto_one_numeric(source_p, &me.client, RPL_ENDOFTRACE, tname);
 }
 
 /* report_this_status()
@@ -283,18 +283,18 @@ report_this_status(struct Client *source_p, struct Client *target_p, int dow)
   switch (target_p->status)
   {
     case STAT_CONNECTING:
-      sendto_one_numeric(source_p, &me, RPL_TRACECONNECTING, class_name,
+      sendto_one_numeric(source_p, &me.client, RPL_TRACECONNECTING, class_name,
                  HasUMode(source_p, UMODE_ADMIN) ? name : target_p->name);
       break;
     case STAT_HANDSHAKE:
-      sendto_one_numeric(source_p, &me, RPL_TRACEHANDSHAKE, class_name,
+      sendto_one_numeric(source_p, &me.client, RPL_TRACEHANDSHAKE, class_name,
                  HasUMode(source_p, UMODE_ADMIN) ? name : target_p->name);
       break;
     case STAT_ME:
       break;
     case STAT_UNKNOWN:
       /* added time -Taner */
-      sendto_one_numeric(source_p, &me, RPL_TRACEUNKNOWN, class_name,
+      sendto_one_numeric(source_p, &me.client, RPL_TRACEUNKNOWN, class_name,
                  name, target_p->sockhost,
                  CurrentTime - target_p->localClient->firsttime);
       break;
@@ -308,7 +308,7 @@ report_this_status(struct Client *source_p, struct Client *target_p, int dow)
           || !dow || HasUMode(target_p, UMODE_OPER))
         {
           if (HasUMode(target_p, UMODE_ADMIN) && !ConfigFileEntry.hide_spoof_ips)
-            sendto_one_numeric(source_p, &me, RPL_TRACEOPERATOR, class_name, name,
+            sendto_one_numeric(source_p, &me.client, RPL_TRACEOPERATOR, class_name, name,
                        HasUMode(source_p, UMODE_ADMIN) ? target_p->sockhost : "255.255.255.255",
                        CurrentTime - target_p->localClient->lasttime,
                        idle_time_get(source_p, target_p));
@@ -316,12 +316,12 @@ report_this_status(struct Client *source_p, struct Client *target_p, int dow)
           else if (HasUMode(target_p, UMODE_OPER))
           {
             if (ConfigFileEntry.hide_spoof_ips)
-              sendto_one_numeric(source_p, &me, RPL_TRACEOPERATOR, class_name, name,
+              sendto_one_numeric(source_p, &me.client, RPL_TRACEOPERATOR, class_name, name,
                          IsIPSpoof(target_p) ? "255.255.255.255" : target_p->sockhost,
                          CurrentTime - target_p->localClient->lasttime,
                          idle_time_get(source_p, target_p));
             else
-              sendto_one_numeric(source_p, &me, RPL_TRACEOPERATOR, class_name, name,
+              sendto_one_numeric(source_p, &me.client, RPL_TRACEOPERATOR, class_name, name,
                          MyOper(source_p) ? target_p->sockhost :
                          (IsIPSpoof(target_p) ? "255.255.255.255" : target_p->sockhost),
                          CurrentTime - target_p->localClient->lasttime,
@@ -330,12 +330,12 @@ report_this_status(struct Client *source_p, struct Client *target_p, int dow)
           else
           {
             if (ConfigFileEntry.hide_spoof_ips)
-              sendto_one_numeric(source_p, &me, RPL_TRACEUSER, class_name, name,
+              sendto_one_numeric(source_p, &me.client, RPL_TRACEUSER, class_name, name,
                          IsIPSpoof(target_p) ? "255.255.255.255" : target_p->sockhost,
                          CurrentTime - target_p->localClient->lasttime,
                          idle_time_get(source_p, target_p));
             else
-              sendto_one_numeric(source_p, &me, RPL_TRACEUSER, class_name, name,
+              sendto_one_numeric(source_p, &me.client, RPL_TRACEUSER, class_name, name,
                          MyOper(source_p) ? target_p->sockhost :
                          (IsIPSpoof(target_p) ? "255.255.255.255" : target_p->sockhost),
                          CurrentTime - target_p->localClient->lasttime,
@@ -353,15 +353,15 @@ report_this_status(struct Client *source_p, struct Client *target_p, int dow)
       if (!HasUMode(source_p, UMODE_ADMIN))
         name = get_client_name(target_p, MASK_IP);
 
-      sendto_one_numeric(source_p, &me, RPL_TRACESERVER, class_name, servers,
+      sendto_one_numeric(source_p, &me.client, RPL_TRACESERVER, class_name, servers,
                  clients, name, *(target_p->serv->by) ?
                  target_p->serv->by : "*", "*",
-                 me.name, CurrentTime - target_p->localClient->lasttime);
+                 me.client.name, CurrentTime - target_p->localClient->lasttime);
       break;
     }
 
     default: /* ...we actually shouldn't come here... --msa */
-      sendto_one_numeric(source_p, &me, RPL_TRACENEWTYPE, name);
+      sendto_one_numeric(source_p, &me.client, RPL_TRACENEWTYPE, name);
       break;
   }
 }

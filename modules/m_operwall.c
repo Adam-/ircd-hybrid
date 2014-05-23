@@ -53,13 +53,13 @@ mo_operwall(struct Client *source_p, int parc, char *parv[])
 
   if (!HasOFlag(source_p, OPER_FLAG_OPERWALL))
   {
-    sendto_one_numeric(source_p, &me, ERR_NOPRIVS, "operwall");
+    sendto_one_numeric(source_p, &me.client, ERR_NOPRIVS, "operwall");
     return 0;
   }
 
   if (EmptyString(message))
   {
-    sendto_one_numeric(source_p, &me, ERR_NEEDMOREPARAMS, "OPERWALL");
+    sendto_one_numeric(source_p, &me.client, ERR_NEEDMOREPARAMS, "OPERWALL");
     return 0;
   }
 
