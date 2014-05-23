@@ -109,16 +109,15 @@ client_init(void)
 struct Client *
 make_client(struct Client *from)
 {
-  struct Client *client_p = mp_pool_get(client_pool);
-
-  memset(client_p, 0, sizeof(*client_p));
+  struct Client *client_p;
 
   if (!from)
   {
-    client_p->from                      = client_p; /* 'from' of local client is self! */
-    client_p->localClient               = mp_pool_get(lclient_pool);
+    struct LocalUser *luser = mp_pool_get(lclient_pool);
+    memset(luser, 0, sizeof(struct LocalUser));
 
-    memset(client_p->localClient, 0, sizeof(*client_p->localClient));
+    client_p = &luser->client;
+    client_p->localClient = luser;
 
     client_p->localClient->since        = CurrentTime;
     client_p->localClient->lasttime     = CurrentTime;
@@ -129,8 +128,12 @@ make_client(struct Client *from)
     dlinkAdd(client_p, &client_p->localClient->lclient_node, &unknown_list);
   }
   else
-    client_p->from = from; /* 'from' of local client is self! */
+  {
+    client_p = mp_pool_get(client_pool);
+    memset(client_p, 0, sizeof(struct Client));
+  }
 
+  client_p->from = from; /* 'from' of local client is self! */
   client_p->idhnext = client_p;
   client_p->hnext  = client_p;
   SetUnknown(client_p);
@@ -188,8 +191,8 @@ free_client(struct Client *client_p)
 
     mp_pool_release(client_p->localClient);
   }
-
-  mp_pool_release(client_p);
+  else
+    mp_pool_release(client_p);
 }
 
 /*
