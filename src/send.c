@@ -161,7 +161,7 @@ send_message_remote(struct Client *to, struct Client *from, struct dbuf_block *b
 
     sendto_server(NULL, NOCAPS, NOCAPS,
                   ":%s KILL %s :%s (%s[%s@%s] Ghosted %s)",
-                  me.id, to->id, me.name, to->name,
+                  me.id, to->id, me.client.name, to->name,
                   to->username, to->host, to->from->name);
 
     AddFlag(to, FLAGS_KILLED);
@@ -904,7 +904,7 @@ sendto_realops_flags(unsigned int flags, int level, int type, const char *patter
 
     if (HasUMode(client_p, flags))
       sendto_one(client_p, ":%s NOTICE %s :*** %s -- %s",
-                 me.name, client_p->name, ntype, nbuf);
+                 me.client.name, client_p->name, ntype, nbuf);
   }
 }
 

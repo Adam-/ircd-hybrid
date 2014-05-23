@@ -123,7 +123,7 @@ m_knock(struct Client *source_p, int parc, char *parv[])
 
   sendto_channel_local(CHFL_CHANOP, 0, chptr,
                        ":%s NOTICE @%s :KNOCK: %s (%s [%s@%s] has asked for an invite)",
-                       me.name, chptr->chname, chptr->chname,
+                       me.client.name, chptr->chname, chptr->chname,
                        source_p->name,
                        source_p->username,
                        source_p->host);

@@ -69,7 +69,7 @@ m_trace(struct Client *source_p, int parc, char *parv[])
   if (parc > 1)
     tname = parv[1];
   else
-    tname = me.name;
+    tname = me.client.name;
 
   sendto_one_numeric(source_p, &me, RPL_ENDOFTRACE, tname);
   return 0;
@@ -92,7 +92,7 @@ mo_trace(struct Client *source_p, int parc, char *parv[])
   if (parc > 1)
     tname = parv[1];
   else
-    tname = me.name;
+    tname = me.client.name;
 
   switch (hunt_server(source_p, ":%s TRACE :%s", 1, parc, parv))
   {
@@ -161,19 +161,19 @@ do_actual_trace(struct Client *source_p, int parc, char *parv[])
   if (parc > 1)
     tname = parv[1];
   else
-    tname = me.name;
+    tname = me.client.name;
 
   sendto_realops_flags(UMODE_SPY, L_ALL, SEND_NOTICE,
                        "TRACE requested by %s (%s@%s) [%s]",
                        source_p->name, source_p->username,
                        source_p->host, source_p->servptr->name);
 
-  if (!match(tname, me.name))
+  if (!match(tname, me.client.name))
     doall = 1;
   else if (!MyClient(source_p) && !strcmp(tname, me.id))
   {
     doall = 1;
-    tname = me.name;
+    tname = me.client.name;
   }
 
   wilds = !parv[1] || has_wildcards(tname);
@@ -356,7 +356,7 @@ report_this_status(struct Client *source_p, struct Client *target_p, int dow)
       sendto_one_numeric(source_p, &me, RPL_TRACESERVER, class_name, servers,
                  clients, name, *(target_p->serv->by) ?
                  target_p->serv->by : "*", "*",
-                 me.name, CurrentTime - target_p->localClient->lasttime);
+                 me.client.name, CurrentTime - target_p->localClient->lasttime);
       break;
     }
 

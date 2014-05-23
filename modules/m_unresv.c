@@ -125,7 +125,7 @@ mo_unresv(struct Client *source_p, int parc, char *parv[])
                        target_server, resv);
 
     /* Allow ON to apply local unresv as well if it matches */
-    if (match(target_server, me.name))
+    if (match(target_server, me.client.name))
       return 0;
   }
   else
@@ -157,7 +157,7 @@ ms_unresv(struct Client *source_p, int parc, char *parv[])
                      "UNRESV %s %s",
                      parv[1], parv[2]);
 
-  if (!IsClient(source_p) || match(parv[1], me.name))
+  if (!IsClient(source_p) || match(parv[1], me.client.name))
     return 0;
 
   if (HasFlag(source_p, FLAGS_SERVICE) ||

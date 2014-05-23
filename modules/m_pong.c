@@ -70,7 +70,7 @@ ms_pong(struct Client *source_p, int parc, char *parv[])
    * That being the case, we will route, but only for registered clients (a
    * case can be made to allow them only from servers). -Shadowfax
    */
-  if (!EmptyString(destination) && match(destination, me.name) &&
+  if (!EmptyString(destination) && match(destination, me.client.name) &&
       irccmp(destination, me.id))
   {
     if ((target_p = hash_find_client(destination)) ||

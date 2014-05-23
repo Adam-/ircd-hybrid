@@ -125,7 +125,7 @@ mo_dline(struct Client *source_p, int parc, char *parv[])
                        dlhost, reason);
 
     /* Allow ON to apply local kline as well if it matches */
-    if (match(target_server, me.name))
+    if (match(target_server, me.client.name))
       return 0;
   }
   else
@@ -230,7 +230,7 @@ ms_dline(struct Client *source_p, int parc, char *parv[])
                      "DLINE %s %s %s :%s",
                      parv[1], parv[2], parv[3], parv[4]);
 
-  if (match(parv[1], me.name))
+  if (match(parv[1], me.client.name))
     return 0;
 
   tkline_time = valid_tkline(parv[2], TK_SECONDS);

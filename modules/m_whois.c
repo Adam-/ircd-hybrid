@@ -82,7 +82,7 @@ whois_person(struct Client *source_p, struct Client *target_p)
                      target_p->info);
 
   cur_len = mlen = snprintf(buf, sizeof(buf), numeric_form(RPL_WHOISCHANNELS),
-                            me.name, source_p->name, target_p->name, "");
+                            me.client.name, source_p->name, target_p->name, "");
   t = buf + mlen;
 
   DLINK_FOREACH(lp, target_p->channel.head)

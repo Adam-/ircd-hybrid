@@ -552,7 +552,7 @@ stats_memory(struct Client *source_p, int parc, char *parv[])
 
   sendto_one_numeric(source_p, &me, RPL_STATSDEBUG|SND_EXPLICIT,
                      "z :TOTAL: %llu",
-                     me.name, RPL_STATSDEBUG, source_p->name,
+                     me.client.name, RPL_STATSDEBUG, source_p->name,
                      total_memory);
 }
 

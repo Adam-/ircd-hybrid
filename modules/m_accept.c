@@ -50,7 +50,7 @@ list_accepts(struct Client *source_p)
   char *t = nicks;
   const dlink_node *ptr = NULL;
 
-  len = strlen(me.name) + strlen(source_p->name) + 12;
+  len = strlen(me.client.name) + strlen(source_p->name) + 12;
 
   DLINK_FOREACH(ptr, source_p->localClient->acceptlist.head)
   {

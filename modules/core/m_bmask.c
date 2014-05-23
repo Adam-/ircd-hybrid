@@ -91,7 +91,7 @@ ms_bmask(struct Client *source_p, int parc, char *parv[])
   s = banbuf;
 
   mlen = snprintf(modebuf, sizeof(modebuf), ":%s MODE %s +",
-                  (IsHidden(source_p) || ConfigServerHide.hide_servers) ? me.name : source_p->name,
+                  (IsHidden(source_p) || ConfigServerHide.hide_servers) ? me.client.name : source_p->name,
                   chptr->chname);
   mbuf = modebuf + mlen;
   pbuf = parabuf;

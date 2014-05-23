@@ -266,7 +266,7 @@ ms_svsjoin(struct Client *source_p, int parc, char *parv[])
                            target_p->name, target_p->username,
                            target_p->host, chptr->chname);
       sendto_channel_local(ALL_MEMBERS, 0, chptr, ":%s MODE %s +nt",
-                           me.name, chptr->chname);
+                           me.client.name, chptr->chname);
 
       if (target_p->away[0])
         sendto_channel_local_butone(target_p, 0, CAP_AWAY_NOTIFY, chptr,

@@ -419,7 +419,7 @@ channel_member_names(struct Client *source_p, struct Channel *chptr,
   if (PubChannel(chptr) || is_member)
   {
     t = lbuf + snprintf(lbuf, sizeof(lbuf), numeric_form(RPL_NAMREPLY),
-                        me.name, source_p->name,
+                        me.client.name, source_p->name,
                         channel_pub_or_secret(chptr), chptr->chname);
     start = t;
 

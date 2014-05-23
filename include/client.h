@@ -369,12 +369,12 @@ struct Client
   char             *certfp;
 };
 
-/*! \brief LocalUser structure
+/*! \brief LocalClient structure
  *
  * Allocated only for local clients, that are directly connected
  * to \b this server with a socket.
  */
-struct LocalUser
+struct LocalClient
 {
   struct Client client;
 
@@ -445,7 +445,7 @@ struct LocalUser
 };
 
 
-extern struct Client me;
+extern struct LocalClient me;
 extern dlink_list listing_client_list;
 extern dlink_list global_client_list;
 extern dlink_list unknown_list;       /* unknown clients ON this server only        */

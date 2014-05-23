@@ -200,7 +200,7 @@ add_id(struct Client *client_p, struct Channel *chptr, char *banid, unsigned int
             client_p->username, client_p->host);
   }
   else if (IsHidden(client_p) || (IsServer(client_p) && ConfigServerHide.hide_servers))
-    ban_p->who = xstrdup(me.name);
+    ban_p->who = xstrdup(me.client.name);
   else
     ban_p->who = xstrdup(client_p->name);
 
@@ -1535,7 +1535,7 @@ send_mode_changes(struct Client *source_p, struct Channel *chptr)
   if (IsServer(source_p))
     mbl = snprintf(modebuf, sizeof(modebuf), ":%s MODE %s ", (IsHidden(source_p) ||
                    ConfigServerHide.hide_servers) ?
-                   me.name : source_p->name, chptr->chname);
+                   me.client.name : source_p->name, chptr->chname);
   else
     mbl = snprintf(modebuf, sizeof(modebuf), ":%s!%s@%s MODE %s ", source_p->name,
                    source_p->username, source_p->host, chptr->chname);
@@ -1572,7 +1572,7 @@ send_mode_changes(struct Client *source_p, struct Channel *chptr)
       if (IsServer(source_p))
         mbl = snprintf(modebuf, sizeof(modebuf), ":%s MODE %s ", (IsHidden(source_p) ||
                        ConfigServerHide.hide_servers) ?
-                       me.name : source_p->name, chptr->chname);
+                       me.client.name : source_p->name, chptr->chname);
       else
         mbl = snprintf(modebuf, sizeof(modebuf), ":%s!%s@%s MODE %s ", source_p->name,
                        source_p->username, source_p->host, chptr->chname);

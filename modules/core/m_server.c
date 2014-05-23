@@ -286,7 +286,7 @@ server_estab(struct Client *client_p)
     send_capabilities(client_p, 0);
 
     sendto_one(client_p, "SERVER %s 1 :%s%s",
-               me.name, ConfigServerHide.hidden ? "(H) " : "", me.info);
+               me.client.name, ConfigServerHide.hidden ? "(H) " : "", me.info);
   }
 
   sendto_one(client_p, "SVINFO %d %d 0 :%lu", TS_CURRENT, TS_MIN,
@@ -480,7 +480,7 @@ mr_server(struct Client *source_p, int parc, char *parv[])
     return 0;
   }
 
-  if (!valid_servname(name))
+  if (!valid_servname.client.name))
   {
     sendto_realops_flags(UMODE_ALL, L_ADMIN, SEND_NOTICE,
           "Unauthorized server connection attempt from %s: Bogus server name "
@@ -606,7 +606,7 @@ mr_server(struct Client *source_p, int parc, char *parv[])
   }
 
   /* XXX If somehow there is a connect in progress and
-   * a connect comes in with same name toss the pending one,
+   * a connect comes in with same.client.name toss the pending one,
    * but only if it's not the same client! - Dianora
    */
   if ((target_p = find_servconn_in_progress(name)))
@@ -705,7 +705,7 @@ ms_sid(struct Client *source_p, int parc, char *parv[])
   }
 
   /* XXX If somehow there is a connect in progress and
-   * a connect comes in with same name toss the pending one,
+   * a connect comes in with same.client.name toss the pending one,
    * but only if it's not the same client! - Dianora
    */
   if ((target_p = find_servconn_in_progress(parv[1])))

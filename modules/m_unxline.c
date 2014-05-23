@@ -120,7 +120,7 @@ mo_unxline(struct Client *source_p, int parc, char *parv[])
                        "UNXLINE %s %s", target_server, gecos);
 
     /* Allow ON to apply local unxline as well if it matches */
-    if (match(target_server, me.name))
+    if (match(target_server, me.client.name))
       return 0;
   }
   else
@@ -155,7 +155,7 @@ ms_unxline(struct Client *source_p, int parc, char *parv[])
   sendto_match_servs(source_p, parv[1], CAP_CLUSTER, "UNXLINE %s %s",
                      parv[1], parv[2]);
 
-  if (match(parv[1], me.name))
+  if (match(parv[1], me.client.name))
     return 0;
 
   if (HasFlag(source_p, FLAGS_SERVICE) ||

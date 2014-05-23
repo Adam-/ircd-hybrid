@@ -72,7 +72,7 @@ get_listener_name(const struct Listener *const listener)
 {
   static char buf[HOSTLEN + HOSTLEN + PORTNAMELEN + 4];
 
-  snprintf(buf, sizeof(buf), "%s[%s/%u]", me.name,
+  snprintf(buf, sizeof(buf), "%s[%s/%u]", me.client.name,
            listener->name, listener->port);
   return buf;
 }
@@ -117,7 +117,7 @@ show_ports(struct Client *source_p)
                          listener->active ? "active" : "disabled");
     else
       sendto_one_numeric(source_p, &me, RPL_STATSPLINE, 'P', listener->port,
-                         me.name, listener->ref_count, buf,
+                         me.client.name, listener->ref_count, buf,
                          listener->active ? "active" : "disabled");
   }
 }

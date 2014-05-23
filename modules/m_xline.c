@@ -142,7 +142,7 @@ relay_xline(struct Client *source_p, char *parv[])
                      "XLINE %s %s %s :%s",
                      parv[1], parv[2], parv[3], parv[4]);
 
-  if (match(parv[1], me.name))
+  if (match(parv[1], me.client.name))
     return;
 
   if (HasFlag(source_p, FLAGS_SERVICE) || find_matching_name_conf(CONF_ULINE, source_p->servptr->name,
@@ -206,7 +206,7 @@ mo_xline(struct Client *source_p, int parc, char *parv[])
                          target_server, gecos, (int)tkline_time, reason);
 
     /* Allow ON to apply local xline as well if it matches */
-    if (match(target_server, me.name))
+    if (match(target_server, me.client.name))
       return 0;
   }
   else

@@ -101,10 +101,10 @@ write_links_file(void *notused)
      * - madmax
      */
     snprintf(buff, sizeof(buff), "%s %s :1 %s",   target_p->name,
-             me.name, target_p->info);
+             me.client.name, target_p->info);
     dlinkAddTail(xstrdup(buff), make_dlink_node(), &flatten_links);
     snprintf(buff, sizeof(buff), "%s %s :1 %s\n", target_p->name,
-             me.name, target_p->info);
+             me.client.name, target_p->info);
 
     fputs(buff, file);
   }
@@ -164,7 +164,7 @@ hunt_server(struct Client *source_p, const char *command,
   if (parc <= server || EmptyString(parv[server]))
     return HUNTED_ISME;
 
-  if (!strcmp(parv[server], me.id) || !match(parv[server], me.name))
+  if (!strcmp(parv[server], me.id) || !match(parv[server], me.client.name))
     return HUNTED_ISME;
 
   /* These are to pickup matches that would cause the following
@@ -813,7 +813,7 @@ finish_ssl_server_handshake(struct Client *client_p)
   send_capabilities(client_p, 0);
 
   sendto_one(client_p, "SERVER %s 1 :%s%s",
-             me.name, ConfigServerHide.hidden ? "(H) " : "",
+             me.client.name, ConfigServerHide.hidden ? "(H) " : "",
              me.info);
 
   /* If we've been marked dead because a send failed, just exit
@@ -992,7 +992,7 @@ serv_connect_callback(fde_t *fd, int status, void *data)
 
   send_capabilities(client_p, 0);
 
-  sendto_one(client_p, "SERVER %s 1 :%s%s", me.name,
+  sendto_one(client_p, "SERVER %s 1 :%s%s", me.client.name,
              ConfigServerHide.hidden ? "(H) " : "", me.info);
 
   /* If we've been marked dead because a send failed, just exit

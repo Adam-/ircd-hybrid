@@ -358,7 +358,7 @@ user_welcome(struct Client *source_p)
   sendto_one_numeric(source_p, &me, RPL_YOURHOST,
                      get_listener_name(source_p->localClient->listener), ircd_version);
   sendto_one_numeric(source_p, &me, RPL_CREATED, built_date);
-  sendto_one_numeric(source_p, &me, RPL_MYINFO, me.name, ircd_version, umode_buffer);
+  sendto_one_numeric(source_p, &me, RPL_MYINFO, me.client.name, ircd_version, umode_buffer);
   show_isupport(source_p);
 
   if (source_p->id[0])
@@ -633,7 +633,7 @@ register_remote_user(struct Client *source_p, const char *username,
                          source_p->host, source_p->from->name);
     sendto_one(source_p->from,
                ":%s KILL %s :%s (Ghosted, server %s doesn't exist)",
-               me.id, source_p->id, me.name, server);
+               me.id, source_p->id, me.client.name, server);
 
     AddFlag(source_p, FLAGS_KILLED);
     exit_client(source_p, "Ghosted Client");
@@ -649,7 +649,7 @@ register_remote_user(struct Client *source_p, const char *username,
                          target_p->name, target_p->from->name);
     sendto_one(source_p->from,
                ":%s KILL %s :%s (NICK from wrong direction (%s != %s))",
-               me.id, source_p->id, me.name, source_p->servptr->name,
+               me.id, source_p->id, me.client.name, source_p->servptr->name,
                target_p->from->name);
 
     AddFlag(source_p, FLAGS_KILLED);
@@ -1199,7 +1199,7 @@ rebuild_isupport_message_line(void)
   int n = 0;
   int tokens = 0;
   size_t len = 0;
-  size_t reserve = strlen(me.name) + HOSTLEN + strlen(numeric_form(RPL_ISUPPORT));
+  size_t reserve = strlen(me.client.name) + HOSTLEN + strlen(numeric_form(RPL_ISUPPORT));
 
   DLINK_FOREACH_SAFE(ptr, ptr_next, support_list_lines.head)
   {

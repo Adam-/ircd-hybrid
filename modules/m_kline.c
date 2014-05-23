@@ -205,7 +205,7 @@ mo_kline(struct Client *source_p, int parc, char *parv[])
                        user, host, reason);
 
     /* Allow ON to apply local kline as well if it matches */
-    if (match(target_server, me.name))
+    if (match(target_server, me.client.name))
       return 0;
   }
   else
@@ -245,7 +245,7 @@ me_kline(struct Client *source_p, int parc, char *parv[])
   if (parc != 6 || EmptyString(parv[5]))
     return 0;
 
-  if (match(parv[1], me.name))
+  if (match(parv[1], me.client.name))
     return 0;
 
   tkline_time = valid_tkline(parv[2], TK_SECONDS);

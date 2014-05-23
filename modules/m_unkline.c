@@ -123,7 +123,7 @@ mo_unkline(struct Client *source_p, int parc, char *parv[])
                         target_server, user, host);
 
     /* Allow ON to apply local unkline as well if it matches */
-    if (match(target_server, me.name))
+    if (match(target_server, me.client.name))
       return 0;
   }
   else
@@ -169,7 +169,7 @@ me_unkline(struct Client *source_p, int parc, char *parv[])
   kuser = parv[2];
   khost = parv[3];
 
-  if (!IsClient(source_p) || match(parv[1], me.name))
+  if (!IsClient(source_p) || match(parv[1], me.client.name))
     return 0;
 
   if (HasFlag(source_p, FLAGS_SERVICE) ||

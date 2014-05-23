@@ -619,7 +619,7 @@ remove_unknown(struct Client *client_p, char *lsender, char *lbuffer)
   }
   else
     sendto_one(client_p, ":%s KILL %s :%s (Unknown Client)",
-               me.id, lsender, me.name);
+               me.id, lsender, me.client.name);
 }
 
 /*

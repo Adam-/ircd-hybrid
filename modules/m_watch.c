@@ -174,7 +174,7 @@ m_watch(struct Client *source_p, int parc, char *parv[])
       anptr = ptr->data;
       strlcpy(buf, anptr->nick, sizeof(buf));
 
-      count = strlen(source_p->name) + strlen(me.name) + 10 +
+      count = strlen(source_p->name) + strlen(me.client.name) + 10 +
               strlen(buf);
 
       while ((ptr = ptr->next))
@@ -185,7 +185,7 @@ m_watch(struct Client *source_p, int parc, char *parv[])
         {
           sendto_one_numeric(source_p, &me, RPL_WATCHLIST, buf);
           buf[0] = '\0';
-          count = strlen(source_p->name) + strlen(me.name) + 10;
+          count = strlen(source_p->name) + strlen(me.client.name) + 10;
         }
 
         strlcat(buf, " ", sizeof(buf));

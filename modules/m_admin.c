@@ -49,7 +49,7 @@ do_admin(struct Client *source_p)
                        source_p->name, source_p->username,
                        source_p->host, source_p->servptr->name);
 
-  sendto_one_numeric(source_p, &me, RPL_ADMINME, me.name);
+  sendto_one_numeric(source_p, &me, RPL_ADMINME, me.client.name);
 
   if (!EmptyString(AdminInfo.name))
     sendto_one_numeric(source_p, &me, RPL_ADMINLOC1, AdminInfo.name);
