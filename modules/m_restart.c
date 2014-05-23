@@ -54,19 +54,19 @@ mo_restart(struct Client *source_p, int parc, char *parv[])
 
   if (!HasOFlag(source_p, OPER_FLAG_RESTART))
   {
-    sendto_one_numeric(source_p, &me, ERR_NOPRIVS, "restart");
+    sendto_one_numeric(source_p, &me.client, ERR_NOPRIVS, "restart");
     return 0;
   }
 
   if (EmptyString(parv[1]))
   {
-    sendto_one_notice(source_p, &me, ":Need server name /restart %s", me.client.name);
+    sendto_one_notice(source_p, &me.client, ":Need server name /restart %s", me.client.name);
     return 0;
   }
 
   if (irccmp(parv[1], me.client.name))
   {
-    sendto_one_notice(source_p, &me, ":Mismatch on /restart %s", me.client.name);
+    sendto_one_notice(source_p, &me.client, ":Mismatch on /restart %s", me.client.name);
     return 0;
   }
 

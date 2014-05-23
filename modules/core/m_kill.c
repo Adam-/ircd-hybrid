@@ -55,7 +55,7 @@ mo_kill(struct Client *source_p, int parc, char *parv[])
 
   if (EmptyString(parv[1]))
   {
-    sendto_one_numeric(source_p, &me, ERR_NEEDMOREPARAMS, "KILL");
+    sendto_one_numeric(source_p, &me.client, ERR_NEEDMOREPARAMS, "KILL");
     return 0;
   }
 
@@ -80,29 +80,29 @@ mo_kill(struct Client *source_p, int parc, char *parv[])
                                 (time_t)ConfigFileEntry.kill_chase_time_limit))
                                 == NULL)
     {
-      sendto_one_numeric(source_p, &me, ERR_NOSUCHNICK, parv[1]);
+      sendto_one_numeric(source_p, &me.client, ERR_NOSUCHNICK, parv[1]);
       return 0;
     }
 
-    sendto_one_notice(source_p, &me, ":KILL changed from %s to %s",
+    sendto_one_notice(source_p, &me.client, ":KILL changed from %s to %s",
                       parv[1], target_p->name);
   }
 
   if (!MyConnect(target_p) && !HasOFlag(source_p, OPER_FLAG_KILL_REMOTE))
   {
-    sendto_one_numeric(source_p, &me, ERR_NOPRIVS, "kill:remote");
+    sendto_one_numeric(source_p, &me.client, ERR_NOPRIVS, "kill:remote");
     return 0;
   }
 
   if (MyConnect(target_p) && !HasOFlag(source_p, OPER_FLAG_KILL))
   {
-    sendto_one_numeric(source_p, &me, ERR_NOPRIVS, "kill");
+    sendto_one_numeric(source_p, &me.client, ERR_NOPRIVS, "kill");
     return 0;
   }
 
   if (IsServer(target_p) || IsMe(target_p))
   {
-    sendto_one_numeric(source_p, &me, ERR_CANTKILLSERVER);
+    sendto_one_numeric(source_p, &me.client, ERR_CANTKILLSERVER);
     return 0;
   }
 
@@ -165,7 +165,7 @@ ms_kill(struct Client *source_p, int parc, char *parv[])
 
   if (parc < 3 || EmptyString(parv[2]))
   {
-    sendto_one_numeric(source_p, &me, ERR_NEEDMOREPARAMS, "KILL");
+    sendto_one_numeric(source_p, &me.client, ERR_NEEDMOREPARAMS, "KILL");
     return 0;
   }
 
@@ -179,7 +179,7 @@ ms_kill(struct Client *source_p, int parc, char *parv[])
 
   if (IsServer(target_p) || IsMe(target_p))
   {
-    sendto_one_numeric(source_p, &me, ERR_CANTKILLSERVER);
+    sendto_one_numeric(source_p, &me.client, ERR_CANTKILLSERVER);
     return 0;
   }
 

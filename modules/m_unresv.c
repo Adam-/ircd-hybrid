@@ -48,19 +48,19 @@ remove_resv(struct Client *source_p, const char *name)
   {
     if ((conf = find_exact_name_conf(CONF_CRESV, NULL, name, NULL, NULL)) == NULL)
     {
-      sendto_one_notice(source_p, &me, ":A RESV does not exist for channel: %s", name);
+      sendto_one_notice(source_p, &me.client, ":A RESV does not exist for channel: %s", name);
       return;
     }
 
     if (!IsConfDatabase(conf))
     {
-      sendto_one_notice(source_p, &me, ":The RESV for channel: %s is in ircd.conf and must be removed by hand.",
+      sendto_one_notice(source_p, &me.client, ":The RESV for channel: %s is in ircd.conf and must be removed by hand.",
                         name);
       return;
     }
 
     conf_free(conf);
-    sendto_one_notice(source_p, &me, ":The RESV has been removed on channel: %s", name);
+    sendto_one_notice(source_p, &me.client, ":The RESV has been removed on channel: %s", name);
     sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
                          "%s has removed the RESV for channel: %s",
                          get_oper_name(source_p), name);
@@ -71,19 +71,19 @@ remove_resv(struct Client *source_p, const char *name)
   {
     if ((conf = find_exact_name_conf(CONF_NRESV, NULL, name, NULL, NULL)) == NULL)
     {
-      sendto_one_notice(source_p, &me, ":A RESV does not exist for nick: %s", name);
+      sendto_one_notice(source_p, &me.client, ":A RESV does not exist for nick: %s", name);
       return;
     }
 
     if (!IsConfDatabase(conf))
     {
-      sendto_one_notice(source_p, &me, ":The RESV for nick: %s is in ircd.conf and must be removed by hand.",
+      sendto_one_notice(source_p, &me.client, ":The RESV for nick: %s is in ircd.conf and must be removed by hand.",
                         name);
       return;
     }
 
     conf_free(conf);
-    sendto_one_notice(source_p, &me, ":The RESV has been removed on nick: %s", name);
+    sendto_one_notice(source_p, &me.client, ":The RESV has been removed on nick: %s", name);
     sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
                          "%s has removed the RESV for nick: %s",
                          get_oper_name(source_p), name);

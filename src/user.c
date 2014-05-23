@@ -163,36 +163,36 @@ void
 show_lusers(struct Client *source_p)
 {
   if (!ConfigServerHide.hide_servers || HasUMode(source_p, UMODE_OPER))
-    sendto_one_numeric(source_p, &me, RPL_LUSERCLIENT, (Count.total-Count.invisi),
+    sendto_one_numeric(source_p, &me.client, RPL_LUSERCLIENT, (Count.total-Count.invisi),
                        Count.invisi, dlink_list_length(&global_serv_list));
   else
-    sendto_one_numeric(source_p, &me, RPL_LUSERCLIENT,
+    sendto_one_numeric(source_p, &me.client, RPL_LUSERCLIENT,
                        (Count.total - Count.invisi), Count.invisi, 1);
 
   if (Count.oper)
-    sendto_one_numeric(source_p, &me, RPL_LUSEROP, Count.oper);
+    sendto_one_numeric(source_p, &me.client, RPL_LUSEROP, Count.oper);
 
   if (dlink_list_length(&unknown_list))
-    sendto_one_numeric(source_p, &me, RPL_LUSERUNKNOWN, dlink_list_length(&unknown_list));
+    sendto_one_numeric(source_p, &me.client, RPL_LUSERUNKNOWN, dlink_list_length(&unknown_list));
 
   if (dlink_list_length(&global_channel_list))
-    sendto_one_numeric(source_p, &me, RPL_LUSERCHANNELS, dlink_list_length(&global_channel_list));
+    sendto_one_numeric(source_p, &me.client, RPL_LUSERCHANNELS, dlink_list_length(&global_channel_list));
 
   if (!ConfigServerHide.hide_servers || HasUMode(source_p, UMODE_OPER))
   {
-    sendto_one_numeric(source_p, &me, RPL_LUSERME, Count.local, Count.myserver);
-    sendto_one_numeric(source_p, &me, RPL_LOCALUSERS, Count.local, Count.max_loc);
+    sendto_one_numeric(source_p, &me.client, RPL_LUSERME, Count.local, Count.myserver);
+    sendto_one_numeric(source_p, &me.client, RPL_LOCALUSERS, Count.local, Count.max_loc);
   }
   else
   {
-    sendto_one_numeric(source_p, &me, RPL_LUSERME, Count.total, 0);
-    sendto_one_numeric(source_p, &me, RPL_LOCALUSERS, Count.total, Count.max_tot);
+    sendto_one_numeric(source_p, &me.client, RPL_LUSERME, Count.total, 0);
+    sendto_one_numeric(source_p, &me.client, RPL_LOCALUSERS, Count.total, Count.max_tot);
   }
 
-  sendto_one_numeric(source_p, &me, RPL_GLOBALUSERS, Count.total, Count.max_tot);
+  sendto_one_numeric(source_p, &me.client, RPL_GLOBALUSERS, Count.total, Count.max_tot);
 
   if (!ConfigServerHide.hide_servers || HasUMode(source_p, UMODE_OPER))
-    sendto_one_numeric(source_p, &me, RPL_STATSCONN, Count.max_loc_con,
+    sendto_one_numeric(source_p, &me.client, RPL_STATSCONN, Count.max_loc_con,
                        Count.max_loc_cli, Count.totalrestartcount);
 
   if (Count.local > Count.max_loc_cli)
@@ -214,7 +214,7 @@ show_isupport(struct Client *source_p)
   const dlink_node *ptr = NULL;
 
   DLINK_FOREACH(ptr, support_list_lines.head)
-    sendto_one_numeric(source_p, &me, RPL_ISUPPORT, ptr->data);
+    sendto_one_numeric(source_p, &me.client, RPL_ISUPPORT, ptr->data);
 }
 
 
@@ -231,13 +231,13 @@ report_and_set_user_flags(struct Client *source_p, const struct MaskItem *conf)
 {
   /* If this user is being spoofed, tell them so */
   if (IsConfDoSpoofIp(conf))
-    sendto_one_notice(source_p, &me, ":*** Spoofing your IP. Congrats.");
+    sendto_one_notice(source_p, &me.client, ":*** Spoofing your IP. Congrats.");
 
   /* If this user is in the exception class, Set it "E lined" */
   if (IsConfExemptKline(conf))
   {
     SetExemptKline(source_p);
-    sendto_one_notice(source_p, &me, ":*** You are exempt from K/D/G lines. Congrats.");
+    sendto_one_notice(source_p, &me.client, ":*** You are exempt from K/D/G lines. Congrats.");
   }
 
   /*
@@ -247,26 +247,26 @@ report_and_set_user_flags(struct Client *source_p, const struct MaskItem *conf)
   else if (IsConfExemptGline(conf))
   {
     SetExemptGline(source_p);
-    sendto_one_notice(source_p, &me, ":*** You are exempt from G lines. Congrats.");
+    sendto_one_notice(source_p, &me.client, ":*** You are exempt from G lines. Congrats.");
   }
 
   if (IsConfExemptResv(conf))
   {
     SetExemptResv(source_p);
-    sendto_one_notice(source_p, &me, ":*** You are exempt from resvs. Congrats.");
+    sendto_one_notice(source_p, &me.client, ":*** You are exempt from resvs. Congrats.");
   }
 
   /* If this user is exempt from user limits set it "F lined" */
   if (IsConfExemptLimits(conf))
   {
     SetExemptLimits(source_p);
-    sendto_one_notice(source_p, &me, ":*** You are exempt from user limits. Congrats.");
+    sendto_one_notice(source_p, &me.client, ":*** You are exempt from user limits. Congrats.");
   }
 
   if (IsConfCanFlood(conf))
   {
     SetCanFlood(source_p);
-    sendto_one_notice(source_p, &me, ":*** You are exempt from flood "
+    sendto_one_notice(source_p, &me.client, ":*** You are exempt from flood "
                       "protection, aren't you fearsome.");
   }
 }
@@ -348,21 +348,21 @@ user_welcome(struct Client *source_p)
   if (HasFlag(source_p, FLAGS_SSL))
   {
     AddUMode(source_p, UMODE_SSL);
-    sendto_one_notice(source_p, &me, ":*** Connected securely via %s",
+    sendto_one_notice(source_p, &me.client, ":*** Connected securely via %s",
                       ssl_get_cipher(source_p->localClient->fd.ssl));
   }
 #endif
 
-  sendto_one_numeric(source_p, &me, RPL_WELCOME, ServerInfo.network_name,
+  sendto_one_numeric(source_p, &me.client, RPL_WELCOME, ServerInfo.network_name,
                      source_p->name);
-  sendto_one_numeric(source_p, &me, RPL_YOURHOST,
+  sendto_one_numeric(source_p, &me.client, RPL_YOURHOST,
                      get_listener_name(source_p->localClient->listener), ircd_version);
-  sendto_one_numeric(source_p, &me, RPL_CREATED, built_date);
-  sendto_one_numeric(source_p, &me, RPL_MYINFO, me.client.name, ircd_version, umode_buffer);
+  sendto_one_numeric(source_p, &me.client, RPL_CREATED, built_date);
+  sendto_one_numeric(source_p, &me.client, RPL_MYINFO, me.client.name, ircd_version, umode_buffer);
   show_isupport(source_p);
 
   if (source_p->id[0])
-    sendto_one_numeric(source_p, &me, RPL_YOURID, source_p->id);
+    sendto_one_numeric(source_p, &me.client, RPL_YOURID, source_p->id);
 
   show_lusers(source_p);
   motd_signon(source_p);
@@ -447,7 +447,7 @@ register_local_user(struct Client *source_p)
 
   if (!valid_hostname(source_p->host))
   {
-    sendto_one_notice(source_p, &me, ":*** Notice -- You have an illegal "
+    sendto_one_notice(source_p, &me.client, ":*** Notice -- You have an illegal "
                       "character in your hostname");
     strlcpy(source_p->host, source_p->sockhost,
             sizeof(source_p->host));
@@ -464,7 +464,7 @@ register_local_user(struct Client *source_p)
     if (IsNeedIdentd(conf))
     {
       ++ServerStats.is_ref;
-      sendto_one_notice(source_p, &me, ":*** Notice -- You need to install "
+      sendto_one_notice(source_p, &me.client, ":*** Notice -- You need to install "
                         "identd to use this server");
       exit_client(source_p, "Install identd");
       return;
@@ -489,7 +489,7 @@ register_local_user(struct Client *source_p)
     {
       ++ServerStats.is_ref;
 
-      sendto_one_numeric(source_p, &me, ERR_PASSWDMISMATCH);
+      sendto_one_numeric(source_p, &me.client, ERR_PASSWDMISMATCH);
       exit_client(source_p, "Bad Password");
       return;
     }
@@ -633,7 +633,7 @@ register_remote_user(struct Client *source_p, const char *username,
                          source_p->host, source_p->from->name);
     sendto_one(source_p->from,
                ":%s KILL %s :%s (Ghosted, server %s doesn't exist)",
-               me.id, source_p->id, me.client.name, server);
+               me.client.id, source_p->id, me.client.name, server);
 
     AddFlag(source_p, FLAGS_KILLED);
     exit_client(source_p, "Ghosted Client");
@@ -649,7 +649,7 @@ register_remote_user(struct Client *source_p, const char *username,
                          target_p->name, target_p->from->name);
     sendto_one(source_p->from,
                ":%s KILL %s :%s (NICK from wrong direction (%s != %s))",
-               me.id, source_p->id, me.client.name, source_p->servptr->name,
+               me.client.id, source_p->id, me.client.name, source_p->servptr->name,
                target_p->from->name);
 
     AddFlag(source_p, FLAGS_KILLED);
@@ -913,7 +913,7 @@ user_set_hostmask(struct Client *target_p, const char *hostname, const int what)
 
   if (MyClient(target_p))
   {
-    sendto_one_numeric(target_p, &me, RPL_NEWHOSTIS, target_p->host);
+    sendto_one_numeric(target_p, &me.client, RPL_NEWHOSTIS, target_p->host);
     clear_ban_cache_client(target_p);
   }
 
@@ -1000,7 +1000,7 @@ oper_up(struct Client *source_p)
   sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE, "%s is now an operator",
                        get_oper_name(source_p));
   send_umode_out(source_p, source_p, old);
-  sendto_one_numeric(source_p, &me, RPL_YOUREOPER);
+  sendto_one_numeric(source_p, &me.client, RPL_YOUREOPER);
 }
 
 static char new_uid[TOTALSIDUID + 1];  /* Allow for \0 */

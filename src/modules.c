@@ -91,7 +91,7 @@ unload_one_module(const char *name, int warn)
 {
   struct module *modp = NULL;
 
-  if ((modp = findmodule_byname.client.name)) == NULL)
+  if ((modp = findmodule_byname(name)) == NULL)
     return -1;
 
   if (modp->modexit)

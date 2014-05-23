@@ -69,7 +69,7 @@ send_tb(struct Client *client_p, struct Channel *chptr)
    * for further information   -Michael
    */
   if (chptr->topic_time)
-    sendto_one(client_p, ":%s TBURST %lu %s %lu %s :%s", me.id,
+    sendto_one(client_p, ":%s TBURST %lu %s %lu %s :%s", me.client.id,
                (unsigned long)chptr->channelts, chptr->chname,
                (unsigned long)chptr->topic_time,
                chptr->topic_info,
@@ -192,7 +192,7 @@ burst_all(struct Client *client_p)
   }
 
   if (IsCapable(client_p, CAP_EOB))
-    sendto_one(client_p, ":%s EOB", me.id);
+    sendto_one(client_p, ":%s EOB", me.client.id);
 }
 
 /* server_burst()
@@ -220,7 +220,7 @@ server_burst(struct Client *client_p)
 
   /* EOB stuff is now in burst_all */
   /* Always send a PING after connect burst is done */
-  sendto_one(client_p, "PING :%s", me.id);
+  sendto_one(client_p, "PING :%s", me.client.id);
 }
 
 /* server_estab()
@@ -281,12 +281,12 @@ server_estab(struct Client *client_p)
 
   if (IsUnknown(client_p))
   {
-    sendto_one(client_p, "PASS %s TS %d %s", conf->spasswd, TS_CURRENT, me.id);
+    sendto_one(client_p, "PASS %s TS %d %s", conf->spasswd, TS_CURRENT, me.client.id);
 
     send_capabilities(client_p, 0);
 
     sendto_one(client_p, "SERVER %s 1 :%s%s",
-               me.client.name, ConfigServerHide.hidden ? "(H) " : "", me.info);
+               me.client.name, ConfigServerHide.hidden ? "(H) " : "", me.client.info);
   }
 
   sendto_one(client_p, "SVINFO %d %d 0 :%lu", TS_CURRENT, TS_MIN,
@@ -306,7 +306,7 @@ server_estab(struct Client *client_p)
   **    ...a bit tricky, but you have been warned, besides
   **    code is more neat this way...  --msa
   */
-  client_p->servptr = &me;
+  client_p->servptr = &me.client;
 
   if (IsClosing(client_p))
     return;
@@ -314,7 +314,7 @@ server_estab(struct Client *client_p)
   SetServer(client_p);
 
   /* Some day, all these lists will be consolidated *sigh* */
-  dlinkAdd(client_p, &client_p->lnode, &me.serv->server_list);
+  dlinkAdd(client_p, &client_p->lnode, &me.client.serv->server_list);
 
   assert(dlinkFind(&unknown_list, client_p));
 
@@ -379,7 +379,7 @@ server_estab(struct Client *client_p)
   fd_note(&client_p->localClient->fd, "Server: %s", client_p->name);
 
   sendto_server(client_p, NOCAPS, NOCAPS, ":%s SID %s 2 %s :%s%s",
-                me.id, client_p->name, client_p->id,
+                me.client.id, client_p->name, client_p->id,
                 IsHidden(client_p) ? "(H) " : "", client_p->info);
 
   /*
@@ -480,7 +480,7 @@ mr_server(struct Client *source_p, int parc, char *parv[])
     return 0;
   }
 
-  if (!valid_servname.client.name))
+  if (!valid_servname(name))
   {
     sendto_realops_flags(UMODE_ALL, L_ADMIN, SEND_NOTICE,
           "Unauthorized server connection attempt from %s: Bogus server name "

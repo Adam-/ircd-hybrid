@@ -69,7 +69,7 @@ m_version(struct Client *source_p, int parc, char *parv[])
 
   if ((last_used + ConfigFileEntry.pace_wait_simple) > CurrentTime)
   {
-    sendto_one_numeric(source_p, &me, RPL_LOAD2HI);
+    sendto_one_numeric(source_p, &me.client, RPL_LOAD2HI);
     return 0;
   }
 
@@ -80,7 +80,7 @@ m_version(struct Client *source_p, int parc, char *parv[])
                     1, parc, parv) != HUNTED_ISME)
       return 0;
 
-  sendto_one_numeric(source_p, &me, RPL_VERSION, ircd_version, serno,
+  sendto_one_numeric(source_p, &me.client, RPL_VERSION, ircd_version, serno,
                      me.client.name, serveropts);
   show_isupport(source_p);
   return 0;
@@ -104,7 +104,7 @@ ms_version(struct Client *source_p, int parc, char *parv[])
                   1, parc, parv) != HUNTED_ISME)
     return 0;
 
-  sendto_one_numeric(source_p, &me, RPL_VERSION, ircd_version, serno,
+  sendto_one_numeric(source_p, &me.client, RPL_VERSION, ircd_version, serno,
                      me.client.name, serveropts);
   show_isupport(source_p);
   return 0;

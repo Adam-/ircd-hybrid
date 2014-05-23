@@ -59,20 +59,20 @@ m_knock(struct Client *source_p, int parc, char *parv[])
 
   if (EmptyString(parv[1]))
   {
-    sendto_one_numeric(source_p, &me, ERR_NEEDMOREPARAMS, "KNOCK");
+    sendto_one_numeric(source_p, &me.client, ERR_NEEDMOREPARAMS, "KNOCK");
     return 0;
   }
 
   if ((chptr = hash_find_channel(parv[1])) == NULL)
   {
-    sendto_one_numeric(source_p, &me, ERR_NOSUCHCHANNEL, parv[1]);
+    sendto_one_numeric(source_p, &me.client, ERR_NOSUCHCHANNEL, parv[1]);
     return 0;
   }
 
   /* Normal channel, just be sure they aren't on it */
   if (IsMember(source_p, chptr))
   {
-    sendto_one_numeric(source_p, &me, ERR_KNOCKONCHAN, chptr->chname);
+    sendto_one_numeric(source_p, &me.client, ERR_KNOCKONCHAN, chptr->chname);
     return 0;
   }
 
@@ -80,7 +80,7 @@ m_knock(struct Client *source_p, int parc, char *parv[])
         (chptr->mode.limit && dlink_list_length(&chptr->members) >=
          chptr->mode.limit)))
   {
-    sendto_one_numeric(source_p, &me, ERR_CHANOPEN, chptr->chname);
+    sendto_one_numeric(source_p, &me.client, ERR_CHANOPEN, chptr->chname);
     return 0;
   }
 
@@ -91,7 +91,7 @@ m_knock(struct Client *source_p, int parc, char *parv[])
      */
     if (PrivateChannel(chptr) || is_banned(chptr, source_p))
     {
-      sendto_one_numeric(source_p, &me, ERR_CANNOTSENDTOCHAN, chptr->chname);
+      sendto_one_numeric(source_p, &me.client, ERR_CANNOTSENDTOCHAN, chptr->chname);
       return 0;
     }
 
@@ -105,18 +105,18 @@ m_knock(struct Client *source_p, int parc, char *parv[])
     if ((source_p->localClient->last_knock + ConfigChannel.knock_delay) >
         CurrentTime)
     {
-      sendto_one_numeric(source_p, &me, ERR_TOOMANYKNOCK, chptr->chname, "user");
+      sendto_one_numeric(source_p, &me.client, ERR_TOOMANYKNOCK, chptr->chname, "user");
       return 0;
     }
 
     if ((chptr->last_knock + ConfigChannel.knock_delay_channel) > CurrentTime)
     {
-      sendto_one_numeric(source_p, &me, ERR_TOOMANYKNOCK, chptr->chname, "channel");
+      sendto_one_numeric(source_p, &me.client, ERR_TOOMANYKNOCK, chptr->chname, "channel");
       return 0;
     }
 
     source_p->localClient->last_knock = CurrentTime;
-    sendto_one_numeric(source_p, &me, RPL_KNOCKDLVR, chptr->chname);
+    sendto_one_numeric(source_p, &me.client, RPL_KNOCKDLVR, chptr->chname);
   }
 
   chptr->last_knock = CurrentTime;

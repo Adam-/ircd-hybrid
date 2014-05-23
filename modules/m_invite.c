@@ -61,7 +61,7 @@ m_invite(struct Client *source_p, int parc, char *parv[])
 
   if (EmptyString(parv[2]))
   {
-    sendto_one_numeric(source_p, &me, ERR_NEEDMOREPARAMS, "INVITE");
+    sendto_one_numeric(source_p, &me.client, ERR_NEEDMOREPARAMS, "INVITE");
     return 0;
   }
 
@@ -70,38 +70,38 @@ m_invite(struct Client *source_p, int parc, char *parv[])
 
   if ((target_p = find_person(source_p, parv[1])) == NULL)
   {
-    sendto_one_numeric(source_p, &me, ERR_NOSUCHNICK, parv[1]);
+    sendto_one_numeric(source_p, &me.client, ERR_NOSUCHNICK, parv[1]);
     return 0;
   }
 
   if ((chptr = hash_find_channel(parv[2])) == NULL)
   {
-    sendto_one_numeric(source_p, &me, ERR_NOSUCHCHANNEL, parv[2]);
+    sendto_one_numeric(source_p, &me.client, ERR_NOSUCHCHANNEL, parv[2]);
     return 0;
   }
 
   if ((ms = find_channel_link(source_p, chptr)) == NULL)
   {
-    sendto_one_numeric(source_p, &me, ERR_NOTONCHANNEL, chptr->chname);
+    sendto_one_numeric(source_p, &me.client, ERR_NOTONCHANNEL, chptr->chname);
     return 0;
   }
 
   if (!has_member_flags(ms, CHFL_CHANOP))
   {
-    sendto_one_numeric(source_p, &me, ERR_CHANOPRIVSNEEDED, chptr->chname);
+    sendto_one_numeric(source_p, &me.client, ERR_CHANOPRIVSNEEDED, chptr->chname);
     return 0;
   }
 
   if (IsMember(target_p, chptr))
   {
-    sendto_one_numeric(source_p, &me, ERR_USERONCHANNEL, target_p->name, chptr->chname);
+    sendto_one_numeric(source_p, &me.client, ERR_USERONCHANNEL, target_p->name, chptr->chname);
     return 0;
   }
 
-  sendto_one_numeric(source_p, &me, RPL_INVITING, target_p->name, chptr->chname);
+  sendto_one_numeric(source_p, &me.client, RPL_INVITING, target_p->name, chptr->chname);
 
   if (target_p->away[0])
-    sendto_one_numeric(source_p, &me, RPL_AWAY, target_p->name, target_p->away);
+    sendto_one_numeric(source_p, &me.client, RPL_AWAY, target_p->name, target_p->away);
 
   if (MyConnect(target_p))
   {
@@ -112,7 +112,7 @@ m_invite(struct Client *source_p, int parc, char *parv[])
 
     if (chptr->mode.mode & MODE_INVITEONLY)
     {
-      sendto_channel_butone(NULL, &me, chptr, CHFL_CHANOP,
+      sendto_channel_butone(NULL, &me.client, chptr, CHFL_CHANOP,
                             "NOTICE @%s :%s is inviting %s to %s.",
                             chptr->chname, source_p->name,
                             target_p->name, chptr->chname);
@@ -172,7 +172,7 @@ ms_invite(struct Client *source_p, int parc, char *parv[])
 
     if (chptr->mode.mode & MODE_INVITEONLY)
     {
-      sendto_channel_butone(NULL, &me, chptr, CHFL_CHANOP,
+      sendto_channel_butone(NULL, &me.client, chptr, CHFL_CHANOP,
                             "NOTICE @%s :%s is inviting %s to %s.",
                             chptr->chname, source_p->name,
                             target_p->name, chptr->chname);

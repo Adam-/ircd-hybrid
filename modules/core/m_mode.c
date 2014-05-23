@@ -60,13 +60,13 @@ set_user_mode(struct Client *source_p, const int parc, char *parv[])
   if ((target_p = find_person(source_p, parv[1])) == NULL)
   {
     if (MyConnect(source_p))
-      sendto_one_numeric(source_p, &me, ERR_NOSUCHCHANNEL, parv[1]);
+      sendto_one_numeric(source_p, &me.client, ERR_NOSUCHCHANNEL, parv[1]);
     return;
   }
 
   if (source_p != target_p)
   {
-     sendto_one_numeric(source_p, &me, ERR_USERSDONTMATCH);
+     sendto_one_numeric(source_p, &me.client, ERR_USERSDONTMATCH);
      return;
   }
 
@@ -80,7 +80,7 @@ set_user_mode(struct Client *source_p, const int parc, char *parv[])
         *m++ = (char)i;
     *m = '\0';
 
-    sendto_one_numeric(source_p, &me, RPL_UMODEIS, buf);
+    sendto_one_numeric(source_p, &me.client, RPL_UMODEIS, buf);
     return;
   }
 
@@ -161,12 +161,12 @@ set_user_mode(struct Client *source_p, const int parc, char *parv[])
   }
 
   if (badmode)
-    sendto_one_numeric(source_p, &me, ERR_UMODEUNKNOWNFLAG);
+    sendto_one_numeric(source_p, &me.client, ERR_UMODEUNKNOWNFLAG);
 
   if (MyConnect(source_p) && HasUMode(source_p, UMODE_ADMIN) &&
       !HasOFlag(source_p, OPER_FLAG_ADMIN))
   {
-    sendto_one_notice(source_p, &me, ":*** You have no admin flag;");
+    sendto_one_notice(source_p, &me.client, ":*** You have no admin flag;");
     DelUMode(source_p, UMODE_ADMIN);
   }
 
@@ -197,7 +197,7 @@ m_mode(struct Client *source_p, int parc, char *parv[])
 
   if (EmptyString(parv[1]))
   {
-    sendto_one_numeric(source_p, &me, ERR_NEEDMOREPARAMS, "MODE");
+    sendto_one_numeric(source_p, &me.client, ERR_NEEDMOREPARAMS, "MODE");
     return 0;
   }
 
@@ -211,7 +211,7 @@ m_mode(struct Client *source_p, int parc, char *parv[])
 
   if ((chptr = hash_find_channel(parv[1])) == NULL)
   {
-    sendto_one_numeric(source_p, &me, ERR_NOSUCHCHANNEL, parv[1]);
+    sendto_one_numeric(source_p, &me.client, ERR_NOSUCHCHANNEL, parv[1]);
     return 0;
   }
 
@@ -219,8 +219,8 @@ m_mode(struct Client *source_p, int parc, char *parv[])
   if (parc < 3)
   {
     channel_modes(chptr, source_p, modebuf, parabuf);
-    sendto_one_numeric(source_p, &me, RPL_CHANNELMODEIS, chptr->chname, modebuf, parabuf);
-    sendto_one_numeric(source_p, &me, RPL_CREATIONTIME, chptr->chname, chptr->channelts);
+    sendto_one_numeric(source_p, &me.client, RPL_CHANNELMODEIS, chptr->chname, modebuf, parabuf);
+    sendto_one_numeric(source_p, &me.client, RPL_CREATIONTIME, chptr->chname, chptr->channelts);
     return 0;
   }
 

@@ -222,7 +222,7 @@ parse(struct Client *client_p, char *pbuffer, char *bufend)
        */
       if (*pbuffer)
         if (IsClient(from))
-          sendto_one_numeric(from, &me, ERR_UNKNOWNCOMMAND, ch);
+          sendto_one_numeric(from, &me.client, ERR_UNKNOWNCOMMAND, ch);
 
       ++ServerStats.is_unco;
       return;
@@ -305,7 +305,7 @@ handle_command(struct Message *mptr, struct Client *source_p,
 
   /* Check right amount of parameters is passed... --is */
   if (i < mptr->args_min)
-    sendto_one_numeric(source_p, &me, ERR_NEEDMOREPARAMS, mptr->cmd);
+    sendto_one_numeric(source_p, &me.client, ERR_NEEDMOREPARAMS, mptr->cmd);
   else
     mptr->handlers[source_p->from->handler](source_p, i, hpara);
 }
@@ -490,7 +490,7 @@ static void
 recurse_report_messages(struct Client *source_p, const struct MessageTree *mtree)
 {
   if (mtree->msg)
-    sendto_one_numeric(source_p, &me, RPL_STATSCOMMANDS,
+    sendto_one_numeric(source_p, &me.client, RPL_STATSCOMMANDS,
                        mtree->msg->cmd,
                        mtree->msg->count, mtree->msg->bytes,
                        mtree->msg->rcount);
@@ -562,7 +562,7 @@ cancel_clients(struct Client *client_p, struct Client *source_p, char *cmd)
                          "Not dropping server %s (%s) for Fake Direction",
                          client_p->name, source_p->name);
     return -1;
-    /* return exit_client(client_p, client_p, &me, "Fake Direction");*/
+    /* return exit_client(client_p, client_p, &me.client, "Fake Direction");*/
   }
 
   /*
@@ -615,11 +615,11 @@ remove_unknown(struct Client *client_p, char *lsender, char *lbuffer)
                          "Unknown prefix (%s) from %s, Squitting %s",
                          lbuffer, client_p->name, lsender);
     sendto_one(client_p, ":%s SQUIT %s :(Unknown prefix (%s) from %s)",
-               me.id, lsender, lbuffer, client_p->name);
+               me.client.id, lsender, lbuffer, client_p->name);
   }
   else
     sendto_one(client_p, ":%s KILL %s :%s (Unknown Client)",
-               me.id, lsender, me.client.name);
+               me.client.id, lsender, me.client.name);
 }
 
 /*
@@ -687,7 +687,7 @@ handle_numeric(unsigned int numeric, struct Client *source_p, int parc, char *pa
     /* Fake it for server hiding, if its our client */
     if (ConfigServerHide.hide_servers && MyClient(target_p) &&
         !HasUMode(target_p, UMODE_OPER))
-      sendto_one_numeric(target_p, &me, numeric|SND_EXPLICIT, "%s", parv[2]);
+      sendto_one_numeric(target_p, &me.client, numeric|SND_EXPLICIT, "%s", parv[2]);
     else
       sendto_one_numeric(target_p, source_p, numeric|SND_EXPLICIT, "%s", parv[2]);
   }
@@ -704,21 +704,21 @@ handle_numeric(unsigned int numeric, struct Client *source_p, int parc, char *pa
 int
 m_not_oper(struct Client *source_p, int parc, char *parv[])
 {
-  sendto_one_numeric(source_p, &me, ERR_NOPRIVILEGES);
+  sendto_one_numeric(source_p, &me.client, ERR_NOPRIVILEGES);
   return 0;
 }
 
 int
 m_unregistered(struct Client *source_p, int parc, char *parv[])
 {
-  sendto_one_numeric(source_p, &me, ERR_NOTREGISTERED);
+  sendto_one_numeric(source_p, &me.client, ERR_NOTREGISTERED);
   return 0;
 }
 
 int
 m_registered(struct Client *source_p, int parc, char *parv[])
 {
-  sendto_one_numeric(source_p, &me, ERR_ALREADYREGISTRED);
+  sendto_one_numeric(source_p, &me.client, ERR_ALREADYREGISTRED);
   return 0;
 }
 

@@ -57,7 +57,7 @@ ms_pong(struct Client *source_p, int parc, char *parv[])
 
   if (parc < 2 || EmptyString(parv[1]))
   {
-    sendto_one_numeric(source_p, &me, ERR_NOORIGIN);
+    sendto_one_numeric(source_p, &me.client, ERR_NOORIGIN);
     return 0;
   }
 
@@ -71,14 +71,14 @@ ms_pong(struct Client *source_p, int parc, char *parv[])
    * case can be made to allow them only from servers). -Shadowfax
    */
   if (!EmptyString(destination) && match(destination, me.client.name) &&
-      irccmp(destination, me.id))
+      irccmp(destination, me.client.id))
   {
     if ((target_p = hash_find_client(destination)) ||
         (target_p = hash_find_server(destination)))
       sendto_one(target_p, ":%s PONG %s %s",
                  source_p->name, origin, destination);
     else
-      sendto_one_numeric(source_p, &me, ERR_NOSUCHSERVER, destination);
+      sendto_one_numeric(source_p, &me.client, ERR_NOSUCHSERVER, destination);
   }
 
   return 0;
@@ -114,13 +114,13 @@ mr_pong(struct Client *source_p, int parc, char *parv[])
           register_local_user(source_p);
         }
         else
-          sendto_one_numeric(source_p, &me, ERR_WRONGPONG,
+          sendto_one_numeric(source_p, &me.client, ERR_WRONGPONG,
                              source_p->localClient->random_ping);
       }
     }
   }
   else
-    sendto_one_numeric(source_p, &me, ERR_NOORIGIN);
+    sendto_one_numeric(source_p, &me.client, ERR_NOORIGIN);
 
   return 0;
 }

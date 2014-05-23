@@ -77,7 +77,7 @@ whois_person(struct Client *source_p, struct Client *target_p)
   int tlen = 0;
   int reply_to_send = 0;
 
-  sendto_one_numeric(source_p, &me, RPL_WHOISUSER, target_p->name,
+  sendto_one_numeric(source_p, &me.client, RPL_WHOISUSER, target_p->name,
                      target_p->username, target_p->host,
                      target_p->info);
 
@@ -116,29 +116,29 @@ whois_person(struct Client *source_p, struct Client *target_p)
 
   if ((ConfigServerHide.hide_servers || IsHidden(target_p->servptr)) &&
       !(HasUMode(source_p, UMODE_OPER) || target_p == source_p))
-    sendto_one_numeric(source_p, &me, RPL_WHOISSERVER, target_p->name,
+    sendto_one_numeric(source_p, &me.client, RPL_WHOISSERVER, target_p->name,
                        ConfigServerHide.hidden_name,
                        ServerInfo.network_desc);
   else
-    sendto_one_numeric(source_p, &me, RPL_WHOISSERVER, target_p->name,
+    sendto_one_numeric(source_p, &me.client, RPL_WHOISSERVER, target_p->name,
                        target_p->servptr->name, target_p->servptr->info);
 
   if (HasUMode(target_p, UMODE_REGISTERED))
-    sendto_one_numeric(source_p, &me, RPL_WHOISREGNICK, target_p->name);
+    sendto_one_numeric(source_p, &me.client, RPL_WHOISREGNICK, target_p->name);
 
   if (!IsDigit(target_p->svid[0]))
-    sendto_one_numeric(source_p, &me, RPL_WHOISACCOUNT, target_p->name,
+    sendto_one_numeric(source_p, &me.client, RPL_WHOISACCOUNT, target_p->name,
                        target_p->svid);
 
   if (target_p->away[0])
-    sendto_one_numeric(source_p, &me, RPL_AWAY, target_p->name,
+    sendto_one_numeric(source_p, &me.client, RPL_AWAY, target_p->name,
                        target_p->away);
 
   if (HasUMode(target_p, UMODE_CALLERID|UMODE_SOFTCALLERID))
   {
     int callerid = !!HasUMode(target_p, UMODE_CALLERID);
 
-    sendto_one_numeric(source_p, &me, RPL_TARGUMODEG, target_p->name,
+    sendto_one_numeric(source_p, &me.client, RPL_TARGUMODEG, target_p->name,
                        callerid ? "+g" : "+G",
                        callerid ? "server side ignore" :
                                   "server side ignore with the exception of common channels");
@@ -146,12 +146,12 @@ whois_person(struct Client *source_p, struct Client *target_p)
 
   if (HasUMode(target_p, UMODE_OPER))
     if (!HasUMode(target_p, UMODE_HIDDEN) || HasUMode(source_p, UMODE_OPER))
-      sendto_one_numeric(source_p, &me, RPL_WHOISOPERATOR, target_p->name,
+      sendto_one_numeric(source_p, &me.client, RPL_WHOISOPERATOR, target_p->name,
                  HasUMode(target_p, UMODE_ADMIN) ? "is a Server Administrator" :
                                                    "is an IRC Operator");
 
   if (HasUMode(target_p, UMODE_WEBIRC))
-    sendto_one_numeric(source_p, &me, RPL_WHOISTEXT, target_p->name,
+    sendto_one_numeric(source_p, &me.client, RPL_WHOISTEXT, target_p->name,
                        "User connected using a webirc gateway");
 
   if (HasUMode(source_p, UMODE_ADMIN) || source_p == target_p)
@@ -164,7 +164,7 @@ whois_person(struct Client *source_p, struct Client *target_p)
         *m++ = (char)i;
     *m = '\0';
 
-    sendto_one_numeric(source_p, &me, RPL_WHOISMODES, target_p->name, buf);
+    sendto_one_numeric(source_p, &me.client, RPL_WHOISMODES, target_p->name, buf);
   }
 
   if (target_p->sockhost[0] && strcmp(target_p->sockhost, "0"))
@@ -177,21 +177,21 @@ whois_person(struct Client *source_p, struct Client *target_p)
       show_ip = 1;
 
 
-    sendto_one_numeric(source_p, &me, RPL_WHOISACTUALLY, target_p->name,
+    sendto_one_numeric(source_p, &me.client, RPL_WHOISACTUALLY, target_p->name,
                        show_ip ? target_p->sockhost : "255.255.255.255");
   }
 
   if (HasUMode(target_p, UMODE_SSL))
-    sendto_one_numeric(source_p, &me, RPL_WHOISSECURE, target_p->name);
+    sendto_one_numeric(source_p, &me.client, RPL_WHOISSECURE, target_p->name);
 
   if (!EmptyString(target_p->certfp))
     if (target_p == source_p || HasUMode(source_p, UMODE_ADMIN))
-      sendto_one_numeric(source_p, &me, RPL_WHOISCERTFP, target_p->name, target_p->certfp);
+      sendto_one_numeric(source_p, &me.client, RPL_WHOISCERTFP, target_p->name, target_p->certfp);
 
   if (MyConnect(target_p))
     if (!HasUMode(target_p, UMODE_HIDEIDLE) || HasUMode(source_p, UMODE_OPER) ||
         source_p == target_p)
-      sendto_one_numeric(source_p, &me, RPL_WHOISIDLE, target_p->name,
+      sendto_one_numeric(source_p, &me.client, RPL_WHOISIDLE, target_p->name,
                          idle_time_get(source_p, target_p),
                          target_p->localClient->firsttime);
 }
@@ -212,9 +212,9 @@ do_whois(struct Client *source_p, const char *name)
   if ((target_p = find_person(source_p, name)))
     whois_person(source_p, target_p);
   else if (!IsDigit(*name))
-    sendto_one_numeric(source_p, &me, ERR_NOSUCHNICK, name);
+    sendto_one_numeric(source_p, &me.client, ERR_NOSUCHNICK, name);
 
-  sendto_one_numeric(source_p, &me, RPL_ENDOFWHOIS, name);
+  sendto_one_numeric(source_p, &me.client, RPL_ENDOFWHOIS, name);
 }
 
 /*! \brief WHOIS command handler
@@ -236,7 +236,7 @@ m_whois(struct Client *source_p, int parc, char *parv[])
 
   if (parc < 2 || EmptyString(parv[1]))
   {
-    sendto_one_numeric(source_p, &me, ERR_NONICKNAMEGIVEN);
+    sendto_one_numeric(source_p, &me.client, ERR_NONICKNAMEGIVEN);
     return 0;
   }
 
@@ -245,7 +245,7 @@ m_whois(struct Client *source_p, int parc, char *parv[])
     /* seeing as this is going across servers, we should limit it */
     if ((last_used + ConfigFileEntry.pace_wait_simple) > CurrentTime)
     {
-      sendto_one_numeric(source_p, &me, RPL_LOAD2HI);
+      sendto_one_numeric(source_p, &me.client, RPL_LOAD2HI);
       return 0;
     }
 
@@ -287,7 +287,7 @@ mo_whois(struct Client *source_p, int parc, char *parv[])
 {
   if (parc < 2 || EmptyString(parv[1]))
   {
-    sendto_one_numeric(source_p, &me, ERR_NONICKNAMEGIVEN);
+    sendto_one_numeric(source_p, &me.client, ERR_NONICKNAMEGIVEN);
     return 0;
   }
 

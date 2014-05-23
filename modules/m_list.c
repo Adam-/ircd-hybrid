@@ -51,7 +51,7 @@ do_list(struct Client *source_p, int parc, char *parv[])
   if (source_p->localClient->list_task)
   {
     free_list_task(source_p);
-    sendto_one_numeric(source_p, &me, RPL_LISTEND);
+    sendto_one_numeric(source_p, &me.client, RPL_LISTEND);
     return;
   }
 
@@ -154,14 +154,14 @@ do_list(struct Client *source_p, int parc, char *parv[])
     if (errors)
     {
       free_list_task(source_p);
-      sendto_one_numeric(source_p, &me, ERR_LISTSYNTAX);
+      sendto_one_numeric(source_p, &me.client, ERR_LISTSYNTAX);
       return;
     }
   }
 
   dlinkAdd(source_p, make_dlink_node(), &listing_client_list);
 
-  sendto_one_numeric(source_p, &me, RPL_LISTSTART);
+  sendto_one_numeric(source_p, &me.client, RPL_LISTSTART);
   safe_list_channels(source_p, no_masked_channels && lt->show_mask.head != NULL);
 }
 

@@ -54,13 +54,13 @@ mo_locops(struct Client *source_p, int parc, char *parv[])
 
   if (!HasOFlag(source_p, OPER_FLAG_LOCOPS))
   {
-    sendto_one_numeric(source_p, &me, ERR_NOPRIVS, "locops");
+    sendto_one_numeric(source_p, &me.client, ERR_NOPRIVS, "locops");
     return 0;
   }
 
   if (EmptyString(message))
   {
-    sendto_one_numeric(source_p, &me, ERR_NEEDMOREPARAMS, "LOCOPS");
+    sendto_one_numeric(source_p, &me.client, ERR_NEEDMOREPARAMS, "LOCOPS");
     return 0;
   }
 

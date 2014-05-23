@@ -188,9 +188,9 @@ stats_hooks(struct Client *source_p)
   char lastused[IRCD_BUFSIZE] = "";
   const dlink_node *ptr = NULL;
 
-  sendto_one_numeric(source_p, &me, RPL_STATSDEBUG|SND_EXPLICIT, "h :%-20s %-20s Used     Hooks",
+  sendto_one_numeric(source_p, &me.client, RPL_STATSDEBUG|SND_EXPLICIT, "h :%-20s %-20s Used     Hooks",
                      "Callback", "Last Execution");
-  sendto_one_numeric(source_p, &me, RPL_STATSDEBUG|SND_EXPLICIT,
+  sendto_one_numeric(source_p, &me.client, RPL_STATSDEBUG|SND_EXPLICIT,
                      "h :------------------------------------"
                      "--------------------");
 
@@ -204,7 +204,7 @@ stats_hooks(struct Client *source_p)
     else
       strlcpy(lastused, "NEVER", sizeof(lastused));
 
-    sendto_one_numeric(source_p, &me, RPL_STATSDEBUG|SND_EXPLICIT,
+    sendto_one_numeric(source_p, &me.client, RPL_STATSDEBUG|SND_EXPLICIT,
                        "h :%-20s %-20s %-8u %d",
                        cb->name, lastused, cb->called,
                        dlink_list_length(&cb->chain));

@@ -57,7 +57,7 @@ m_kick(struct Client *source_p, int parc, char *parv[])
 
   if (EmptyString(parv[2]))
   {
-    sendto_one_numeric(source_p, &me, ERR_NEEDMOREPARAMS, "KICK");
+    sendto_one_numeric(source_p, &me.client, ERR_NEEDMOREPARAMS, "KICK");
     return 0;
   }
 
@@ -66,19 +66,19 @@ m_kick(struct Client *source_p, int parc, char *parv[])
 
   if ((chptr = hash_find_channel(parv[1])) == NULL)
   {
-    sendto_one_numeric(source_p, &me, ERR_NOSUCHCHANNEL, parv[1]);
+    sendto_one_numeric(source_p, &me.client, ERR_NOSUCHCHANNEL, parv[1]);
     return 0;
   }
 
   if ((ms_source = find_channel_link(source_p, chptr)) == NULL)
   {
-    sendto_one_numeric(source_p, &me, ERR_NOTONCHANNEL, chptr->chname);
+    sendto_one_numeric(source_p, &me.client, ERR_NOTONCHANNEL, chptr->chname);
     return 0;
   }
 
   if (!has_member_flags(ms_source, CHFL_CHANOP|CHFL_HALFOP))
   {
-    sendto_one_numeric(source_p, &me, ERR_CHANOPRIVSNEEDED, chptr->chname);
+    sendto_one_numeric(source_p, &me.client, ERR_CHANOPRIVSNEEDED, chptr->chname);
     return 0;
   }
 
@@ -87,7 +87,7 @@ m_kick(struct Client *source_p, int parc, char *parv[])
 
   if (!(ms_target = find_channel_link(target_p, chptr)))
   {
-    sendto_one_numeric(source_p, &me, ERR_USERNOTINCHANNEL, target_p->name, chptr->chname);
+    sendto_one_numeric(source_p, &me.client, ERR_USERNOTINCHANNEL, target_p->name, chptr->chname);
     return 0;
   }
 
@@ -98,7 +98,7 @@ m_kick(struct Client *source_p, int parc, char *parv[])
     if (((chptr->mode.mode & MODE_PRIVATE) && has_member_flags(ms_target,
          CHFL_CHANOP|CHFL_HALFOP)) || has_member_flags(ms_target, CHFL_CHANOP))
     {
-      sendto_one_numeric(source_p, &me, ERR_CHANOPRIVSNEEDED, chptr->chname);
+      sendto_one_numeric(source_p, &me.client, ERR_CHANOPRIVSNEEDED, chptr->chname);
       return 0;
     }
   }

@@ -153,7 +153,7 @@ send_members(struct Client *client_p, struct Channel *chptr,
   char *t, *start;       /* temp char pointer */
 
   start = t = buf + snprintf(buf, sizeof(buf), ":%s SJOIN %lu %s %s %s:",
-                             me.id, (unsigned long)chptr->channelts,
+                             me.client.id, (unsigned long)chptr->channelts,
                              chptr->chname, modebuf, parabuf);
 
   DLINK_FOREACH(ptr, chptr->members.head)
@@ -222,7 +222,7 @@ send_mode_list(struct Client *client_p, struct Channel *chptr,
   if (top->length == 0)
     return;
 
-  mlen = snprintf(buf, sizeof(buf), ":%s BMASK %lu %s %c :", me.id,
+  mlen = snprintf(buf, sizeof(buf), ":%s BMASK %lu %s %c :", me.client.id,
                   (unsigned long)chptr->channelts, chptr->chname, flag);
   cur_len = mlen;
 
@@ -475,7 +475,7 @@ channel_member_names(struct Client *source_p, struct Channel *chptr,
   }
 
   if (show_eon)
-    sendto_one_numeric(source_p, &me, RPL_ENDOFNAMES, chptr->chname);
+    sendto_one_numeric(source_p, &me.client, RPL_ENDOFNAMES, chptr->chname);
 }
 
 /*! \brief Adds client to invite list

@@ -102,13 +102,13 @@ mo_undline(struct Client *source_p, int parc, char *parv[])
 
   if (!HasOFlag(source_p, OPER_FLAG_UNDLINE))
   {
-    sendto_one_numeric(source_p, &me, ERR_NOPRIVS, "undline");
+    sendto_one_numeric(source_p, &me.client, ERR_NOPRIVS, "undline");
     return 0;
   }
 
   if (parc < 2 || EmptyString(parv[1]))
   {
-    sendto_one_numeric(source_p, &me, ERR_NEEDMOREPARAMS, "UNDLINE");
+    sendto_one_numeric(source_p, &me.client, ERR_NEEDMOREPARAMS, "UNDLINE");
     return 0;
   }
 
@@ -130,7 +130,7 @@ mo_undline(struct Client *source_p, int parc, char *parv[])
 
   if (remove_dline_match(addr))
   {
-    sendto_one_notice(source_p, &me, ":D-Line for [%s] is removed", addr);
+    sendto_one_notice(source_p, &me.client, ":D-Line for [%s] is removed", addr);
     sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
                          "%s has removed the D-Line for: [%s]",
                          get_oper_name(source_p), addr);
@@ -138,7 +138,7 @@ mo_undline(struct Client *source_p, int parc, char *parv[])
          get_oper_name(source_p), addr);
   }
   else
-    sendto_one_notice(source_p, &me, ":No D-Line for [%s] found", addr);
+    sendto_one_notice(source_p, &me.client, ":No D-Line for [%s] found", addr);
 
   return 0;
 }
@@ -176,7 +176,7 @@ ms_undline(struct Client *source_p, int parc, char *parv[])
   {
     if (remove_dline_match(addr))
     {
-      sendto_one_notice(source_p, &me, ":D-Line for [%s] is removed", addr);
+      sendto_one_notice(source_p, &me.client, ":D-Line for [%s] is removed", addr);
       sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
                            "%s has removed the D-Line for: [%s]",
                            get_oper_name(source_p), addr);
@@ -184,7 +184,7 @@ ms_undline(struct Client *source_p, int parc, char *parv[])
            get_oper_name(source_p), addr);
     }
     else
-      sendto_one_notice(source_p, &me, ":No D-Line for [%s] found", addr);
+      sendto_one_notice(source_p, &me.client, ":No D-Line for [%s] found", addr);
   }
 
   return 0;

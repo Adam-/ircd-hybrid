@@ -52,7 +52,7 @@ report_this_status(struct Client *source_p, const struct Client *target_p)
     return;  
 
   if (ConfigFileEntry.hide_spoof_ips)
-    sendto_one_numeric(source_p, &me, RPL_ETRACE,
+    sendto_one_numeric(source_p, &me.client, RPL_ETRACE,
                        HasUMode(target_p, UMODE_OPER) ? "Oper" : "User",
                        get_client_class(&target_p->localClient->confs),
                        target_p->name,
@@ -61,7 +61,7 @@ report_this_status(struct Client *source_p, const struct Client *target_p)
                        IsIPSpoof(target_p) ? "255.255.255.255" : target_p->sockhost,
                        target_p->info);
   else
-    sendto_one_numeric(source_p, &me, RPL_ETRACE,
+    sendto_one_numeric(source_p, &me.client, RPL_ETRACE,
                        HasUMode(target_p, UMODE_OPER) ? "Oper" : "User",
                        get_client_class(&target_p->localClient->confs),
                        target_p->name,
@@ -108,7 +108,7 @@ do_etrace(struct Client *source_p, const char *arg)
     if (target_p && MyClient(target_p))
       report_this_status(source_p, target_p);
 
-    sendto_one_numeric(source_p, &me, RPL_ENDOFTRACE, tname);
+    sendto_one_numeric(source_p, &me.client, RPL_ENDOFTRACE, tname);
     return;
   }
 
@@ -125,7 +125,7 @@ do_etrace(struct Client *source_p, const char *arg)
       report_this_status(source_p, target_p);
   }
 
-  sendto_one_numeric(source_p, &me, RPL_ENDOFTRACE, tname);
+  sendto_one_numeric(source_p, &me.client, RPL_ENDOFTRACE, tname);
 }
 
 /* mo_etrace()

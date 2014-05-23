@@ -112,7 +112,7 @@ send_message(struct Client *to, struct dbuf_block *buf)
    * Queued bytes get updated in send_queued_write().
    */
   ++to->localClient->send.messages;
-  ++me.localClient->send.messages;
+  ++me.send.messages;
 
   send_queued_write(to);
 }
@@ -161,13 +161,13 @@ send_message_remote(struct Client *to, struct Client *from, struct dbuf_block *b
 
     sendto_server(NULL, NOCAPS, NOCAPS,
                   ":%s KILL %s :%s (%s[%s@%s] Ghosted %s)",
-                  me.id, to->id, me.client.name, to->name,
+                  me.client.id, to->id, me.client.name, to->name,
                   to->username, to->host, to->from->name);
 
     AddFlag(to, FLAGS_KILLED);
 
     if (IsClient(from))
-      sendto_one_numeric(from, &me, ERR_GHOSTEDCLIENT, to->name,
+      sendto_one_numeric(from, &me.client, ERR_GHOSTEDCLIENT, to->name,
                          to->username, to->host, to->from);
 
     exit_client(to, "Ghosted client");
@@ -250,7 +250,7 @@ send_queued_write(struct Client *to)
 
       /* We have some data written .. update counters */
       to->localClient->send.bytes += retlen;
-      me.localClient->send.bytes += retlen;
+      me.send.bytes += retlen;
     } while (dbuf_length(&to->localClient->buf_sendq));
 
     if (retlen < 0 && ignoreErrno(errno))

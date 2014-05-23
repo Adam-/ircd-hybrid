@@ -54,9 +54,9 @@ server_die(const char *message, int rboot)
              rboot ? "Restarting" : "Terminating", message);
 
   DLINK_FOREACH(ptr, local_client_list.head)
-    sendto_one_notice(ptr->data, &me, ":%s", buffer);
+    sendto_one_notice(ptr->data, &me.client, ":%s", buffer);
 
-  sendto_server(NULL, NOCAPS, NOCAPS, ":%s ERROR :%s", me.id, buffer);
+  sendto_server(NULL, NOCAPS, NOCAPS, ":%s ERROR :%s", me.client.id, buffer);
 
   ilog(LOG_TYPE_IRCD, "%s", buffer);
 

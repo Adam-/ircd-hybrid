@@ -62,7 +62,7 @@ list_accepts(struct Client *source_p)
     if ((t - nicks) + masklen + len  > IRCD_BUFSIZE)
     {
       *(t - 1) = '\0';
-      sendto_one_numeric(source_p, &me, RPL_ACCEPTLIST, nicks);
+      sendto_one_numeric(source_p, &me.client, RPL_ACCEPTLIST, nicks);
       t = nicks;
     }
 
@@ -74,10 +74,10 @@ list_accepts(struct Client *source_p)
   if (nicks[0])
   {
     *(t - 1) = '\0';
-    sendto_one_numeric(source_p, &me, RPL_ACCEPTLIST, nicks);
+    sendto_one_numeric(source_p, &me.client, RPL_ACCEPTLIST, nicks);
   }
 
-  sendto_one_numeric(source_p, &me, RPL_ENDOFACCEPT);
+  sendto_one_numeric(source_p, &me.client, RPL_ENDOFACCEPT);
 }
 
 /*! \brief Allocates and adds a split_nuh_item holding a nick!user\@host
@@ -146,7 +146,7 @@ m_accept(struct Client *source_p, int parc, char *parv[])
 
       if ((accept_p = find_accept(nick, user, host, source_p, irccmp)) == NULL)
       {
-        sendto_one_numeric(source_p, &me, ERR_ACCEPTNOT, nick, user, host);
+        sendto_one_numeric(source_p, &me.client, ERR_ACCEPTNOT, nick, user, host);
         continue;
       }
 
@@ -157,7 +157,7 @@ m_accept(struct Client *source_p, int parc, char *parv[])
       if (dlink_list_length(&source_p->localClient->acceptlist) >=
           ConfigFileEntry.max_accept)
       {
-        sendto_one_numeric(source_p, &me, ERR_ACCEPTFULL);
+        sendto_one_numeric(source_p, &me.client, ERR_ACCEPTFULL);
         return 0;
       }
 
@@ -174,7 +174,7 @@ m_accept(struct Client *source_p, int parc, char *parv[])
 
       if ((accept_p = find_accept(nick, user, host, source_p, irccmp)))
       {
-        sendto_one_numeric(source_p, &me, ERR_ACCEPTEXIST, nick, user, host);
+        sendto_one_numeric(source_p, &me.client, ERR_ACCEPTEXIST, nick, user, host);
         continue;
       }
 

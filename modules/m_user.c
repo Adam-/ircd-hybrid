@@ -90,7 +90,7 @@ mr_user(struct Client *source_p, int parc, char *parv[])
 
   if (EmptyString(parv[4]))
   {
-    sendto_one_numeric(source_p, &me, ERR_NEEDMOREPARAMS, "USER");
+    sendto_one_numeric(source_p, &me.client, ERR_NEEDMOREPARAMS, "USER");
     return 0;
   }
 

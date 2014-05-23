@@ -228,21 +228,21 @@ show_events(struct Client *source_p)
 {
   if (last_event_ran)
   {
-    sendto_one_numeric(source_p, &me, RPL_STATSDEBUG|SND_EXPLICIT,
+    sendto_one_numeric(source_p, &me.client, RPL_STATSDEBUG|SND_EXPLICIT,
                        "E :Last event to run: %s",
                        last_event_ran);
-    sendto_one_numeric(source_p, &me, RPL_STATSDEBUG|SND_EXPLICIT,
+    sendto_one_numeric(source_p, &me.client, RPL_STATSDEBUG|SND_EXPLICIT,
                        "E : ");
   }
 
-  sendto_one_numeric(source_p, &me, RPL_STATSDEBUG|SND_EXPLICIT,
+  sendto_one_numeric(source_p, &me.client, RPL_STATSDEBUG|SND_EXPLICIT,
                      "E :Operation                    Next Execution");
-  sendto_one_numeric(source_p, &me, RPL_STATSDEBUG|SND_EXPLICIT,
+  sendto_one_numeric(source_p, &me.client, RPL_STATSDEBUG|SND_EXPLICIT,
                      "E :-------------------------------------------");
 
   for (unsigned i = 0; i < MAX_EVENTS; ++i)
     if (event_table[i].active)
-      sendto_one_numeric(source_p, &me, RPL_STATSDEBUG|SND_EXPLICIT,
+      sendto_one_numeric(source_p, &me.client, RPL_STATSDEBUG|SND_EXPLICIT,
                          "E :%-28s %-4d seconds",
                          event_table[i].name,
                          (int)(event_table[i].when - CurrentTime));

@@ -53,13 +53,13 @@ mo_globops(struct Client *source_p, int parc, char *parv[])
 
   if (!HasOFlag(source_p, OPER_FLAG_GLOBOPS))
   {
-    sendto_one_numeric(source_p, &me, ERR_NOPRIVS, "globops");
+    sendto_one_numeric(source_p, &me.client, ERR_NOPRIVS, "globops");
     return 0;
   }
 
   if (EmptyString(message))
   {
-    sendto_one_numeric(source_p, &me, ERR_NEEDMOREPARAMS, "GLOBOPS");
+    sendto_one_numeric(source_p, &me.client, ERR_NEEDMOREPARAMS, "GLOBOPS");
     return 0;
   }
 

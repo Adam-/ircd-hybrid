@@ -87,7 +87,7 @@ client_init(void)
    * Every 30 seconds is plenty -- db
    */
   client_pool = mp_pool_new(sizeof(struct Client), MP_CHUNK_SIZE_CLIENT);
-  lclient_pool = mp_pool_new(sizeof(struct LocalUser), MP_CHUNK_SIZE_LCLIENT);
+  lclient_pool = mp_pool_new(sizeof(struct LocalClient), MP_CHUNK_SIZE_LCLIENT);
   eventAdd("check_pings", check_pings, NULL, 5);
 }
 
@@ -113,8 +113,8 @@ make_client(struct Client *from)
 
   if (!from)
   {
-    struct LocalUser *luser = mp_pool_get(lclient_pool);
-    memset(luser, 0, sizeof(struct LocalUser));
+    struct LocalClient *luser = mp_pool_get(lclient_pool);
+    memset(luser, 0, sizeof(struct LocalClient));
 
     client_p = &luser->client;
     client_p->localClient = luser;
@@ -272,7 +272,7 @@ check_pings_list(dlink_list *list)
          */
         SetPingSent(client_p);
         client_p->localClient->lasttime = CurrentTime - ping;
-        sendto_one(client_p, "PING :%s", ID_or_name(&me, client_p));
+        sendto_one(client_p, "PING :%s", ID_or_name(&me.client, client_p));
       }
       else
       {
@@ -465,7 +465,7 @@ conf_try_ban(struct Client *client_p, struct MaskItem *conf)
                        type_string, get_client_name(client_p, HIDE_IP));
 
   if (IsClient(client_p))
-    sendto_one_numeric(client_p, &me, ERR_YOUREBANNEDCREEP, user_reason);
+    sendto_one_numeric(client_p, &me.client, ERR_YOUREBANNEDCREEP, user_reason);
 
   exit_client(client_p, user_reason);
 }
@@ -539,7 +539,7 @@ find_chasing(struct Client *source_p, const char *name)
                          (time_t)ConfigFileEntry.kill_chase_time_limit))
                          == NULL)
   {
-    sendto_one_numeric(source_p, &me, ERR_NOSUCHNICK, name);
+    sendto_one_numeric(source_p, &me.client, ERR_NOSUCHNICK, name);
     return NULL;
   }
 
@@ -818,7 +818,7 @@ exit_client(struct Client *source_p, const char *comment)
         {
           /* for them, we are exiting the network */
           sendto_one(source_p, ":%s SQUIT %s :%s",
-                     me.id, me.id, comment);
+                     me.client.id, me.client.id, comment);
         }
       }
 

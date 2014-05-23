@@ -58,7 +58,7 @@ ms_tmode(struct Client *source_p, int parc, char *parv[])
 
   if ((chptr = hash_find_channel(parv[2])) == NULL)
   {
-    sendto_one_numeric(source_p, &me, ERR_NOSUCHCHANNEL, parv[2]);
+    sendto_one_numeric(source_p, &me.client, ERR_NOSUCHCHANNEL, parv[2]);
     return 0;
   }
 

@@ -176,7 +176,7 @@ ms_svsjoin(struct Client *source_p, int parc, char *parv[])
 
     if (!check_channel_name(chan, 1))
     {
-      sendto_one_numeric(target_p, &me, ERR_BADCHANNAME, chan);
+      sendto_one_numeric(target_p, &me.client, ERR_BADCHANNAME, chan);
       continue;
     }
 
@@ -185,7 +185,7 @@ ms_svsjoin(struct Client *source_p, int parc, char *parv[])
         ((conf = match_find_resv(chan)) && !resv_find_exempt(target_p, conf)))
     {
       ++conf->count;
-      sendto_one_numeric(target_p, &me, ERR_CHANBANREASON,
+      sendto_one_numeric(target_p, &me.client, ERR_CHANBANREASON,
                          chan, conf->reason ? conf->reason : "Reserved channel");
       sendto_realops_flags(UMODE_SPY, L_ALL, SEND_NOTICE,
                            "Forbidding reserved channel %s from user %s",
@@ -198,7 +198,7 @@ ms_svsjoin(struct Client *source_p, int parc, char *parv[])
          ConfigChannel.max_chans_per_oper :
          ConfigChannel.max_chans_per_user))
     {
-      sendto_one_numeric(target_p, &me, ERR_TOOMANYCHANNELS, chan);
+      sendto_one_numeric(target_p, &me.client, ERR_TOOMANYCHANNELS, chan);
       break;
     }
 
@@ -210,7 +210,7 @@ ms_svsjoin(struct Client *source_p, int parc, char *parv[])
       if (splitmode && !HasUMode(target_p, UMODE_OPER) &&
           ConfigChannel.no_join_on_split)
       {
-        sendto_one_numeric(target_p, &me, ERR_UNAVAILRESOURCE, chan);
+        sendto_one_numeric(target_p, &me.client, ERR_UNAVAILRESOURCE, chan);
         continue;
       }
 
@@ -219,7 +219,7 @@ ms_svsjoin(struct Client *source_p, int parc, char *parv[])
        */
       if ((i = can_join(target_p, chptr, key)))
       {
-        sendto_one_numeric(target_p, &me, i, chptr->chname);
+        sendto_one_numeric(target_p, &me.client, i, chptr->chname);
         continue;
       }
 
@@ -237,7 +237,7 @@ ms_svsjoin(struct Client *source_p, int parc, char *parv[])
       if (splitmode && !HasUMode(target_p, UMODE_OPER) &&
           (ConfigChannel.no_create_on_split || ConfigChannel.no_join_on_split))
       {
-        sendto_one_numeric(target_p, &me, ERR_UNAVAILRESOURCE, chan);
+        sendto_one_numeric(target_p, &me.client, ERR_UNAVAILRESOURCE, chan);
         continue;
       }
 
@@ -257,7 +257,7 @@ ms_svsjoin(struct Client *source_p, int parc, char *parv[])
       chptr->mode.mode |= MODE_NOPRIVMSGS;
 
       sendto_server(target_p, NOCAPS, NOCAPS, ":%s SJOIN %lu %s +nt :@%s",
-                    me.id, (unsigned long)chptr->channelts,
+                    me.client.id, (unsigned long)chptr->channelts,
                     chptr->chname, target_p->id);
       /*
        * Notify all other users on the new channel
@@ -294,8 +294,8 @@ ms_svsjoin(struct Client *source_p, int parc, char *parv[])
 
     if (chptr->topic[0])
     {
-      sendto_one_numeric(target_p, &me, RPL_TOPIC, chptr->chname, chptr->topic);
-      sendto_one_numeric(target_p, &me, RPL_TOPICWHOTIME, chptr->chname,
+      sendto_one_numeric(target_p, &me.client, RPL_TOPIC, chptr->chname, chptr->topic);
+      sendto_one_numeric(target_p, &me.client, RPL_TOPICWHOTIME, chptr->chname,
                          chptr->topic_info, chptr->topic_time);
     }
 

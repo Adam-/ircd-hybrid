@@ -59,7 +59,7 @@ mr_pass(struct Client *source_p, int parc, char *parv[])
 
   if (EmptyString(parv[1]))
   {
-    sendto_one_numeric(source_p, &me, ERR_NEEDMOREPARAMS, "PASS");
+    sendto_one_numeric(source_p, &me.client, ERR_NEEDMOREPARAMS, "PASS");
     return 0;
   }
 
