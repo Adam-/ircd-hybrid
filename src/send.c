@@ -83,7 +83,7 @@ send_format(struct dbuf_block *buffer, const char *pattern, va_list args)
  **      Internal utility which appends given buffer to the sockets
  **      sendq.
  */
-static void
+void
 send_message(struct Client *to, struct dbuf_block *buf)
 {
   assert(!IsMe(to));

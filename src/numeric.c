@@ -387,7 +387,7 @@ static const char *const replies[] =
 /* 350 */ NULL,
 /* 351 RPL_VERSION */ "%s(%s). %s :%s",
 /* 352 RPL_WHOREPLY */ "%s %s %s %s %s %s :%d %s",
-/* 353 RPL_NAMREPLY */ ":%s 353 %s %s %s :",
+/* 353 RPL_NAMREPLY */ ":%s 353 %s %s %s",
 /* 354 */ NULL,
 /* 355 */ NULL,
 /* 356 */ NULL,

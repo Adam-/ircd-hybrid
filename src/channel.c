@@ -42,6 +42,7 @@
 #include "mempool.h"
 #include "misc.h"
 #include "resv.h"
+#include "splitbuf.h"
 
 
 dlink_list global_channel_list;
@@ -148,39 +149,20 @@ static void
 send_members(struct Client *client_p, struct Channel *chptr,
              char *modebuf, char *parabuf)
 {
-  const dlink_node *ptr = NULL;
-  int tlen;              /* length of text to append */
-  char *t, *start;       /* temp char pointer */
+  dlink_node *ptr;
+  struct splitbuf sbuf;
 
-  start = t = buf + snprintf(buf, sizeof(buf), ":%s SJOIN %lu %s %s %s:",
-                             me.id, (unsigned long)chptr->channelts,
-                             chptr->chname, modebuf, parabuf);
+  /* ts, name, modes, users */
+  splitbuf_init(&sbuf, 2, 4, ":%s SJOIN %lu %s",
+                me.id, (unsigned long)chptr->channelts,
+                chptr->chname);
+  /* even though this can contain spaces, we treat it as one parameter */
+  splitbuf_add_fmt(&sbuf, "%s%s", modebuf, parabuf);
 
   DLINK_FOREACH(ptr, chptr->members.head)
   {
     const struct Membership *ms = ptr->data;
-
-    tlen = strlen(ms->client_p->id) + 1;  /* nick + space */
-
-    if (ms->flags & CHFL_CHANOP)
-      ++tlen;
-#ifdef HALFOPS
-    if (ms->flags & CHFL_HALFOP)
-      ++tlen;
-#endif
-    if (ms->flags & CHFL_VOICE)
-      ++tlen;
-
-    /*
-     * Space will be converted into CR, but we also need space for LF..
-     * That's why we use '- 1' here -adx 
-     */
-    if (t + tlen - buf > IRCD_BUFSIZE - 1)
-    {
-      *(t - 1) = '\0';  /* Kill the space and terminate the string */
-      sendto_one(client_p, "%s", buf);
-      t = start;
-    }
+    char *t = buf;
 
     if (ms->flags & CHFL_CHANOP)
       *t++ = '@';
@@ -193,15 +175,12 @@ send_members(struct Client *client_p, struct Channel *chptr,
 
     strcpy(t, ms->client_p->id);
 
-    t += strlen(t);
-    *t++ = ' ';
+    splitbuf_add(&sbuf, t);
   }
 
-  /* Should always be non-NULL unless we have a kind of persistent channels */
-  if (chptr->members.head)
-    t--;  /* Take the space out */
-  *t = '\0';
-  sendto_one(client_p, "%s", buf);
+  splitbuf_finish(&sbuf);
+  splitbuf_send(&sbuf, client_p);
+  splitbuf_end(&sbuf);
 }
 
 /*! \brief Sends +b/+e/+I
@@ -214,45 +193,26 @@ static void
 send_mode_list(struct Client *client_p, struct Channel *chptr,
                const dlink_list *top, char flag)
 {
+  struct splitbuf sbuf;
   const dlink_node *ptr = NULL;
-  char pbuf[IRCD_BUFSIZE] = "";
-  int tlen, mlen, cur_len;
-  char *pp = pbuf;
 
   if (top->length == 0)
     return;
 
-  mlen = snprintf(buf, sizeof(buf), ":%s BMASK %lu %s %c :", me.id,
-                  (unsigned long)chptr->channelts, chptr->chname, flag);
-  cur_len = mlen;
+  /* ts, channel, flag, modes */
+  splitbuf_init(&sbuf, 3, 4, ":%s BMASK %lu %s %c", me.id,
+                (unsigned long)chptr->channelts, chptr->chname, flag);
 
   DLINK_FOREACH(ptr, top->head)
   {
     const struct Ban *banptr = ptr->data;
 
-    tlen = banptr->len + 3;
-
-    /*
-     * Send buffer and start over if we cannot fit another ban,
-     * or if the target is non-ts6 and we have too many modes in
-     * in this line.
-     */
-    if (cur_len + (tlen - 1) > IRCD_BUFSIZE - 2)
-    {
-      *(pp - 1) = '\0';  /* Get rid of trailing space on buffer */
-      sendto_one(client_p, "%s%s", buf, pbuf);
-
-      cur_len = mlen;
-      pp = pbuf;
-    }
-
-    pp += sprintf(pp, "%s!%s@%s ", banptr->name, banptr->user,
-                  banptr->host);
-    cur_len += tlen;
+    splitbuf_add_fmt(&sbuf, "%s!%s@%s", banptr->name, banptr->user, banptr->host);
   }
 
-  *(pp - 1) = '\0';  /* Get rid of trailing space on buffer */
-  sendto_one(client_p, "%s%s", buf, pbuf);
+  splitbuf_finish(&sbuf);
+  splitbuf_send(&sbuf, client_p);
+  splitbuf_end(&sbuf);
 }
 
 /*! \brief Send "client_p" a full list of the modes for channel chptr
@@ -409,19 +369,17 @@ channel_member_names(struct Client *source_p, struct Channel *chptr,
                      int show_eon)
 {
   const dlink_node *ptr = NULL;
-  char lbuf[IRCD_BUFSIZE + 1] = "";
-  char *t = NULL, *start = NULL;
-  int tlen = 0;
   int is_member = IsMember(source_p, chptr);
   int multi_prefix = HasCap(source_p, CAP_MULTI_PREFIX) != 0;
   int uhnames = HasCap(source_p, CAP_UHNAMES) != 0;
 
   if (PubChannel(chptr) || is_member)
   {
-    t = lbuf + snprintf(lbuf, sizeof(lbuf), numeric_form(RPL_NAMREPLY),
-                        me.name, source_p->name,
-                        channel_pub_or_secret(chptr), chptr->chname);
-    start = t;
+    struct splitbuf sbuf;
+
+    splitbuf_init(&sbuf, 3, 4, numeric_form(RPL_NAMREPLY),
+                         me.name, source_p->name,
+                         channel_pub_or_secret(chptr), chptr->chname);
 
     DLINK_FOREACH(ptr, chptr->members.head)
     {
@@ -431,47 +389,17 @@ channel_member_names(struct Client *source_p, struct Channel *chptr,
         continue;
 
       if (!uhnames)
-        tlen = strlen(ms->client_p->name) + 1;  /* nick + space */
+        splitbuf_add_fmt(&sbuf, "%s%s", get_member_status(ms, multi_prefix),
+                         ms->client_p->name);
       else
-        tlen = strlen(ms->client_p->name) + strlen(ms->client_p->username) +
-               strlen(ms->client_p->host) + 3;
-
-      if (!multi_prefix)
-      {
-        if (ms->flags & (CHFL_CHANOP | CHFL_HALFOP | CHFL_VOICE))
-          ++tlen;
-      }
-      else
-      {
-        if (ms->flags & CHFL_CHANOP)
-          ++tlen;
-        if (ms->flags & CHFL_HALFOP)
-          ++tlen;
-        if (ms->flags & CHFL_VOICE)
-          ++tlen;
-      }
-
-      if (t + tlen - lbuf > IRCD_BUFSIZE - 2)
-      {
-        *(t - 1) = '\0';
-        sendto_one(source_p, "%s", lbuf);
-        t = start;
-      }
-
-      if (!uhnames)
-        t += sprintf(t, "%s%s ", get_member_status(ms, multi_prefix),
-                     ms->client_p->name);
-      else
-        t += sprintf(t, "%s%s!%s@%s ", get_member_status(ms, multi_prefix),
+        splitbuf_add_fmt(&sbuf, "%s%s!%s@%s", get_member_status(ms, multi_prefix),
                      ms->client_p->name, ms->client_p->username,
                      ms->client_p->host);
     }
 
-    if (tlen)
-    {
-      *(t - 1) = '\0';
-      sendto_one(source_p, "%s", lbuf);
-    }
+    splitbuf_finish(&sbuf);
+    splitbuf_send(&sbuf, source_p);
+    splitbuf_end(&sbuf);
   }
 
   if (show_eon)

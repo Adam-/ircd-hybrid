@@ -55,6 +55,7 @@ ircd_SOURCES = auth.c            \
                s_bsd.c           \
                send.c            \
                server.c          \
+               splitbuf.c        \
                user.c            \
                version.c         \
                watch.c           \
