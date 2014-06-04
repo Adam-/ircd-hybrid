@@ -1,0 +1,13 @@
+language: c
+
+compiler:
+ - gcc
+ - clang
+
+script:
+ - make
+ - sudo make install
+
+notifications:
+ irc:
+  - "irc.ircd-hybrid.org#ircd-coders"
