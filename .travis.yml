@@ -5,6 +5,7 @@ compiler:
  - clang
 
 script:
+ - ./configure
  - make
  - sudo make install
 
