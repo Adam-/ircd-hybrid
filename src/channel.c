@@ -50,6 +50,11 @@ mp_pool_t *ban_pool;    /*! \todo ban_pool shouldn't be a global var */
 static mp_pool_t *member_pool, *channel_pool;
 static char buf[IRCD_BUFSIZE];
 
+struct event splitmode_event = {
+  .name = "check_splitmode",
+  .handler = check_splitmode,
+  .when = 10
+};
 
 /*! \brief Initializes the channel blockheap, adds known channel CAPAB
  */
@@ -848,7 +853,7 @@ check_splitmode(void *unused)
 
       sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
                            "Network split, activating splitmode");
-      eventAddIsh("check_splitmode", check_splitmode, NULL, 10);
+      event_add(&splitmode_event, NULL);
     }
     else if (splitmode && (server > split_servers) && (Count.total > split_users))
     {
@@ -856,7 +861,7 @@ check_splitmode(void *unused)
 
       sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
                            "Network rejoined, deactivating splitmode");
-      eventDelete(check_splitmode, NULL);
+      event_delete(&splitmode_event);
     }
   }
 }

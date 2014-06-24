@@ -113,6 +113,7 @@ extern unsigned int splitmode;
 extern unsigned int splitchecking;
 extern unsigned int split_users;
 extern unsigned int split_servers;
+extern struct event event_write_links_file;
 
 extern void set_time(void);
 #endif
