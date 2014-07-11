@@ -283,8 +283,8 @@ send_queued_all(void)
   /* Servers are processed first, mainly because this can generate
    * a notice to opers, which is to be delivered by this function.
    */
-  DLINK_FOREACH(ptr, serv_list.head)
-    send_queued_write(ptr->data);
+  LIST_FOREACH(struct Client *, cptr, &serv_list)
+    send_queued_write(cptr);
 
   DLINK_FOREACH(ptr, unknown_list.head)
     send_queued_write(ptr->data);

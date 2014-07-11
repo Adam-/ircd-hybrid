@@ -31,6 +31,8 @@
  * they are simple yet effective
  */
 
+#define LIST_FOREACH(type, name, list) dlink_node *dnode_ ## __LINE__ = (list)->head; for (type name; dnode_ ## __LINE__ != NULL && (name = dnode_ ## __LINE__ ->data); dnode_ ## __LINE__ = dnode_ ## __LINE__->next)
+
 /*
  * Walks forward of a list.
  * pos is your node
