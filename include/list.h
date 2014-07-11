@@ -59,6 +59,9 @@ typedef struct _dlink_list dlink_list;
 struct _dlink_node
 {
   void *data;
+#ifndef NDEBUG
+  dlink_list *list;
+#endif
   dlink_node *prev;
   dlink_node *next;
 };

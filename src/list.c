@@ -78,8 +78,14 @@ free_dlink_node(dlink_node *ptr)
 void
 dlinkAdd(void *data, dlink_node *m, dlink_list *list)
 {
+#ifndef NDEBUG
+  assert(m->list == NULL);
+#endif
   m->data = data;
   m->prev = NULL;
+#ifndef NDEBUG
+  m->list = list;
+#endif
   m->next = list->head;
 
   /* Assumption: If list->tail != NULL, list->head != NULL */
@@ -100,7 +106,13 @@ dlinkAddBefore(dlink_node *b, void *data, dlink_node *m, dlink_list *list)
     dlinkAdd(data, m, list);
   else
   {
+#ifndef NDEBUG
+    assert(m->list == NULL);
+#endif
     m->data = data;
+#ifndef NDEBUG
+    m->list = list;
+#endif
     b->prev->next = m;
     m->prev = b->prev;
     b->prev = m;
@@ -112,6 +124,10 @@ dlinkAddBefore(dlink_node *b, void *data, dlink_node *m, dlink_list *list)
 void
 dlinkAddTail(void *data, dlink_node *m, dlink_list *list)
 {
+#ifndef NDEBUG
+  assert(m->list == NULL);
+  m->list = list;
+#endif
   m->data = data;
   m->next = NULL;
   m->prev = list->tail;
@@ -132,6 +148,9 @@ dlinkAddTail(void *data, dlink_node *m, dlink_list *list)
 void
 dlinkDelete(dlink_node *m, dlink_list *list)
 {
+#ifndef NDEBUG
+  assert(m->list == list);
+#endif
   /* Assumption: If m->next == NULL, then list->tail == m
    *      and:   If m->prev == NULL, then list->head == m
    */
@@ -153,6 +172,9 @@ dlinkDelete(dlink_node *m, dlink_list *list)
 
   /* Set this to NULL does matter */
   m->next = m->prev = NULL;
+#ifndef NDEBUG
+  m->list = NULL;
+#endif
   list->length--;
 }
 
@@ -209,6 +231,9 @@ dlinkMoveList(dlink_list *from, dlink_list *to)
 void
 dlink_move_node(dlink_node *m, dlink_list *list_del, dlink_list *list_add)
 {
+#ifndef NDEBUG
+  assert(m->list == list_del);
+#endif
   /* Assumption: If m->next == NULL, then list_del->tail == m
    *      and:   If m->prev == NULL, then list_del->head == m
    */
@@ -231,6 +256,9 @@ dlink_move_node(dlink_node *m, dlink_list *list_del, dlink_list *list_add)
   /* Set this to NULL does matter */
   m->prev = NULL;
   m->next = list_add->head;
+#ifndef NDEBUG
+  m->list = list_add;
+#endif
 
   /* Assumption: If list_add->tail != NULL, list_add->head != NULL */
   if (list_add->head != NULL)
@@ -271,6 +299,9 @@ dlinkFindDelete(dlink_list *list, void *data)
 
     /* Set this to NULL does matter */
     m->next = m->prev = NULL;
+#ifndef NDEBUG
+    m->list = NULL;
+#endif
     list->length--;
 
     return m;
