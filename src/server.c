@@ -157,8 +157,6 @@ hunt_server(struct Client *source_p, const char *command,
             const int server, const int parc, char *parv[])
 {
   struct Client *target_p = NULL;
-  struct Client *target_tmp = NULL;
-  dlink_node *ptr;
 
   /* Assume it's me, if no server */
   if (parc <= server || EmptyString(parv[server]))
@@ -172,73 +170,72 @@ hunt_server(struct Client *source_p, const char *command,
    * non-matching lookups.
    */
   if (MyClient(source_p))
+  {
     target_p = hash_find_client(parv[server]);
+
+    /* don't allow finiding other users */
+    if (ConfigServerHide.hide_servers && target_p && target_p != source_p && IsClient(target_p))
+      target_p = NULL;
+  }
   else
-    target_p = find_person(source_p, parv[server]);
+  {
+    target_p = hash_find_client(parv[server]);
+    if (!target_p)
+      target_p = hash_find_id(parv[server]);
+  }
 
-  if (target_p)
-    if (target_p->from == source_p->from && !MyConnect(target_p))
-      target_p = NULL;
-
-  if (target_p == NULL && (target_p = hash_find_server(parv[server])))
-    if (target_p->from == source_p->from && !MyConnect(target_p))
-      target_p = NULL;
+  /* don't send back to where source_p is unless source_p is my client */
+  if (target_p && !MyClient(source_p) && target_p->from == source_p->from)
+    target_p = NULL;
 
   /* Again, if there are no wild cards involved in the server
    * name, use the hash lookup
    */
-  if (target_p == NULL)
+  if (!target_p)
   {
     if (!has_wildcards(parv[server]))
-    {
-      if (!(target_p = hash_find_server(parv[server])))
-      {
-        sendto_one_numeric(source_p, &me, ERR_NOSUCHSERVER, parv[server]);
-        return HUNTED_NOSUCH;
-      }
-    }
-    else
-    {
-      DLINK_FOREACH(ptr, global_client_list.head)
-      {
-        target_tmp = ptr->data;
-
-        if (!match(parv[server], target_tmp->name))
-        {
-          if (target_tmp->from == source_p->from && !MyConnect(target_tmp))
-            continue;
-          target_p = ptr->data;
-
-          if (IsRegistered(target_p) && (target_p != source_p->from))
-            break;
-        }
-      }
-    }
-  }
-
-  if (target_p)
-  {
-    if (!IsRegistered(target_p))
     {
       sendto_one_numeric(source_p, &me, ERR_NOSUCHSERVER, parv[server]);
       return HUNTED_NOSUCH;
     }
 
-    if (IsMe(target_p) || MyClient(target_p))
-      return HUNTED_ISME;
+    if (MyClient(source_p) && !ConfigServerHide.hide_servers)
+    {
+      dlink_node *ptr;
 
-    if (match(target_p->name, parv[server]))
-      parv[server] = target_p->name;
+      DLINK_FOREACH(ptr, global_client_list.head)
+      {
+        struct Client *target_tmp = ptr->data;
 
-    /* This is a little kludgy but should work... */
-    sendto_one(target_p, command, ID_or_name(source_p, target_p),
-               parv[1], parv[2], parv[3], parv[4],
-               parv[5], parv[6], parv[7], parv[8]);
-    return HUNTED_PASS;
+        if (!IsRegistered(target_tmp))
+          continue;
+
+        if (match(parv[server], target_tmp->name))
+          continue;
+
+        target_p = target_tmp;
+        break;
+      }
+    }
   }
 
-  sendto_one_numeric(source_p, &me, ERR_NOSUCHSERVER, parv[server]);
-  return HUNTED_NOSUCH;
+  if (!target_p)
+  {
+    sendto_one_numeric(source_p, &me, ERR_NOSUCHSERVER, parv[server]);
+    return HUNTED_NOSUCH;
+  }
+
+  if (IsMe(target_p) || MyClient(target_p))
+    return HUNTED_ISME;
+
+  if (match(target_p->name, parv[server]))
+    parv[server] = ID_or_name(target_p, target_p);
+
+  /* This is a little kludgy but should work... */
+  sendto_one(target_p, command, ID_or_name(source_p, target_p),
+             parv[1], parv[2], parv[3], parv[4],
+             parv[5], parv[6], parv[7], parv[8]);
+  return HUNTED_PASS;
 }
 
 /* try_connections()
