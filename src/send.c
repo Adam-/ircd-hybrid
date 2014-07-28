@@ -40,6 +40,7 @@
 #include "log.h"
 #include "memory.h"
 #include "packet.h"
+#include "msg.h"
 
 
 static unsigned int current_serial = 0;
@@ -325,6 +326,21 @@ sendto_one(struct Client *to, const char *pattern, ...)
   send_message(to->from, buffer);
 
   dbuf_ref_free(buffer);
+}
+
+void
+sendto_one_msg(struct Client *to, struct msg *msg)
+{
+  dlink_list *list;
+  dlink_node *node;
+
+  if (IsServer(to))
+    list = &msg->server;
+  else
+    list = &msg->user;
+
+  DLINK_FOREACH(node, list->head)
+    send_message(to->from, node->data);
 }
 
 void

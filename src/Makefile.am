@@ -37,6 +37,7 @@ ircd_SOURCES = auth.c            \
                misc.c            \
                modules.c         \
                motd.c            \
+               msg.c             \
                numeric.c         \
                packet.c          \
                parse.c           \

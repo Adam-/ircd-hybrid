@@ -42,6 +42,7 @@
 #include "mempool.h"
 #include "misc.h"
 #include "resv.h"
+#include "msg.h"
 
 
 dlink_list channel_list;
@@ -161,37 +162,19 @@ static void
 send_members(struct Client *client_p, struct Channel *chptr,
              char *modebuf, char *parabuf)
 {
+  struct msg msg;
   const dlink_node *ptr = NULL;
-  int tlen;              /* length of text to append */
-  char *t, *start;       /* temp char pointer */
 
-  start = t = buf + snprintf(buf, sizeof(buf), ":%s SJOIN %lu %s %s %s:",
-                             me.id, (unsigned long)chptr->channelts,
-                             chptr->chname, modebuf, parabuf);
+  msg_init(&msg, &me, "SJOIN");
+  msg_push_fmt(&msg, "channelts", "%lu", (unsigned long)chptr->channelts);
+  msg_push(&msg, "channel", PARAM_TYPE_CHANNEL, chptr);
+  msg_push_fmt(&msg, "modes", "%s %s", modebuf, parabuf);
+  msg_push_last();
 
   DLINK_FOREACH(ptr, chptr->members.head)
   {
     const struct Membership *ms = ptr->data;
-
-    tlen = strlen(ms->client_p->id) + 1;  /* +1 for space */
-
-    if (ms->flags & CHFL_CHANOP)
-      ++tlen;
-    if (ms->flags & CHFL_HALFOP)
-      ++tlen;
-    if (ms->flags & CHFL_VOICE)
-      ++tlen;
-
-    /*
-     * Space will be converted into CR, but we also need space for LF..
-     * That's why we use '- 1' here -adx
-     */
-    if (t + tlen - buf > IRCD_BUFSIZE - 1)
-    {
-      *(t - 1) = '\0';  /* Kill the space and terminate the string */
-      sendto_one(client_p, "%s", buf);
-      t = start;
-    }
+    char *t = buf;
 
     if (ms->flags & CHFL_CHANOP)
       *t++ = '@';
@@ -200,17 +183,14 @@ send_members(struct Client *client_p, struct Channel *chptr,
     if (ms->flags & CHFL_VOICE)
       *t++ = '+';
 
-    strcpy(t, ms->client_p->id);
-
-    t += strlen(t);
-    *t++ = ' ';
+    msg_push_str(&msg, "users", t);
   }
 
-  /* Should always be non-NULL unless we have a kind of persistent channels */
-  if (chptr->members.head)
-    t--;  /* Take the space out */
-  *t = '\0';
-  sendto_one(client_p, "%s", buf);
+  msg_build(&msg);
+
+  sendto_one_msg(client_p, &msg);
+
+  msg_free(&msg);
 }
 
 /*! \brief Sends +b/+e/+I
