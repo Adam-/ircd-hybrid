@@ -131,6 +131,9 @@ msg_build_part(struct msg *msg, int from)
   --user->size;
   --server->size;
 
+  dbuf_put_fmt(user, "%s", "\r\n");
+  dbuf_put_fmt(server, "%s", "\r\n");
+
   dlinkAdd(user, make_dlink_node(), &msg->user);
   dlinkAdd(server, make_dlink_node(), &msg->server);
 
