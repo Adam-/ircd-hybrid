@@ -183,6 +183,8 @@ send_members(struct Client *client_p, struct Channel *chptr,
     if (ms->flags & CHFL_VOICE)
       *t++ = '+';
 
+    strcpy(t, ms->client_p->id);
+
     msg_push_str(&msg, "users", t);
   }
 

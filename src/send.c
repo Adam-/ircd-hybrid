@@ -334,7 +334,7 @@ sendto_one_msg(struct Client *to, struct msg *msg)
   dlink_list *list;
   dlink_node *node;
 
-  if (IsServer(to))
+  if (IsServer(to->from))
     list = &msg->server;
   else
     list = &msg->user;
