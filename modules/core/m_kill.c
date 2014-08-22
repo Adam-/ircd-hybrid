@@ -164,10 +164,7 @@ ms_kill(struct Client *source_p, int parc, char *parv[])
   char *reason = NULL;
 
   if (parc < 3 || EmptyString(parv[2]))
-  {
-    sendto_one_numeric(source_p, &me, ERR_NEEDMOREPARAMS, "KILL");
     return 0;
-  }
 
   if ((target_p = find_person(source_p, parv[1])) == NULL)
     return 0;
@@ -178,10 +175,7 @@ ms_kill(struct Client *source_p, int parc, char *parv[])
     reason = def_reason;
 
   if (IsServer(target_p) || IsMe(target_p))
-  {
-    sendto_one_numeric(source_p, &me, ERR_CANTKILLSERVER);
     return 0;
-  }
 
   if (MyConnect(target_p))
   {
@@ -245,7 +239,7 @@ ms_kill(struct Client *source_p, int parc, char *parv[])
 
 static struct Message kill_msgtab =
 {
-  "KILL", NULL, 0, 0, 2, MAXPARA, MFLG_SLOW, 0,
+  "KILL", NULL, 0, 0, 2, MAXPARA, MFLG_SLOW | MFLG_UNKNOWN, 0,
   { m_unregistered, m_not_oper, ms_kill, m_ignore, mo_kill, m_ignore }
 };
 

@@ -281,6 +281,7 @@ parse(struct Client *client_p, char *pbuffer, char *bufend)
   unsigned int numeric = 0;
   unsigned int parc = 0;
   unsigned int paramcount;
+  const char *sender = NULL;
 
   if (IsDefunct(client_p))
     return;
@@ -297,7 +298,7 @@ parse(struct Client *client_p, char *pbuffer, char *bufend)
      * Copy the prefix to 'sender' assuming it terminates
      * with SPACE (or NULL, which is an error, though).
      */
-    const char *sender = ++ch;
+    sender = ++ch;
 
     if ((s = strchr(ch, ' ')))
     {
@@ -310,19 +311,7 @@ parse(struct Client *client_p, char *pbuffer, char *bufend)
       if ((from = find_person(client_p, sender)) == NULL)
         from = hash_find_server(sender);
 
-      /*
-       * Hmm! If the client corresponding to the prefix is not found--what is
-       * the correct action??? Now, I will ignore the message (old IRC just
-       * let it through as if the prefix just wasn't there...) --msa
-       */
-      if (from == NULL)
-      {
-        ++ServerStats.is_unpf;
-        parse_remove_unknown(client_p, sender, pbuffer);
-        return;
-      }
-
-      if (from->from != client_p)
+      if (from != NULL && from->from != client_p)
       {
         ++ServerStats.is_wrdi;
         parse_cancel_clients(client_p, from, pbuffer);
@@ -379,8 +368,8 @@ parse(struct Client *client_p, char *pbuffer, char *bufend)
        * code has been found ?? -Armin
        */
       if (*pbuffer)
-        if (IsClient(from))
-          sendto_one_numeric(from, &me, ERR_UNKNOWNCOMMAND, ch);
+        if (IsClient(client_p))
+          sendto_one_numeric(client_p, &me, ERR_UNKNOWNCOMMAND, ch);
 
       ++ServerStats.is_unco;
       return;
@@ -443,6 +432,18 @@ parse(struct Client *client_p, char *pbuffer, char *bufend)
   }
 
   para[++parc] = NULL;
+
+  if (from == NULL)
+  {
+    if (!(msg_ptr->flags & MFLG_UNKNOWN))
+    {
+      ++ServerStats.is_unpf;
+      parse_remove_unknown(client_p, sender, pbuffer);
+      return;
+    }
+
+    from = client_p;
+  }
 
   if (msg_ptr)
     parse_handle_command(msg_ptr, from, parc, para);

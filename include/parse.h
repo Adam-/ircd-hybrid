@@ -101,6 +101,7 @@ struct Message
                                          * once per 2 seconds.
                                          */
 #define MFLG_EXTRA 0x002
+#define MFLG_UNKNOWN 0x003
 #define MAXPARA    15
 
 extern void parse(struct Client *, char *, char *);
