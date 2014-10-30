@@ -101,7 +101,8 @@ comm_setselect(fde_t *F, unsigned int type, void (*handler)(fde_t *, void *),
     else
       op = EPOLL_CTL_MOD;
 
-    ep_event.events = F->evcache = new_events;
+    F->evcache = new_events;
+    ep_event.events = new_events | EPOLLET;
     ep_event.data.fd = F->fd;
 
     if (epoll_ctl(efd.fd, op, F->fd, &ep_event) != 0)
@@ -150,7 +151,6 @@ comm_select(void)
     {
       if ((hdl = F->read_handler) != NULL)
       {
-        F->read_handler = NULL;
         hdl(F, F->read_data);
         if (!F->flags.open)
           continue;
@@ -161,14 +161,11 @@ comm_select(void)
     {
       if ((hdl = F->write_handler) != NULL)
       {
-        F->write_handler = NULL;
         hdl(F, F->write_data);
         if (!F->flags.open)
           continue;
       }
     }
-
-    comm_setselect(F, 0, NULL, NULL, 0);
   }
 }
 #endif
