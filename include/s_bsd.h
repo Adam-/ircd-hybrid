@@ -31,8 +31,12 @@
 #include "fdlist.h"
 
 /* Type of IO */
-#define COMM_SELECT_READ  1
-#define COMM_SELECT_WRITE 2
+enum
+{
+  COMM_SELECT_READ  = 1,
+  COMM_SELECT_WRITE = 2,
+  COMM_SELECT_ET    = 4
+};
 
 /* How long can comm_select() wait for network events [milliseconds] */
 #define SELECT_DELAY    500

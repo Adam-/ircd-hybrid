@@ -252,7 +252,7 @@ send_queued_write(struct Client *to)
       AddFlag(to, FLAGS_BLOCKED);
 
       /* we have a non-fatal error, reschedule a write */
-      comm_setselect(&to->connection->fd, COMM_SELECT_WRITE,
+      comm_setselect(&to->connection->fd, COMM_SELECT_WRITE | COMM_SELECT_ET,
                      sendq_unblocked, to, 0);
     }
     else if (retlen <= 0)

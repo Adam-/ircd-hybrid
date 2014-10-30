@@ -367,7 +367,7 @@ read_packet(fde_t *fd, void *data)
 #endif
 
   /* If we get here, we need to register for another COMM_SELECT_READ */
-  comm_setselect(fd, COMM_SELECT_READ, read_packet, client_p, 0);
+  comm_setselect(fd, COMM_SELECT_READ | COMM_SELECT_ET, read_packet, client_p, 0);
 }
 
 /*

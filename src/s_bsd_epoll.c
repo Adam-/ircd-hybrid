@@ -83,7 +83,8 @@ comm_setselect(fde_t *F, unsigned int type, void (*handler)(fde_t *, void *),
   }
 
   new_events = (F->read_handler ? EPOLLIN : 0) |
-    (F->write_handler ? EPOLLOUT : 0);
+    (F->write_handler ? EPOLLOUT : 0) |
+    ((type & COMM_SELECT_ET) ? EPOLLET : 0);
 
   if (timeout != 0)
   {
@@ -150,7 +151,8 @@ comm_select(void)
     {
       if ((hdl = F->read_handler) != NULL)
       {
-        F->read_handler = NULL;
+        if (!(F->evcache & EPOLLET))
+          F->read_handler = NULL;
         hdl(F, F->read_data);
         if (!F->flags.open)
           continue;
@@ -161,14 +163,16 @@ comm_select(void)
     {
       if ((hdl = F->write_handler) != NULL)
       {
-        F->write_handler = NULL;
+        if (!(F->evcache & EPOLLET))
+          F->write_handler = NULL;
         hdl(F, F->write_data);
         if (!F->flags.open)
           continue;
       }
     }
 
-    comm_setselect(F, 0, NULL, NULL, 0);
+    if (!(F->evcache & EPOLLET))
+      comm_setselect(F, 0, NULL, NULL, 0);
   }
 }
 #endif
