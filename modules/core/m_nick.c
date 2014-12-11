@@ -418,7 +418,7 @@ perform_uid_introduction_collides(struct Client *source_p, struct Client *target
   /* Server introducing new nick */
 
   /* If we don't have a TS, or their TS's are the same, kill both */
-  if (!newts || !target_p->tsinfo || (newts == target_p->tsinfo))
+  if (!newts || !target_p->tsinfo || (newts == target_p->tsinfo) || target_p->from == source_p->from)
   {
     sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
                          "Nick collision on %s(%s <- %s)(both killed)",
@@ -505,7 +505,7 @@ perform_nick_change_collides(struct Client *source_p, struct Client *target_p,
   assert(newts > 0);
 
   /* It's a client changing nick and causing a collide */
-  if (!newts || !target_p->tsinfo || (newts == target_p->tsinfo))
+  if (!newts || !target_p->tsinfo || (newts == target_p->tsinfo) || target_p->from == source_p->from)
   {
     sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
                "Nick change collision from %s to %s(%s <- %s)(both killed)",
