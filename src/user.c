@@ -953,17 +953,8 @@ valid_sid(const char *sid)
 void
 init_uid(void)
 {
-  memset(new_uid, 0, sizeof(new_uid));
-
-  if (!EmptyString(ConfigServerInfo.sid))
-    strlcpy(new_uid, ConfigServerInfo.sid, sizeof(new_uid));
-
-  for (unsigned int i = 0; i < IRC_MAXSID; ++i)
-    if (new_uid[i] == '\0')
-      new_uid[i] = 'A';
-
-  /* NOTE: if IRC_MAXUID != 6, this will have to be rewritten */
-  memcpy(new_uid + IRC_MAXSID, "AAAAA@", IRC_MAXUID);
+  strlcpy(new_uid, ConfigServerInfo.sid, sizeof(new_uid));
+  strlcat(new_uid, "AAAAA@", sizeof(new_uid));
 }
 
 /*
@@ -977,26 +968,18 @@ init_uid(void)
 static void
 add_one_to_uid(unsigned int i)
 {
-  if (i != IRC_MAXSID)  /* Not reached server SID portion yet? */
+  if (i < IRC_MAXSID)
+    return;
+
+  if (new_uid[i] == 'Z')
+    new_uid[i] = '0';
+  else if (new_uid[i] == '9')
   {
-    if (new_uid[i] == 'Z')
-      new_uid[i] = '0';
-    else if (new_uid[i] == '9')
-    {
-      new_uid[i] = 'A';
-      add_one_to_uid(i - 1);
-    }
-    else
-      ++new_uid[i];
+    new_uid[i] = 'A';
+    add_one_to_uid(i - 1);
   }
   else
-  {
-    /* NOTE: if IRC_MAXUID != 6, this will have to be rewritten */
-    if (new_uid[i] == 'Z')
-      memcpy(new_uid + IRC_MAXSID, "AAAAAA", IRC_MAXUID);
-    else
-      ++new_uid[i];
-  }
+    ++new_uid[i];
 }
 
 /*
