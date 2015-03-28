@@ -953,8 +953,7 @@ valid_sid(const char *sid)
 void
 init_uid(void)
 {
-  strlcpy(new_uid, ConfigServerInfo.sid, sizeof(new_uid));
-  strlcat(new_uid, "AAAAA@", sizeof(new_uid));
+  snprintf(new_uid, sizeof(new_uid), "%s999999", ConfigServerInfo.sid);
 }
 
 /*
