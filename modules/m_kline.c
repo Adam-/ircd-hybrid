@@ -92,7 +92,7 @@ m_kline_add_kline(struct Client *source_p, struct MaskItem *conf,
     conf->until = CurrentTime + tkline_time;
 
     if (IsClient(source_p))
-      sendto_one_notice(source_p, &me, ":Added temporary %d min. K-Line [%s@%s]",
+      sendto_one_notice(source_p, "Added temporary %d min. K-Line [%s@%s]",
                         tkline_time/60, conf->user, conf->host);
 
     sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
@@ -107,7 +107,7 @@ m_kline_add_kline(struct Client *source_p, struct MaskItem *conf,
   else
   {
     if (IsClient(source_p))
-      sendto_one_notice(source_p, &me, ":Added K-Line [%s@%s]",
+      sendto_one_notice(source_p, "Added K-Line [%s@%s]",
                         conf->user, conf->host);
 
     sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
@@ -156,7 +156,7 @@ already_placed_kline(struct Client *source_p, const char *luser, const char *lho
   if ((conf = find_conf_by_address(lhost, piphost, CONF_KLINE, aftype, luser, NULL, 0)))
   {
     if (IsClient(source_p) && warn)
-      sendto_one_notice(source_p, &me, ":[%s@%s] already K-Lined by [%s@%s] - %s",
+      sendto_one_notice(source_p, "[%s@%s] already K-Lined by [%s@%s] - %s",
                         luser, lhost, conf->user, conf->host, conf->reason);
     return 1;
   }

@@ -86,7 +86,7 @@ mo_opme(struct Client *source_p, int parc, char *parv[])
   {
     if (((struct Membership *)node->data)->flags & CHFL_CHANOP)
     {
-      sendto_one_notice(source_p, &me, ":Cannot use OPME on %s: channel is not opless",
+      sendto_one_notice(source_p, "Cannot use OPME on %s: channel is not opless",
                         chptr->name);
       return 0;
     }

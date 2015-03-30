@@ -110,7 +110,7 @@ apply_dline(struct Client *source_p, struct MaskItem *conf,
     conf->until = CurrentTime + tkline_time;
 
     if (IsClient(source_p))
-      sendto_one_notice(source_p, &me, ":Added temporary %d min. D-Line [%s]",
+      sendto_one_notice(source_p, "Added temporary %d min. D-Line [%s]",
                         tkline_time/60, conf->host);
 
     sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
@@ -123,7 +123,7 @@ apply_dline(struct Client *source_p, struct MaskItem *conf,
   else
   {
     if (IsClient(source_p))
-      sendto_one_notice(source_p, &me, ":Added D-Line [%s]", conf->host);
+      sendto_one_notice(source_p, "Added D-Line [%s]", conf->host);
 
     sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
                          "%s added D-Line for [%s] [%s]",
@@ -193,13 +193,13 @@ mo_dline(struct Client *source_p, int parc, char *parv[])
 
     if (!MyConnect(target_p))
     {
-      sendto_one_notice(source_p, &me, ":Cannot DLINE nick on another server");
+      sendto_one_notice(source_p, "Cannot DLINE nick on another server");
       return 0;
     }
 
     if (IsExemptKline(target_p))
     {
-      sendto_one_notice(source_p, &me, ":%s is E-lined", target_p->name);
+      sendto_one_notice(source_p, "%s is E-lined", target_p->name);
       return 0;
     }
 
@@ -213,7 +213,7 @@ mo_dline(struct Client *source_p, int parc, char *parv[])
 
   if (bits < 8)
   {
-    sendto_one_notice(source_p, &me, ":For safety, bitmasks less than 8 require conf access.");
+    sendto_one_notice(source_p, "For safety, bitmasks less than 8 require conf access.");
     return 0;
   }
 
@@ -229,10 +229,10 @@ mo_dline(struct Client *source_p, int parc, char *parv[])
     creason = conf->reason ? conf->reason : def_reason;
 
     if (IsConfExemptKline(conf))
-      sendto_one_notice(source_p, &me, ":[%s] is (E)d-lined by [%s] - %s",
+      sendto_one_notice(source_p, "[%s] is (E)d-lined by [%s] - %s",
                         dlhost, conf->host, creason);
     else
-      sendto_one_notice(source_p, &me, ":[%s] already D-lined by [%s] - %s",
+      sendto_one_notice(source_p, "[%s] already D-lined by [%s] - %s",
                         dlhost, conf->host, creason);
     return 0;
   }
@@ -289,7 +289,7 @@ ms_dline(struct Client *source_p, int parc, char *parv[])
     if (bits < 8)
     {
       if (IsClient(source_p))
-        sendto_one_notice(source_p, &me, ":For safety, bitmasks less than 8 require conf access.");
+        sendto_one_notice(source_p, "For safety, bitmasks less than 8 require conf access.");
       return 0;
     }
 
@@ -306,10 +306,10 @@ ms_dline(struct Client *source_p, int parc, char *parv[])
       creason = conf->reason ? conf->reason : def_reason;
 
       if (IsConfExemptKline(conf))
-        sendto_one_notice(source_p, &me, ":[%s] is (E)d-lined by [%s] - %s",
+        sendto_one_notice(source_p, "[%s] is (E)d-lined by [%s] - %s",
                           dlhost, conf->host, creason);
       else
-        sendto_one_notice(source_p, &me, ":[%s] already D-lined by [%s] - %s",
+        sendto_one_notice(source_p, "[%s] already D-lined by [%s] - %s",
                           dlhost, conf->host, creason);
       return 0;
     }

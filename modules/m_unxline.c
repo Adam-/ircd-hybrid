@@ -74,7 +74,7 @@ remove_xline(struct Client *source_p, const char *gecos)
   if (remove_xline_exact(gecos))
   {
     if (IsClient(source_p))
-      sendto_one_notice(source_p, &me, ":X-Line for [%s] is removed", gecos);
+      sendto_one_notice(source_p, "X-Line for [%s] is removed", gecos);
 
     sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
                          "%s has removed the X-Line for: [%s]",
@@ -83,7 +83,7 @@ remove_xline(struct Client *source_p, const char *gecos)
          get_oper_name(source_p), gecos);
   }
   else if (IsClient(source_p))
-    sendto_one_notice(source_p, &me, ":No X-Line for %s", gecos);
+    sendto_one_notice(source_p, "No X-Line for %s", gecos);
 }
 
 /*! \brief UNXLINE command handler

@@ -378,7 +378,7 @@ mo_gline(struct Client *source_p, int parc, char *parv[])
 
   if (!ConfigGeneral.glines)
   {
-    sendto_one_notice(source_p, &me, ":GLINE disabled");
+    sendto_one_notice(source_p, "GLINE disabled");
     return 0;
   }
 
@@ -393,7 +393,7 @@ mo_gline(struct Client *source_p, int parc, char *parv[])
                                          ConfigGeneral.gline_min_cidr;
     if (bitlen < min_bitlen)
     {
-      sendto_one_notice(source_p, &me, ":Cannot set G-Lines with CIDR length < %d",
+      sendto_one_notice(source_p, "Cannot set G-Lines with CIDR length < %d",
                         min_bitlen);
       return 0;
     }
@@ -403,7 +403,7 @@ mo_gline(struct Client *source_p, int parc, char *parv[])
   if (check_majority(source_p, user, host, reason, GLINE_PENDING_ADD_TYPE) ==
       GLINE_ALREADY_VOTED)
   {
-    sendto_one_notice(source_p, &me, ":This server or oper has already voted");
+    sendto_one_notice(source_p, "This server or oper has already voted");
     return 0;
   }
 
@@ -492,7 +492,7 @@ mo_gungline(struct Client *source_p, int parc, char *parv[])
 
   if (!ConfigGeneral.glines)
   {
-    sendto_one_notice(source_p, &me, ":GUNGLINE disabled");
+    sendto_one_notice(source_p, "GUNGLINE disabled");
     return 0;
   }
 

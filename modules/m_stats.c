@@ -256,7 +256,7 @@ stats_usage(struct Client *source_p, int parc, char *parv[])
 
   if (getrusage(RUSAGE_SELF, &rus) == -1)
   {
-    sendto_one_notice(source_p, &me, ":Getruseage error: %s",
+    sendto_one_notice(source_p, "Getruseage error: %s",
                       strerror(errno));
     return;
   }
@@ -687,12 +687,12 @@ stats_pending_glines(struct Client *source_p, int parc, char *parv[])
 
   if (!ConfigGeneral.glines)
   {
-    sendto_one_notice(source_p, &me, ":This server does not support G-Lines");
+    sendto_one_notice(source_p, "This server does not support G-Lines");
     return;
   }
 
   if (dlink_list_length(&pending_glines[GLINE_PENDING_ADD_TYPE]))
-    sendto_one_notice(source_p, &me, ":Pending G-lines");
+    sendto_one_notice(source_p, "Pending G-lines");
 
   DLINK_FOREACH(node, pending_glines[GLINE_PENDING_ADD_TYPE].head)
   {
@@ -700,7 +700,7 @@ stats_pending_glines(struct Client *source_p, int parc, char *parv[])
     tmptr   = localtime(&glp_ptr->vote_1.time_request);
     strftime(timebuffer, MAX_DATE_STRING, "%Y/%m/%d %H:%M:%S", tmptr);
 
-    sendto_one_notice(source_p, &me, ":1) %s!%s@%s on %s requested gline at %s for %s@%s [%s]",
+    sendto_one_notice(source_p, "1) %s!%s@%s on %s requested gline at %s for %s@%s [%s]",
                       glp_ptr->vote_1.oper_nick,
                       glp_ptr->vote_1.oper_user, glp_ptr->vote_1.oper_host,
                       glp_ptr->vote_1.oper_server, timebuffer,
@@ -711,7 +711,7 @@ stats_pending_glines(struct Client *source_p, int parc, char *parv[])
       tmptr = localtime(&glp_ptr->vote_2.time_request);
       strftime(timebuffer, MAX_DATE_STRING, "%Y/%m/%d %H:%M:%S", tmptr);
 
-      sendto_one_notice(source_p, &me, ":2) %s!%s@%s on %s requested gline at %s for %s@%s [%s]",
+      sendto_one_notice(source_p, "2) %s!%s@%s on %s requested gline at %s for %s@%s [%s]",
                         glp_ptr->vote_2.oper_nick,
                         glp_ptr->vote_2.oper_user, glp_ptr->vote_2.oper_host,
                         glp_ptr->vote_2.oper_server, timebuffer,
@@ -719,10 +719,10 @@ stats_pending_glines(struct Client *source_p, int parc, char *parv[])
     }
   }
 
-  sendto_one_notice(source_p, &me, ":End of Pending G-lines");
+  sendto_one_notice(source_p, "End of Pending G-lines");
 
   if (dlink_list_length(&pending_glines[GLINE_PENDING_DEL_TYPE]))
-    sendto_one_notice(source_p, &me, ":Pending UNG-lines");
+    sendto_one_notice(source_p, "Pending UNG-lines");
 
   DLINK_FOREACH(node, pending_glines[GLINE_PENDING_DEL_TYPE].head)
   {
@@ -730,7 +730,7 @@ stats_pending_glines(struct Client *source_p, int parc, char *parv[])
     tmptr   = localtime(&glp_ptr->vote_1.time_request);
     strftime(timebuffer, MAX_DATE_STRING, "%Y/%m/%d %H:%M:%S", tmptr);
 
-    sendto_one_notice(source_p, &me, ":1) %s!%s@%s on %s requested ungline at %s for %s@%s [%s]",
+    sendto_one_notice(source_p, "1) %s!%s@%s on %s requested ungline at %s for %s@%s [%s]",
                       glp_ptr->vote_1.oper_nick,
                       glp_ptr->vote_1.oper_user, glp_ptr->vote_1.oper_host,
                       glp_ptr->vote_1.oper_server, timebuffer,
@@ -741,7 +741,7 @@ stats_pending_glines(struct Client *source_p, int parc, char *parv[])
       tmptr = localtime(&glp_ptr->vote_2.time_request);
       strftime(timebuffer, MAX_DATE_STRING, "%Y/%m/%d %H:%M:%S", tmptr);
 
-      sendto_one_notice(source_p, &me, ":2) %s!%s@%s on %s requested ungline at %s for %s@%s [%s]",
+      sendto_one_notice(source_p, "2) %s!%s@%s on %s requested ungline at %s for %s@%s [%s]",
                         glp_ptr->vote_2.oper_nick,
                         glp_ptr->vote_2.oper_user, glp_ptr->vote_2.oper_host,
                         glp_ptr->vote_2.oper_server, timebuffer,
@@ -750,7 +750,7 @@ stats_pending_glines(struct Client *source_p, int parc, char *parv[])
     }
   }
 
-  sendto_one_notice(source_p, &me, ":End of Pending UNG-lines");
+  sendto_one_notice(source_p, "End of Pending UNG-lines");
 }
 
 /* stats_glines()
@@ -766,7 +766,7 @@ stats_glines(struct Client *source_p, int parc, char *parv[])
 
   if (!ConfigGeneral.glines)
   {
-    sendto_one_notice(source_p, &me, ":This server does not support G-Lines");
+    sendto_one_notice(source_p, "This server does not support G-Lines");
     return;
   }
 

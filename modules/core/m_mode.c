@@ -161,7 +161,7 @@ set_user_mode(struct Client *source_p, const int parc, char *parv[])
   if (MyConnect(source_p) && HasUMode(source_p, UMODE_ADMIN) &&
       !HasOFlag(source_p, OPER_FLAG_ADMIN))
   {
-    sendto_one_notice(source_p, &me, ":*** You have no admin flag;");
+    sendto_one_notice(source_p, "*** You have no admin flag;");
     DelUMode(source_p, UMODE_ADMIN);
   }
 

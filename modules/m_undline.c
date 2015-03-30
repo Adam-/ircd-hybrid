@@ -128,7 +128,7 @@ mo_undline(struct Client *source_p, int parc, char *parv[])
 
   if (remove_dline_match(addr))
   {
-    sendto_one_notice(source_p, &me, ":D-Line for [%s] is removed", addr);
+    sendto_one_notice(source_p, "D-Line for [%s] is removed", addr);
     sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
                          "%s has removed the D-Line for: [%s]",
                          get_oper_name(source_p), addr);
@@ -136,7 +136,7 @@ mo_undline(struct Client *source_p, int parc, char *parv[])
          get_oper_name(source_p), addr);
   }
   else
-    sendto_one_notice(source_p, &me, ":No D-Line for [%s] found", addr);
+    sendto_one_notice(source_p, "No D-Line for [%s] found", addr);
 
   return 0;
 }
@@ -175,7 +175,7 @@ ms_undline(struct Client *source_p, int parc, char *parv[])
     if (remove_dline_match(addr))
     {
       if (IsClient(source_p))
-        sendto_one_notice(source_p, &me, ":D-Line for [%s] is removed", addr);
+        sendto_one_notice(source_p, "D-Line for [%s] is removed", addr);
 
       sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
                            "%s has removed the D-Line for: [%s]",
@@ -184,7 +184,7 @@ ms_undline(struct Client *source_p, int parc, char *parv[])
            get_oper_name(source_p), addr);
     }
     else if (IsClient(source_p))
-      sendto_one_notice(source_p, &me, ":No D-Line for [%s] found", addr);
+      sendto_one_notice(source_p, "No D-Line for [%s] found", addr);
   }
 
   return 0;

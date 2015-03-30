@@ -54,7 +54,7 @@ server_die(const char *message, int rboot)
              rboot ? "Restarting" : "Terminating", message);
 
   DLINK_FOREACH(node, local_client_list.head)
-    sendto_one_notice(node->data, &me, ":%s", buffer);
+    sendto_one_notice(node->data, "%s", buffer);
 
   sendto_server(NULL, 0, 0, ":%s ERROR :%s", me.id, buffer);
 

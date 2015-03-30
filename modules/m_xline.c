@@ -69,7 +69,7 @@ valid_xline(struct Client *source_p, const char *gecos)
   if (!valid_wild_card_simple(gecos))
   {
     if (IsClient(source_p))
-      sendto_one_notice(source_p, &me, ":Please include at least %u non-wildcard characters with the xline",
+      sendto_one_notice(source_p, "Please include at least %u non-wildcard characters with the xline",
                         ConfigGeneral.min_nonwildcard_simple);
     return 0;
   }
@@ -98,7 +98,7 @@ write_xline(struct Client *source_p, char *gecos, char *reason,
   if (tkline_time)
   {
     if (IsClient(source_p))
-      sendto_one_notice(source_p, &me, ":Added temporary %d min. X-Line [%s]",
+      sendto_one_notice(source_p, "Added temporary %d min. X-Line [%s]",
                         (int)tkline_time/60, conf->name);
 
     sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
@@ -112,7 +112,7 @@ write_xline(struct Client *source_p, char *gecos, char *reason,
   else
   {
     if (IsClient(source_p))
-      sendto_one_notice(source_p, &me, ":Added X-Line [%s] [%s]",
+      sendto_one_notice(source_p, "Added X-Line [%s] [%s]",
                         conf->name, conf->reason);
 
     sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
@@ -138,7 +138,7 @@ relay_xline(struct Client *source_p, char *parv[])
     if ((conf = find_matching_name_conf(CONF_XLINE, parv[2], NULL, NULL, 0)))
     {
       if (IsClient(source_p))
-        sendto_one_notice(source_p, &me, ":[%s] already X-Lined by [%s] - %s",
+        sendto_one_notice(source_p, "[%s] already X-Lined by [%s] - %s",
                           parv[2], conf->name, conf->reason);
       return;
     }
@@ -211,7 +211,7 @@ mo_xline(struct Client *source_p, int parc, char *parv[])
 
   if ((conf = find_matching_name_conf(CONF_XLINE, gecos, NULL, NULL, 0)))
   {
-    sendto_one_notice(source_p, &me, ":[%s] already X-Lined by [%s] - %s",
+    sendto_one_notice(source_p, "[%s] already X-Lined by [%s] - %s",
                       gecos, conf->name, conf->reason);
     return 0;
   }
