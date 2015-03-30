@@ -296,7 +296,7 @@ sendto_one(struct Client *to, const char *pattern, ...)
 }
 
 void
-sendto_one_numeric(struct Client *to, struct Client *from, enum irc_numerics numeric, ...)
+sendto_one_numeric(struct Client *to, enum irc_numerics numeric, ...)
 {
   struct dbuf_block *buffer = NULL;
   const char *dest = NULL, *numstr = NULL;
@@ -312,7 +312,7 @@ sendto_one_numeric(struct Client *to, struct Client *from, enum irc_numerics num
 
   buffer = dbuf_alloc();
 
-  dbuf_put_fmt(buffer, ":%s %03d %s ", ID_or_name(from, to), numeric & ~SND_EXPLICIT, dest);
+  dbuf_put_fmt(buffer, ":%s %03d %s ", ID_or_name(&me, to), numeric & ~SND_EXPLICIT, dest);
 
   va_start(args, numeric);
 
