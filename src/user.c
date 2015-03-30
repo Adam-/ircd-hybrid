@@ -123,36 +123,36 @@ void
 show_lusers(struct Client *source_p)
 {
   if (!ConfigServerHide.hide_servers || HasUMode(source_p, UMODE_OPER))
-    sendto_one_numeric(source_p, &me, RPL_LUSERCLIENT, (Count.total - Count.invisi),
+    sendto_one_numeric(source_p, RPL_LUSERCLIENT, (Count.total - Count.invisi),
                        Count.invisi, dlink_list_length(&global_server_list));
   else
-    sendto_one_numeric(source_p, &me, RPL_LUSERCLIENT, (Count.total - Count.invisi),
+    sendto_one_numeric(source_p, RPL_LUSERCLIENT, (Count.total - Count.invisi),
                        Count.invisi, 1);
 
   if (Count.oper)
-    sendto_one_numeric(source_p, &me, RPL_LUSEROP, Count.oper);
+    sendto_one_numeric(source_p, RPL_LUSEROP, Count.oper);
 
   if (dlink_list_length(&unknown_list))
-    sendto_one_numeric(source_p, &me, RPL_LUSERUNKNOWN, dlink_list_length(&unknown_list));
+    sendto_one_numeric(source_p, RPL_LUSERUNKNOWN, dlink_list_length(&unknown_list));
 
   if (dlink_list_length(&channel_list))
-    sendto_one_numeric(source_p, &me, RPL_LUSERCHANNELS, dlink_list_length(&channel_list));
+    sendto_one_numeric(source_p, RPL_LUSERCHANNELS, dlink_list_length(&channel_list));
 
   if (!ConfigServerHide.hide_servers || HasUMode(source_p, UMODE_OPER))
   {
-    sendto_one_numeric(source_p, &me, RPL_LUSERME, Count.local, Count.myserver);
-    sendto_one_numeric(source_p, &me, RPL_LOCALUSERS, Count.local, Count.max_loc);
+    sendto_one_numeric(source_p, RPL_LUSERME, Count.local, Count.myserver);
+    sendto_one_numeric(source_p, RPL_LOCALUSERS, Count.local, Count.max_loc);
   }
   else
   {
-    sendto_one_numeric(source_p, &me, RPL_LUSERME, Count.total, 0);
-    sendto_one_numeric(source_p, &me, RPL_LOCALUSERS, Count.total, Count.max_tot);
+    sendto_one_numeric(source_p, RPL_LUSERME, Count.total, 0);
+    sendto_one_numeric(source_p, RPL_LOCALUSERS, Count.total, Count.max_tot);
   }
 
-  sendto_one_numeric(source_p, &me, RPL_GLOBALUSERS, Count.total, Count.max_tot);
+  sendto_one_numeric(source_p, RPL_GLOBALUSERS, Count.total, Count.max_tot);
 
   if (!ConfigServerHide.hide_servers || HasUMode(source_p, UMODE_OPER))
-    sendto_one_numeric(source_p, &me, RPL_STATSCONN, Count.max_loc_con,
+    sendto_one_numeric(source_p, RPL_STATSCONN, Count.max_loc_con,
                        Count.max_loc_cli, Count.totalrestartcount);
 
   if (Count.local > Count.max_loc_cli)
@@ -174,7 +174,7 @@ show_isupport(struct Client *source_p)
   const dlink_node *node = NULL;
 
   DLINK_FOREACH(node, support_list_lines.head)
-    sendto_one_numeric(source_p, &me, RPL_ISUPPORT, node->data);
+    sendto_one_numeric(source_p, RPL_ISUPPORT, node->data);
 }
 
 
@@ -311,14 +311,14 @@ user_welcome(struct Client *source_p)
   }
 #endif
 
-  sendto_one_numeric(source_p, &me, RPL_WELCOME, ConfigServerInfo.network_name,
+  sendto_one_numeric(source_p, RPL_WELCOME, ConfigServerInfo.network_name,
                      source_p->name);
-  sendto_one_numeric(source_p, &me, RPL_YOURHOST,
+  sendto_one_numeric(source_p, RPL_YOURHOST,
                      get_listener_name(source_p->connection->listener), ircd_version);
-  sendto_one_numeric(source_p, &me, RPL_CREATED, built_date);
-  sendto_one_numeric(source_p, &me, RPL_MYINFO, me.name, ircd_version, umode_buffer);
+  sendto_one_numeric(source_p, RPL_CREATED, built_date);
+  sendto_one_numeric(source_p, RPL_MYINFO, me.name, ircd_version, umode_buffer);
   show_isupport(source_p);
-  sendto_one_numeric(source_p, &me, RPL_YOURID, source_p->id);
+  sendto_one_numeric(source_p, RPL_YOURID, source_p->id);
 
   show_lusers(source_p);
   motd_signon(source_p);
@@ -434,7 +434,7 @@ register_local_user(struct Client *source_p)
     {
       ++ServerStats.is_ref;
 
-      sendto_one_numeric(source_p, &me, ERR_PASSWDMISMATCH);
+      sendto_one_numeric(source_p, ERR_PASSWDMISMATCH);
       exit_client(source_p, "Bad Password");
       return;
     }
@@ -821,7 +821,7 @@ user_set_hostmask(struct Client *target_p, const char *hostname, const int what)
 
   if (MyClient(target_p))
   {
-    sendto_one_numeric(target_p, &me, RPL_VISIBLEHOST, target_p->host);
+    sendto_one_numeric(target_p, RPL_VISIBLEHOST, target_p->host);
     clear_ban_cache_client(target_p);
   }
 
@@ -925,7 +925,7 @@ oper_up(struct Client *source_p)
   sendto_server(NULL, 0, 0, ":%s GLOBOPS :%s is now an operator",
                 me.id, get_oper_name(source_p));
   send_umode_out(source_p, old);
-  sendto_one_numeric(source_p, &me, RPL_YOUREOPER);
+  sendto_one_numeric(source_p, RPL_YOUREOPER);
 }
 
 static char new_uid[TOTALSIDUID + 1];  /* Allow for \0 */

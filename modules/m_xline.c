@@ -168,7 +168,7 @@ mo_xline(struct Client *source_p, int parc, char *parv[])
 
   if (!HasOFlag(source_p, OPER_FLAG_XLINE))
   {
-    sendto_one_numeric(source_p, &me, ERR_NOPRIVS, "xline");
+    sendto_one_numeric(source_p, ERR_NOPRIVS, "xline");
     return 0;
   }
 

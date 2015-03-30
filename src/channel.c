@@ -481,7 +481,7 @@ channel_member_names(struct Client *source_p, struct Channel *chptr,
   }
 
   if (show_eon)
-    sendto_one_numeric(source_p, &me, RPL_ENDOFNAMES, chptr->name);
+    sendto_one_numeric(source_p, RPL_ENDOFNAMES, chptr->name);
 }
 
 /*! \brief Adds client to invite list
@@ -1007,7 +1007,7 @@ channel_do_join(struct Client *source_p, char *channel, char *key_list)
 
     if (!check_channel_name(chan, 1))
     {
-      sendto_one_numeric(source_p, &me, ERR_BADCHANNAME, chan);
+      sendto_one_numeric(source_p, ERR_BADCHANNAME, chan);
       continue;
     }
 
@@ -1016,7 +1016,7 @@ channel_do_join(struct Client *source_p, char *channel, char *key_list)
         ((conf = match_find_resv(chan)) && !resv_find_exempt(source_p, conf)))
     {
       ++conf->count;
-      sendto_one_numeric(source_p, &me, ERR_CHANBANREASON,
+      sendto_one_numeric(source_p, ERR_CHANBANREASON,
                          chan, conf->reason ? conf->reason : "Reserved channel");
       sendto_realops_flags(UMODE_REJ, L_ALL, SEND_NOTICE,
                            "Forbidding reserved channel %s from user %s",
@@ -1027,7 +1027,7 @@ channel_do_join(struct Client *source_p, char *channel, char *key_list)
     if (dlink_list_length(&source_p->channel) >=
         ((class->max_channels) ? class->max_channels : ConfigChannel.max_channels))
     {
-      sendto_one_numeric(source_p, &me, ERR_TOOMANYCHANNELS, chan);
+      sendto_one_numeric(source_p, ERR_TOOMANYCHANNELS, chan);
       break;
     }
 
@@ -1039,7 +1039,7 @@ channel_do_join(struct Client *source_p, char *channel, char *key_list)
       if (splitmode && !HasUMode(source_p, UMODE_OPER) &&
           ConfigChannel.no_join_on_split)
       {
-        sendto_one_numeric(source_p, &me, ERR_UNAVAILRESOURCE, chptr->name);
+        sendto_one_numeric(source_p, ERR_UNAVAILRESOURCE, chptr->name);
         continue;
       }
 
@@ -1048,7 +1048,7 @@ channel_do_join(struct Client *source_p, char *channel, char *key_list)
        */
       if ((i = can_join(source_p, chptr, key)))
       {
-        sendto_one_numeric(source_p, &me, i, chptr->name);
+        sendto_one_numeric(source_p, i, chptr->name);
         continue;
       }
 
@@ -1066,7 +1066,7 @@ channel_do_join(struct Client *source_p, char *channel, char *key_list)
       if (splitmode && !HasUMode(source_p, UMODE_OPER) &&
           (ConfigChannel.no_create_on_split || ConfigChannel.no_join_on_split))
       {
-        sendto_one_numeric(source_p, &me, ERR_UNAVAILRESOURCE, chan);
+        sendto_one_numeric(source_p, ERR_UNAVAILRESOURCE, chan);
         continue;
       }
 
@@ -1138,8 +1138,8 @@ channel_do_join(struct Client *source_p, char *channel, char *key_list)
 
     if (chptr->topic[0])
     {
-      sendto_one_numeric(source_p, &me, RPL_TOPIC, chptr->name, chptr->topic);
-      sendto_one_numeric(source_p, &me, RPL_TOPICWHOTIME, chptr->name,
+      sendto_one_numeric(source_p, RPL_TOPIC, chptr->name, chptr->topic);
+      sendto_one_numeric(source_p, RPL_TOPICWHOTIME, chptr->name,
                          chptr->topic_info, chptr->topic_time);
     }
 
@@ -1162,13 +1162,13 @@ channel_part_one_client(struct Client *source_p, const char *name, const char *r
 
   if ((chptr = hash_find_channel(name)) == NULL)
   {
-    sendto_one_numeric(source_p, &me, ERR_NOSUCHCHANNEL, name);
+    sendto_one_numeric(source_p, ERR_NOSUCHCHANNEL, name);
     return;
   }
 
   if ((member = find_channel_link(source_p, chptr)) == NULL)
   {
-    sendto_one_numeric(source_p, &me, ERR_NOTONCHANNEL, chptr->name);
+    sendto_one_numeric(source_p, ERR_NOTONCHANNEL, chptr->name);
     return;
   }
 

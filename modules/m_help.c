@@ -45,29 +45,29 @@ sendhelpfile(struct Client *source_p, const char *path, const char *topic)
 
   if ((file = fopen(path, "r")) == NULL)
   {
-    sendto_one_numeric(source_p, &me, ERR_HELPNOTFOUND, topic);
+    sendto_one_numeric(source_p, ERR_HELPNOTFOUND, topic);
     return;
   }
 
   if (fgets(line, sizeof(line), file) == NULL)
   {
-    sendto_one_numeric(source_p, &me, ERR_HELPNOTFOUND, topic);
+    sendto_one_numeric(source_p, ERR_HELPNOTFOUND, topic);
     fclose(file);
     return;
   }
 
   line[strlen(line) - 1] = '\0';
-  sendto_one_numeric(source_p, &me, RPL_HELPSTART, topic, line);
+  sendto_one_numeric(source_p, RPL_HELPSTART, topic, line);
 
   while (fgets(line, sizeof(line), file))
   {
     line[strlen(line) - 1] = '\0';
 
-    sendto_one_numeric(source_p, &me, RPL_HELPTXT, topic, line);
+    sendto_one_numeric(source_p, RPL_HELPTXT, topic, line);
   }
 
   fclose(file);
-  sendto_one_numeric(source_p, &me, RPL_ENDOFHELP, topic);
+  sendto_one_numeric(source_p, RPL_ENDOFHELP, topic);
 }
 
 static void
@@ -85,13 +85,13 @@ do_help(struct Client *source_p, char *topic)
 
   if (strpbrk(topic, "/\\"))
   {
-    sendto_one_numeric(source_p, &me, ERR_HELPNOTFOUND, topic);
+    sendto_one_numeric(source_p, ERR_HELPNOTFOUND, topic);
     return;
   }
 
   if (strlen(HPATH) + strlen(topic) + 1 > HYB_PATH_MAX)
   {
-    sendto_one_numeric(source_p, &me, ERR_HELPNOTFOUND, topic);
+    sendto_one_numeric(source_p, ERR_HELPNOTFOUND, topic);
     return;
   }
 
@@ -99,13 +99,13 @@ do_help(struct Client *source_p, char *topic)
 
   if (stat(path, &sb) < 0)
   {
-    sendto_one_numeric(source_p, &me, ERR_HELPNOTFOUND, topic);
+    sendto_one_numeric(source_p, ERR_HELPNOTFOUND, topic);
     return;
   }
 
   if (!S_ISREG(sb.st_mode))
   {
-    sendto_one_numeric(source_p, &me, ERR_HELPNOTFOUND, topic);
+    sendto_one_numeric(source_p, ERR_HELPNOTFOUND, topic);
     return;
   }
 
@@ -130,7 +130,7 @@ m_help(struct Client *source_p, int parc, char *parv[])
 
   if ((last_used + ConfigGeneral.pace_wait_simple) > CurrentTime)
   {
-    sendto_one_numeric(source_p, &me, RPL_LOAD2HI, "HELP");
+    sendto_one_numeric(source_p, RPL_LOAD2HI, "HELP");
     return 0;
   }
 

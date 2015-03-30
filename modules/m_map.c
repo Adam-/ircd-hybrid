@@ -49,7 +49,7 @@ static void dump_map(struct Client *client,
   *p = '\0';
 
   if (prompt_length > 60)
-    sendto_one_numeric(client, &me, RPL_MAPMORE, prompt, server->name);
+    sendto_one_numeric(client, RPL_MAPMORE, prompt, server->name);
   else
   {
     int dashes;
@@ -70,7 +70,7 @@ static void dump_map(struct Client *client,
                        dlink_list_length(&server->serv->client_list), 100 *
                        (float)dlink_list_length(&server->serv->client_list) /
                        (float)Count.total);
-    sendto_one_numeric(client, &me, RPL_MAP, prompt, buf);
+    sendto_one_numeric(client, RPL_MAP, prompt, buf);
   }
 
   if (prompt_length > 0)
@@ -154,14 +154,14 @@ m_map(struct Client *source_p, int parc, char *parv[])
 
   if ((last_used + ConfigGeneral.pace_wait) > CurrentTime)
   {
-    sendto_one_numeric(source_p, &me, RPL_LOAD2HI, "MAP");
+    sendto_one_numeric(source_p, RPL_LOAD2HI, "MAP");
     return 0;
   }
 
   last_used = CurrentTime;
 
   do_map(source_p);
-  sendto_one_numeric(source_p, &me, RPL_MAPEND);
+  sendto_one_numeric(source_p, RPL_MAPEND);
   return 0;
 }
 
@@ -179,7 +179,7 @@ static int
 mo_map(struct Client *source_p, int parc, char *parv[])
 {
   do_map(source_p);
-  sendto_one_numeric(source_p, &me, RPL_MAPEND);
+  sendto_one_numeric(source_p, RPL_MAPEND);
   return 0;
 }
 

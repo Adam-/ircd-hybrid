@@ -193,11 +193,17 @@ parse_handle_numeric(unsigned int numeric, struct Client *source_p, int parc, ch
   if (target_p)
   {
     /* Fake it for server hiding, if it's our client */
+    struct Client *numeric_source = source_p;
+
     if ((ConfigServerHide.hide_servers || IsHidden(source_p)) && MyConnect(target_p) &&
         !HasUMode(target_p, UMODE_OPER))
-      sendto_one_numeric(target_p, &me, numeric | SND_EXPLICIT, "%s", parv[2]);
-    else
-      sendto_one_numeric(target_p, source_p, numeric | SND_EXPLICIT, "%s", parv[2]);
+      numeric_source = &me;
+
+    sendto_one(target_p, ":%s %03d %s %s",
+               ID_or_name(numeric_source, target_p),
+               numeric,
+               ID_or_name(target_p, target_p),
+               parv[2]);
   }
   else
     sendto_channel_butone(source_p, source_p, chptr, 0, "%u %s %s",
@@ -225,7 +231,7 @@ parse_handle_command(struct Message *message, struct Client *source_p,
 
   /* Check right amount of parameters is passed... --is */
   if (i < message->args_min)
-    sendto_one_numeric(source_p, &me, ERR_NEEDMOREPARAMS, message->cmd);
+    sendto_one_numeric(source_p, ERR_NEEDMOREPARAMS, message->cmd);
   else
     message->handlers[source_p->from->handler](source_p, i, para);
 }
@@ -352,7 +358,7 @@ parse(struct Client *client_p, char *pbuffer, char *bufend)
        */
       if (*pbuffer)
         if (IsClient(from))
-          sendto_one_numeric(from, &me, ERR_UNKNOWNCOMMAND, ch);
+          sendto_one_numeric(from, ERR_UNKNOWNCOMMAND, ch);
 
       ++ServerStats.is_unco;
       return;
@@ -599,7 +605,7 @@ static void
 recurse_report_messages(struct Client *source_p, const struct MessageTree *mtree)
 {
   if (mtree->msg)
-    sendto_one_numeric(source_p, &me, RPL_STATSCOMMANDS,
+    sendto_one_numeric(source_p, RPL_STATSCOMMANDS,
                        mtree->msg->cmd,
                        mtree->msg->count, mtree->msg->bytes,
                        mtree->msg->rcount);
@@ -633,21 +639,21 @@ report_messages(struct Client *source_p)
 int
 m_not_oper(struct Client *source_p, int parc, char *parv[])
 {
-  sendto_one_numeric(source_p, &me, ERR_NOPRIVILEGES);
+  sendto_one_numeric(source_p, ERR_NOPRIVILEGES);
   return 0;
 }
 
 int
 m_unregistered(struct Client *source_p, int parc, char *parv[])
 {
-  sendto_one_numeric(source_p, &me, ERR_NOTREGISTERED);
+  sendto_one_numeric(source_p, ERR_NOTREGISTERED);
   return 0;
 }
 
 int
 m_registered(struct Client *source_p, int parc, char *parv[])
 {
-  sendto_one_numeric(source_p, &me, ERR_ALREADYREGISTRED);
+  sendto_one_numeric(source_p, ERR_ALREADYREGISTRED);
   return 0;
 }
 

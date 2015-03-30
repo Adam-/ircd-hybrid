@@ -54,7 +54,7 @@ mo_die(struct Client *source_p, int parc, char *parv[])
 
   if (!HasOFlag(source_p, OPER_FLAG_DIE))
   {
-    sendto_one_numeric(source_p, &me, ERR_NOPRIVS, "die");
+    sendto_one_numeric(source_p, ERR_NOPRIVS, "die");
     return 0;
   }
 

@@ -80,7 +80,7 @@ m_challenge(struct Client *source_p, int parc, char *parv[])
 
   if (EmptyString(parv[1]))
   {
-    sendto_one_numeric(source_p, &me, ERR_NEEDMOREPARAMS, "CHALLENGE");
+    sendto_one_numeric(source_p, ERR_NEEDMOREPARAMS, "CHALLENGE");
     return 0;
   }
 
@@ -92,7 +92,7 @@ m_challenge(struct Client *source_p, int parc, char *parv[])
 
     if (irccmp(source_p->connection->challenge_response, ++parv[1]))
     {
-      sendto_one_numeric(source_p, &me, ERR_PASSWDMISMATCH);
+      sendto_one_numeric(source_p, ERR_PASSWDMISMATCH);
       failed_challenge_notice(source_p, source_p->connection->challenge_operator,
                               "challenge failed");
       return 0;
@@ -102,7 +102,7 @@ m_challenge(struct Client *source_p, int parc, char *parv[])
                                 source_p->connection->challenge_operator, NULL, NULL);
     if (conf == NULL)
     {
-      sendto_one_numeric(source_p, &me, ERR_NOOPERHOST);
+      sendto_one_numeric(source_p, ERR_NOOPERHOST);
       conf = find_exact_name_conf(CONF_OPER, NULL, source_p->connection->challenge_operator, NULL, NULL);
       failed_challenge_notice(source_p, source_p->connection->challenge_operator, (conf != NULL) ?
                               "host mismatch" : "no operator {} block");
@@ -139,7 +139,7 @@ m_challenge(struct Client *source_p, int parc, char *parv[])
 
   if (!conf)
   {
-    sendto_one_numeric(source_p, &me, ERR_NOOPERHOST);
+    sendto_one_numeric(source_p, ERR_NOOPERHOST);
     conf = find_exact_name_conf(CONF_OPER, NULL, parv[1], NULL, NULL);
     failed_challenge_notice(source_p, parv[1], (conf != NULL)
                             ? "host mismatch" : "no operator {} block");
@@ -155,7 +155,7 @@ m_challenge(struct Client *source_p, int parc, char *parv[])
 
   if (IsConfSSL(conf) && !HasUMode(source_p, UMODE_SSL))
   {
-    sendto_one_numeric(source_p, &me, ERR_NOOPERHOST);
+    sendto_one_numeric(source_p, ERR_NOOPERHOST);
     failed_challenge_notice(source_p, conf->name, "requires SSL/TLS");
     return 0;
   }
@@ -164,7 +164,7 @@ m_challenge(struct Client *source_p, int parc, char *parv[])
   {
     if (EmptyString(source_p->certfp) || strcasecmp(source_p->certfp, conf->certfp))
     {
-      sendto_one_numeric(source_p, &me, ERR_NOOPERHOST);
+      sendto_one_numeric(source_p, ERR_NOOPERHOST);
       failed_challenge_notice(source_p, conf->name, "client certificate fingerprint mismatch");
       return 0;
     }
@@ -173,7 +173,7 @@ m_challenge(struct Client *source_p, int parc, char *parv[])
   if (!generate_challenge(&challenge, &source_p->connection->challenge_response,
                           conf->rsa_public_key))
   {
-    sendto_one_numeric(source_p, &me, RPL_RSACHALLENGE, challenge);
+    sendto_one_numeric(source_p, RPL_RSACHALLENGE, challenge);
     source_p->connection->challenge_operator = xstrdup(conf->name);
   }
 
@@ -195,7 +195,7 @@ m_challenge(struct Client *source_p, int parc, char *parv[])
 static int
 mo_challenge(struct Client *source_p, int parc, char *parv[])
 {
-  sendto_one_numeric(source_p, &me, RPL_YOUREOPER);
+  sendto_one_numeric(source_p, RPL_YOUREOPER);
   return 0;
 }
 

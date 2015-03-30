@@ -54,7 +54,7 @@ mo_close(struct Client *source_p, int parc, char *parv[])
   {
     struct Client *target_p = node->data;
 
-    sendto_one_numeric(source_p, &me, RPL_CLOSING,
+    sendto_one_numeric(source_p, RPL_CLOSING,
                        get_client_name(target_p, SHOW_IP),
                        target_p->status);
 
@@ -65,7 +65,7 @@ mo_close(struct Client *source_p, int parc, char *parv[])
     exit_client(target_p, "Oper Closing");
   }
 
-  sendto_one_numeric(source_p, &me, RPL_CLOSEEND, closed);
+  sendto_one_numeric(source_p, RPL_CLOSEEND, closed);
   return 0;
 }
 

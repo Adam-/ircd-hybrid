@@ -59,7 +59,7 @@ m_topic(struct Client *source_p, int parc, char *parv[])
 
   if (EmptyString(parv[1]))
   {
-    sendto_one_numeric(source_p, &me, ERR_NEEDMOREPARAMS, "TOPIC");
+    sendto_one_numeric(source_p, ERR_NEEDMOREPARAMS, "TOPIC");
     return 0;
   }
 
@@ -68,7 +68,7 @@ m_topic(struct Client *source_p, int parc, char *parv[])
 
   if ((chptr = hash_find_channel(parv[1])) == NULL)
   {
-    sendto_one_numeric(source_p, &me, ERR_NOSUCHCHANNEL, parv[1]);
+    sendto_one_numeric(source_p, ERR_NOSUCHCHANNEL, parv[1]);
     return 0;
   }
 
@@ -79,7 +79,7 @@ m_topic(struct Client *source_p, int parc, char *parv[])
 
     if ((member = find_channel_link(source_p, chptr)) == NULL)
     {
-      sendto_one_numeric(source_p, &me, ERR_NOTONCHANNEL, chptr->name);
+      sendto_one_numeric(source_p, ERR_NOTONCHANNEL, chptr->name);
       return 0;
     }
 
@@ -102,25 +102,25 @@ m_topic(struct Client *source_p, int parc, char *parv[])
                            chptr->name, chptr->topic);
     }
     else
-      sendto_one_numeric(source_p, &me, ERR_CHANOPRIVSNEEDED, chptr->name);
+      sendto_one_numeric(source_p, ERR_CHANOPRIVSNEEDED, chptr->name);
   }
   else /* only asking for topic */
   {
     if (!SecretChannel(chptr) || IsMember(source_p, chptr))
     {
       if (chptr->topic[0] == '\0')
-        sendto_one_numeric(source_p, &me, RPL_NOTOPIC, chptr->name);
+        sendto_one_numeric(source_p, RPL_NOTOPIC, chptr->name);
       else
       {
-        sendto_one_numeric(source_p, &me, RPL_TOPIC,
+        sendto_one_numeric(source_p, RPL_TOPIC,
                            chptr->name, chptr->topic);
-        sendto_one_numeric(source_p, &me, RPL_TOPICWHOTIME, chptr->name,
+        sendto_one_numeric(source_p, RPL_TOPICWHOTIME, chptr->name,
                            chptr->topic_info,
                            chptr->topic_time);
       }
     }
     else
-      sendto_one_numeric(source_p, &me, ERR_NOTONCHANNEL, chptr->name);
+      sendto_one_numeric(source_p, ERR_NOTONCHANNEL, chptr->name);
   }
 
   return 0;
@@ -147,13 +147,13 @@ ms_topic(struct Client *source_p, int parc, char *parv[])
 
   if (EmptyString(parv[1]))
   {
-    sendto_one_numeric(source_p, &me, ERR_NEEDMOREPARAMS, "TOPIC");
+    sendto_one_numeric(source_p, ERR_NEEDMOREPARAMS, "TOPIC");
     return 0;
   }
 
   if ((chptr = hash_find_channel(parv[1])) == NULL)
   {
-    sendto_one_numeric(source_p, &me, ERR_NOSUCHCHANNEL, parv[1]);
+    sendto_one_numeric(source_p, ERR_NOSUCHCHANNEL, parv[1]);
     return 0;
   }
 

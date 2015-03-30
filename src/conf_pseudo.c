@@ -62,7 +62,7 @@ m_pseudo(struct Client *source_p, int parc, char *parv[])
 
   if (parc < 3 || EmptyString(msg))
   {
-    sendto_one_numeric(source_p, &me, ERR_NOTEXTTOSEND);
+    sendto_one_numeric(source_p, ERR_NOTEXTTOSEND);
     return 0;
   }
 
@@ -82,7 +82,7 @@ m_pseudo(struct Client *source_p, int parc, char *parv[])
     return 0;
   }
 
-  sendto_one_numeric(source_p, &me, ERR_SERVICESDOWN, pseudo->name);
+  sendto_one_numeric(source_p, ERR_SERVICESDOWN, pseudo->name);
   return 0;
 }
 

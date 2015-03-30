@@ -164,7 +164,7 @@ mo_dline(struct Client *source_p, int parc, char *parv[])
 
   if (!HasOFlag(source_p, OPER_FLAG_DLINE))
   {
-    sendto_one_numeric(source_p, &me, ERR_NOPRIVS, "dline");
+    sendto_one_numeric(source_p, ERR_NOPRIVS, "dline");
     return 0;
   }
 

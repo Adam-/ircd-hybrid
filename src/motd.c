@@ -276,17 +276,17 @@ motd_forward(struct Client *source_p, const struct MotdCache *cache)
 {
   if (!cache)  /* No motd to send */
   {
-    sendto_one_numeric(source_p, &me, ERR_NOMOTD);
+    sendto_one_numeric(source_p, ERR_NOMOTD);
     return;
   }
 
   /* Send the motd */
-  sendto_one_numeric(source_p, &me, RPL_MOTDSTART, me.name);
+  sendto_one_numeric(source_p, RPL_MOTDSTART, me.name);
 
   for (unsigned int i = 0; i < cache->count; ++i)
-    sendto_one_numeric(source_p, &me, RPL_MOTD, cache->motd[i]);
+    sendto_one_numeric(source_p, RPL_MOTD, cache->motd[i]);
 
-  sendto_one_numeric(source_p, &me, RPL_ENDOFMOTD);
+  sendto_one_numeric(source_p, RPL_ENDOFMOTD);
 }
 
 /*! \brief Find the MOTD for a client and send it.
@@ -322,9 +322,9 @@ motd_signon(struct Client *source_p)
                       cache->modtime.tm_hour,
                       cache->modtime.tm_min);
     sendto_one_notice(source_p, &me, ":*** Notice -- Please read the motd if you haven't read it");
-    sendto_one_numeric(source_p, &me, RPL_MOTDSTART, me.name);
-    sendto_one_numeric(source_p, &me, RPL_MOTD, "*** This is the short motd ***");
-    sendto_one_numeric(source_p, &me, RPL_ENDOFMOTD);
+    sendto_one_numeric(source_p, RPL_MOTDSTART, me.name);
+    sendto_one_numeric(source_p, RPL_MOTD, "*** This is the short motd ***");
+    sendto_one_numeric(source_p, RPL_ENDOFMOTD);
   }
 }
 
@@ -414,7 +414,7 @@ motd_report(struct Client *source_p, int parc, char *parv[])
   {
     const struct Motd *motd = node->data;
 
-    sendto_one_numeric(source_p, &me, RPL_STATSTLINE,
+    sendto_one_numeric(source_p, RPL_STATSTLINE,
                        motd->mask, motd->path);
   }
 }
@@ -462,7 +462,7 @@ motd_memory_count(struct Client *source_p)
     mtcm += sizeof(struct MotdCache) + (MOTD_LINESIZE * (cache->count - 1));
   }
 
-  sendto_one_numeric(source_p, &me, RPL_STATSDEBUG | SND_EXPLICIT,
+  sendto_one_numeric(source_p, RPL_STATSDEBUG | SND_EXPLICIT,
                      "z :Motds %u(%u) Cache %u(%u)",
                      mt, mtm, mtc, mtcm);
 }

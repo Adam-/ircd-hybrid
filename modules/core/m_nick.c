@@ -204,7 +204,7 @@ change_local_nick(struct Client *source_p, const char *nick)
       source_p->connection->nick.count >
       ConfigGeneral.max_nick_changes)
   {
-    sendto_one_numeric(source_p, &me, ERR_NICKTOOFAST, nick,
+    sendto_one_numeric(source_p, ERR_NICKTOOFAST, nick,
                        ConfigGeneral.max_nick_time);
     return;
   }
@@ -434,7 +434,7 @@ perform_uid_introduction_collides(struct Client *source_p, struct Client *target
                   me.id, target_p->id, me.name);
 
     ++ServerStats.is_kill;
-    sendto_one_numeric(target_p, &me, ERR_NICKCOLLISION, target_p->name);
+    sendto_one_numeric(target_p, ERR_NICKCOLLISION, target_p->name);
 
     AddFlag(target_p, FLAGS_KILLED);
     exit_client(target_p, "Nick collision (new)");
@@ -472,7 +472,7 @@ perform_uid_introduction_collides(struct Client *source_p, struct Client *target
                          source_p->from->name);
 
   ++ServerStats.is_kill;
-  sendto_one_numeric(target_p, &me, ERR_NICKCOLLISION, target_p->name);
+  sendto_one_numeric(target_p, ERR_NICKCOLLISION, target_p->name);
 
   sendto_server(NULL, 0, 0, ":%s KILL %s :%s (Nick collision (new))",
                 me.id, target_p->id, me.name);
@@ -515,7 +515,7 @@ perform_nick_change_collides(struct Client *source_p, struct Client *target_p,
                source_p->name, target_p->name, target_p->from->name,
                source_p->from->name);
 
-    sendto_one_numeric(target_p, &me, ERR_NICKCOLLISION, target_p->name);
+    sendto_one_numeric(target_p, ERR_NICKCOLLISION, target_p->name);
     ServerStats.is_kill += 2;
 
     sendto_server(NULL, 0, 0, ":%s KILL %s :%s (Nick change collision)",
@@ -580,7 +580,7 @@ perform_nick_change_collides(struct Client *source_p, struct Client *target_p,
                 me.id, target_p->id, me.name);
 
   ++ServerStats.is_kill;
-  sendto_one_numeric(target_p, &me, ERR_NICKCOLLISION, target_p->name);
+  sendto_one_numeric(target_p, ERR_NICKCOLLISION, target_p->name);
 
   AddFlag(target_p, FLAGS_KILLED);
   exit_client(target_p, "Nick collision");
@@ -608,7 +608,7 @@ mr_nick(struct Client *source_p, int parc, char *parv[])
 
   if (parc < 2 || EmptyString(parv[1]))
   {
-    sendto_one_numeric(source_p, &me, ERR_NONICKNAMEGIVEN);
+    sendto_one_numeric(source_p, ERR_NONICKNAMEGIVEN);
     return 0;
   }
 
@@ -618,7 +618,7 @@ mr_nick(struct Client *source_p, int parc, char *parv[])
   /* Check the nickname is ok */
   if (!valid_nickname(nick, 1))
   {
-    sendto_one_numeric(source_p, &me, ERR_ERRONEUSNICKNAME, parv[1], "Erroneous Nickname");
+    sendto_one_numeric(source_p, ERR_ERRONEUSNICKNAME, parv[1], "Erroneous Nickname");
     return 0;
   }
 
@@ -626,7 +626,7 @@ mr_nick(struct Client *source_p, int parc, char *parv[])
   if ((conf = find_matching_name_conf(CONF_NRESV, nick, NULL, NULL, 0)))
   {
     ++conf->count;
-    sendto_one_numeric(source_p, &me, ERR_ERRONEUSNICKNAME, nick, conf->reason);
+    sendto_one_numeric(source_p, ERR_ERRONEUSNICKNAME, nick, conf->reason);
     sendto_realops_flags(UMODE_REJ, L_ALL, SEND_NOTICE,
                          "Forbidding reserved nick %s from user %s",
                          nick, get_client_name(source_p, HIDE_IP));
@@ -636,7 +636,7 @@ mr_nick(struct Client *source_p, int parc, char *parv[])
   if ((target_p = hash_find_client(nick)) == NULL || target_p == source_p)
     set_initial_nick(source_p, nick);
   else
-    sendto_one_numeric(source_p, &me, ERR_NICKNAMEINUSE, target_p->name);
+    sendto_one_numeric(source_p, ERR_NICKNAMEINUSE, target_p->name);
 
   return 0;
 }
@@ -663,7 +663,7 @@ m_nick(struct Client *source_p, int parc, char *parv[])
 
   if (parc < 2 || EmptyString(parv[1]))
   {
-    sendto_one_numeric(source_p, &me, ERR_NONICKNAMEGIVEN);
+    sendto_one_numeric(source_p, ERR_NONICKNAMEGIVEN);
     return 0;
   }
 
@@ -677,7 +677,7 @@ m_nick(struct Client *source_p, int parc, char *parv[])
   /* Check the nickname is ok */
   if (!valid_nickname(nick, 1))
   {
-    sendto_one_numeric(source_p, &me, ERR_ERRONEUSNICKNAME, nick, "Erroneous Nickname");
+    sendto_one_numeric(source_p, ERR_ERRONEUSNICKNAME, nick, "Erroneous Nickname");
     return 0;
   }
 
@@ -686,7 +686,7 @@ m_nick(struct Client *source_p, int parc, char *parv[])
       (conf = find_matching_name_conf(CONF_NRESV, nick, NULL, NULL, 0)))
   {
     ++conf->count;
-    sendto_one_numeric(source_p, &me, ERR_ERRONEUSNICKNAME, nick, conf->reason);
+    sendto_one_numeric(source_p, ERR_ERRONEUSNICKNAME, nick, conf->reason);
     sendto_realops_flags(UMODE_REJ, L_ALL, SEND_NOTICE,
                          "Forbidding reserved nick %s from user %s",
                          nick, get_client_name(source_p, HIDE_IP));
@@ -716,7 +716,7 @@ m_nick(struct Client *source_p, int parc, char *parv[])
     change_local_nick(source_p, nick);
   }
   else
-    sendto_one_numeric(source_p, &me, ERR_NICKNAMEINUSE, target_p->name);
+    sendto_one_numeric(source_p, ERR_NICKNAMEINUSE, target_p->name);
 
   return 0;
 }

@@ -49,14 +49,14 @@ do_admin(struct Client *source_p)
                        source_p->name, source_p->username,
                        source_p->host, source_p->servptr->name);
 
-  sendto_one_numeric(source_p, &me, RPL_ADMINME, me.name);
+  sendto_one_numeric(source_p, RPL_ADMINME, me.name);
 
   if (!EmptyString(ConfigAdminInfo.name))
-    sendto_one_numeric(source_p, &me, RPL_ADMINLOC1, ConfigAdminInfo.name);
+    sendto_one_numeric(source_p, RPL_ADMINLOC1, ConfigAdminInfo.name);
   if (!EmptyString(ConfigAdminInfo.description))
-    sendto_one_numeric(source_p, &me, RPL_ADMINLOC2, ConfigAdminInfo.description);
+    sendto_one_numeric(source_p, RPL_ADMINLOC2, ConfigAdminInfo.description);
   if (!EmptyString(ConfigAdminInfo.email))
-    sendto_one_numeric(source_p, &me, RPL_ADMINEMAIL, ConfigAdminInfo.email);
+    sendto_one_numeric(source_p, RPL_ADMINEMAIL, ConfigAdminInfo.email);
 }
 
 /*! \brief ADMIN command handler
@@ -77,7 +77,7 @@ m_admin(struct Client *source_p, int parc, char *parv[])
 
   if ((last_used + ConfigGeneral.pace_wait_simple) > CurrentTime)
   {
-    sendto_one_numeric(source_p, &me, RPL_LOAD2HI, "ADMIN");
+    sendto_one_numeric(source_p, RPL_LOAD2HI, "ADMIN");
     return 0;
   }
 

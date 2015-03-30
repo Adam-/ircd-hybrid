@@ -60,25 +60,25 @@ mo_opme(struct Client *source_p, int parc, char *parv[])
 
   if (EmptyString(name))
   {
-    sendto_one_numeric(source_p, &me, ERR_NEEDMOREPARAMS, "OPME");
+    sendto_one_numeric(source_p, ERR_NEEDMOREPARAMS, "OPME");
     return 0;
   }
 
   if (!HasOFlag(source_p, OPER_FLAG_OPME))
   {
-    sendto_one_numeric(source_p, &me, ERR_NOPRIVS, "opme");
+    sendto_one_numeric(source_p, ERR_NOPRIVS, "opme");
     return 0;
   }
 
   if ((chptr = hash_find_channel(name)) == NULL)
   {
-    sendto_one_numeric(source_p, &me, ERR_NOSUCHCHANNEL, name);
+    sendto_one_numeric(source_p, ERR_NOSUCHCHANNEL, name);
     return 0;
   }
 
   if ((member = find_channel_link(source_p, chptr)) == NULL)
   {
-    sendto_one_numeric(source_p, &me, ERR_NOTONCHANNEL, chptr->name);
+    sendto_one_numeric(source_p, ERR_NOTONCHANNEL, chptr->name);
     return 0;
   }
 

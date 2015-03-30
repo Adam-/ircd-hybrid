@@ -82,7 +82,7 @@ m_oper(struct Client *source_p, int parc, char *parv[])
 
   if (EmptyString(password))
   {
-    sendto_one_numeric(source_p, &me, ERR_NEEDMOREPARAMS, "OPER");
+    sendto_one_numeric(source_p, ERR_NEEDMOREPARAMS, "OPER");
     return 0;
   }
 
@@ -92,7 +92,7 @@ m_oper(struct Client *source_p, int parc, char *parv[])
 
   if ((conf = find_exact_name_conf(CONF_OPER, source_p, opername, NULL, NULL)) == NULL)
   {
-    sendto_one_numeric(source_p, &me, ERR_NOOPERHOST);
+    sendto_one_numeric(source_p, ERR_NOOPERHOST);
     conf = find_exact_name_conf(CONF_OPER, NULL, opername, NULL, NULL);
     failed_oper_notice(source_p, opername, (conf != NULL) ?
                        "host mismatch" : "no operator {} block");
@@ -101,7 +101,7 @@ m_oper(struct Client *source_p, int parc, char *parv[])
 
   if (IsConfSSL(conf) && !HasUMode(source_p, UMODE_SSL))
   {
-    sendto_one_numeric(source_p, &me, ERR_NOOPERHOST);
+    sendto_one_numeric(source_p, ERR_NOOPERHOST);
     failed_oper_notice(source_p, opername, "requires SSL/TLS");
     return 0;
   }
@@ -110,7 +110,7 @@ m_oper(struct Client *source_p, int parc, char *parv[])
   {
     if (EmptyString(source_p->certfp) || strcasecmp(source_p->certfp, conf->certfp))
     {
-      sendto_one_numeric(source_p, &me, ERR_NOOPERHOST);
+      sendto_one_numeric(source_p, ERR_NOOPERHOST);
       failed_oper_notice(source_p, opername, "client certificate fingerprint mismatch");
       return 0;
     }
@@ -132,7 +132,7 @@ m_oper(struct Client *source_p, int parc, char *parv[])
   }
   else
   {
-    sendto_one_numeric(source_p, &me, ERR_PASSWDMISMATCH);
+    sendto_one_numeric(source_p, ERR_PASSWDMISMATCH);
     failed_oper_notice(source_p, opername, "password mismatch");
   }
 
@@ -154,7 +154,7 @@ m_oper(struct Client *source_p, int parc, char *parv[])
 static int
 mo_oper(struct Client *source_p, int parc, char *parv[])
 {
-  sendto_one_numeric(source_p, &me, RPL_YOUREOPER);
+  sendto_one_numeric(source_p, RPL_YOUREOPER);
   return 0;
 }
 

@@ -100,13 +100,13 @@ mo_undline(struct Client *source_p, int parc, char *parv[])
 
   if (!HasOFlag(source_p, OPER_FLAG_UNDLINE))
   {
-    sendto_one_numeric(source_p, &me, ERR_NOPRIVS, "undline");
+    sendto_one_numeric(source_p, ERR_NOPRIVS, "undline");
     return 0;
   }
 
   if (parc < 2 || EmptyString(parv[1]))
   {
-    sendto_one_numeric(source_p, &me, ERR_NEEDMOREPARAMS, "UNDLINE");
+    sendto_one_numeric(source_p, ERR_NEEDMOREPARAMS, "UNDLINE");
     return 0;
   }
 

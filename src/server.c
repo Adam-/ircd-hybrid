@@ -206,7 +206,7 @@ hunt_server(struct Client *source_p, const char *command,
     return HUNTED_PASS;
   }
 
-  sendto_one_numeric(source_p, &me, ERR_NOSUCHSERVER, parv[server]);
+  sendto_one_numeric(source_p, ERR_NOSUCHSERVER, parv[server]);
   return HUNTED_NOSUCH;
 }
 

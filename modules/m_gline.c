@@ -372,7 +372,7 @@ mo_gline(struct Client *source_p, int parc, char *parv[])
 
   if (!HasOFlag(source_p, OPER_FLAG_GLINE))
   {
-    sendto_one_numeric(source_p, &me, ERR_NOPRIVS, "gline");
+    sendto_one_numeric(source_p, ERR_NOPRIVS, "gline");
     return 0;
   }
 
@@ -486,7 +486,7 @@ mo_gungline(struct Client *source_p, int parc, char *parv[])
 
   if (!HasOFlag(source_p, OPER_FLAG_GLINE))
   {
-    sendto_one_numeric(source_p, &me, ERR_NOPRIVS, "gline");
+    sendto_one_numeric(source_p, ERR_NOPRIVS, "gline");
     return 0;
   }
 

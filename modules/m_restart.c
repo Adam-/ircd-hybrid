@@ -54,7 +54,7 @@ mo_restart(struct Client *source_p, int parc, char *parv[])
 
   if (!HasOFlag(source_p, OPER_FLAG_RESTART))
   {
-    sendto_one_numeric(source_p, &me, ERR_NOPRIVS, "restart");
+    sendto_one_numeric(source_p, ERR_NOPRIVS, "restart");
     return 0;
   }
 

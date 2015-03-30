@@ -104,7 +104,7 @@ quote_identtimeout(struct Client *source_p, const char *arg, int newval)
 {
   if (!HasUMode(source_p, UMODE_ADMIN))
   {
-    sendto_one_numeric(source_p, &me, ERR_NOPRIVS, "set");
+    sendto_one_numeric(source_p, ERR_NOPRIVS, "set");
     return;
   }
 
@@ -421,7 +421,7 @@ mo_set(struct Client *source_p, int parc, char *parv[])
 
   if (!HasOFlag(source_p, OPER_FLAG_SET))
   {
-    sendto_one_numeric(source_p, &me, ERR_NOPRIVS, "set");
+    sendto_one_numeric(source_p, ERR_NOPRIVS, "set");
     return 0;
   }
 

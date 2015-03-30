@@ -100,13 +100,13 @@ mo_unkline(struct Client *source_p, int parc, char *parv[])
 
   if (!HasOFlag(source_p, OPER_FLAG_UNKLINE))
   {
-    sendto_one_numeric(source_p, &me, ERR_NOPRIVS, "unkline");
+    sendto_one_numeric(source_p, ERR_NOPRIVS, "unkline");
     return 0;
   }
 
   if (EmptyString(parv[1]))
   {
-    sendto_one_numeric(source_p, &me, ERR_NEEDMOREPARAMS, "UNKLINE");
+    sendto_one_numeric(source_p, ERR_NEEDMOREPARAMS, "UNKLINE");
     return 0;
   }
 

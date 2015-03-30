@@ -71,7 +71,7 @@ m_trace(struct Client *source_p, int parc, char *parv[])
   else
     name = me.name;
 
-  sendto_one_numeric(source_p, &me, RPL_ENDOFTRACE, name);
+  sendto_one_numeric(source_p, RPL_ENDOFTRACE, name);
   return 0;
 }
 
@@ -114,10 +114,10 @@ mo_trace(struct Client *source_p, int parc, char *parv[])
      }
 
       if (ac2ptr)
-        sendto_one_numeric(source_p, &me, RPL_TRACELINK,
+        sendto_one_numeric(source_p, RPL_TRACELINK,
                            ircd_version, name, ac2ptr->from->name);
       else
-        sendto_one_numeric(source_p, &me, RPL_TRACELINK,
+        sendto_one_numeric(source_p, RPL_TRACELINK,
                            ircd_version, name, "ac2ptr_is_NULL!!");
       return 0;
     }
@@ -188,7 +188,7 @@ do_actual_trace(struct Client *source_p, int parc, char *parv[])
     {
       if (HasUMode(target_p, UMODE_OPER))
       {
-        sendto_one_numeric(source_p, &me, RPL_TRACEOPERATOR,
+        sendto_one_numeric(source_p, RPL_TRACEOPERATOR,
                    get_client_class(&target_p->connection->confs), get_client_name(target_p, HIDE_IP),
                    target_p->sockhost,
                    CurrentTime - target_p->connection->lasttime,
@@ -196,7 +196,7 @@ do_actual_trace(struct Client *source_p, int parc, char *parv[])
       }
       else
       {
-        sendto_one_numeric(source_p, &me, RPL_TRACEUSER,
+        sendto_one_numeric(source_p, RPL_TRACEUSER,
                    get_client_class(&target_p->connection->confs), get_client_name(target_p, HIDE_IP),
                    target_p->sockhost,
                    CurrentTime - target_p->connection->lasttime,
@@ -204,7 +204,7 @@ do_actual_trace(struct Client *source_p, int parc, char *parv[])
       }
     }
 
-    sendto_one_numeric(source_p, &me, RPL_ENDOFTRACE, name);
+    sendto_one_numeric(source_p, RPL_ENDOFTRACE, name);
     return;
   }
 
@@ -255,10 +255,10 @@ do_actual_trace(struct Client *source_p, int parc, char *parv[])
     const struct ClassItem *class = node->data;
 
     if (class->ref_count > 0)
-      sendto_one_numeric(source_p, &me, RPL_TRACECLASS, class->name, class->ref_count);
+      sendto_one_numeric(source_p, RPL_TRACECLASS, class->name, class->ref_count);
   }
 
-  sendto_one_numeric(source_p, &me, RPL_ENDOFTRACE, name);
+  sendto_one_numeric(source_p, RPL_ENDOFTRACE, name);
 }
 
 /* report_this_status()
@@ -280,28 +280,28 @@ report_this_status(struct Client *source_p, struct Client *target_p, int dow)
   switch (target_p->status)
   {
     case STAT_CONNECTING:
-      sendto_one_numeric(source_p, &me, RPL_TRACECONNECTING, class_name,
+      sendto_one_numeric(source_p, RPL_TRACECONNECTING, class_name,
                          HasUMode(source_p, UMODE_ADMIN) ? name : target_p->name);
       break;
     case STAT_HANDSHAKE:
-      sendto_one_numeric(source_p, &me, RPL_TRACEHANDSHAKE, class_name,
+      sendto_one_numeric(source_p, RPL_TRACEHANDSHAKE, class_name,
                          HasUMode(source_p, UMODE_ADMIN) ? name : target_p->name);
       break;
     case STAT_ME:
       break;
     case STAT_UNKNOWN:
-      sendto_one_numeric(source_p, &me, RPL_TRACEUNKNOWN, class_name,
+      sendto_one_numeric(source_p, RPL_TRACEUNKNOWN, class_name,
                          name, target_p->sockhost,
                          CurrentTime - target_p->connection->firsttime);
       break;
     case STAT_CLIENT:
       if (HasUMode(target_p, UMODE_OPER))
-        sendto_one_numeric(source_p, &me, RPL_TRACEOPERATOR, class_name, name,
+        sendto_one_numeric(source_p, RPL_TRACEOPERATOR, class_name, name,
                            target_p->sockhost,
                            CurrentTime - target_p->connection->lasttime,
                            client_get_idle_time(source_p, target_p));
       else
-        sendto_one_numeric(source_p, &me, RPL_TRACEUSER, class_name, name,
+        sendto_one_numeric(source_p, RPL_TRACEUSER, class_name, name,
                            target_p->sockhost,
                            CurrentTime - target_p->connection->lasttime,
                            client_get_idle_time(source_p, target_p));
@@ -316,7 +316,7 @@ report_this_status(struct Client *source_p, struct Client *target_p, int dow)
       if (!HasUMode(source_p, UMODE_ADMIN))
         name = get_client_name(target_p, MASK_IP);
 
-      sendto_one_numeric(source_p, &me, RPL_TRACESERVER, class_name, servers,
+      sendto_one_numeric(source_p, RPL_TRACESERVER, class_name, servers,
                          clients, name, *(target_p->serv->by) ?
                          target_p->serv->by : "*", "*",
                          me.name, CurrentTime - target_p->connection->lasttime);
@@ -324,7 +324,7 @@ report_this_status(struct Client *source_p, struct Client *target_p, int dow)
     }
 
     default: /* ...we actually shouldn't come here... --msa */
-      sendto_one_numeric(source_p, &me, RPL_TRACENEWTYPE, name);
+      sendto_one_numeric(source_p, RPL_TRACENEWTYPE, name);
       break;
   }
 }

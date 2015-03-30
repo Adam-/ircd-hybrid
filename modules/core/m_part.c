@@ -56,7 +56,7 @@ m_part(struct Client *source_p, int parc, char *parv[])
 {
   if (EmptyString(parv[1]))
   {
-    sendto_one_numeric(source_p, &me, ERR_NEEDMOREPARAMS, "PART");
+    sendto_one_numeric(source_p, ERR_NEEDMOREPARAMS, "PART");
     return 0;
   }
 

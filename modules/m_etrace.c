@@ -51,7 +51,7 @@ report_this_status(struct Client *source_p, const struct Client *target_p)
   if (target_p->status != STAT_CLIENT)
     return;
 
-  sendto_one_numeric(source_p, &me, RPL_ETRACE,
+  sendto_one_numeric(source_p, RPL_ETRACE,
                      HasUMode(target_p, UMODE_OPER) ? "Oper" : "User",
                      get_client_class(&target_p->connection->confs),
                      target_p->name,
@@ -94,7 +94,7 @@ do_etrace(struct Client *source_p, const char *arg)
     if (target_p && MyConnect(target_p))
       report_this_status(source_p, target_p);
 
-    sendto_one_numeric(source_p, &me, RPL_ENDOFTRACE, tname);
+    sendto_one_numeric(source_p, RPL_ENDOFTRACE, tname);
     return;
   }
 
@@ -111,7 +111,7 @@ do_etrace(struct Client *source_p, const char *arg)
       report_this_status(source_p, target_p);
   }
 
-  sendto_one_numeric(source_p, &me, RPL_ENDOFTRACE, tname);
+  sendto_one_numeric(source_p, RPL_ENDOFTRACE, tname);
 }
 
 /* mo_etrace()

@@ -67,7 +67,7 @@ m_away(struct Client *source_p, int parc, char *parv[])
                                    source_p->host);
     }
 
-    sendto_one_numeric(source_p, &me, RPL_UNAWAY);
+    sendto_one_numeric(source_p, RPL_UNAWAY);
     return 0;
   }
 
@@ -76,7 +76,7 @@ m_away(struct Client *source_p, int parc, char *parv[])
 
   if (source_p->connection->away.count > ConfigGeneral.away_count)
   {
-    sendto_one_numeric(source_p, &me, ERR_TOOMANYAWAY);
+    sendto_one_numeric(source_p, ERR_TOOMANYAWAY);
     return 0;
   }
 
@@ -85,7 +85,7 @@ m_away(struct Client *source_p, int parc, char *parv[])
 
   strlcpy(source_p->away, message, sizeof(source_p->away));
 
-  sendto_one_numeric(source_p, &me, RPL_NOWAWAY);
+  sendto_one_numeric(source_p, RPL_NOWAWAY);
   sendto_common_channels_local(source_p, 1, CAP_AWAY_NOTIFY, ":%s!%s@%s AWAY :%s",
                                source_p->name, source_p->username,
                                source_p->host, source_p->away);

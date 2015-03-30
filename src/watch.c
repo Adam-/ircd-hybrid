@@ -94,7 +94,7 @@ watch_check_hash(const struct Client *client_p, const enum irc_numerics reply)
 
   /* Send notifies out to everybody on the list in header */
   DLINK_FOREACH(node, watch->watched_by.head)
-    sendto_one_numeric(node->data, &me, reply, client_p->name,
+    sendto_one_numeric(node->data, reply, client_p->name,
                        client_p->username, client_p->host,
                        watch->lasttime, client_p->info);
 }

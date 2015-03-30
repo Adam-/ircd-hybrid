@@ -325,7 +325,7 @@ verify_access(struct Client *client_p)
     {
       if (IsConfRedir(conf))
       {
-        sendto_one_numeric(client_p, &me, RPL_REDIR,
+        sendto_one_numeric(client_p, RPL_REDIR,
                            conf->name ? conf->name : "",
                            conf->port);
         return NOT_AUTHORIZED;
@@ -1689,7 +1689,7 @@ parse_aline(const char *cmd, struct Client *source_p,
 
   if (parc == 0)
   {
-    sendto_one_numeric(source_p, &me, ERR_NEEDMOREPARAMS, cmd);
+    sendto_one_numeric(source_p, ERR_NEEDMOREPARAMS, cmd);
     return -1;
   }
 
@@ -1722,13 +1722,13 @@ parse_aline(const char *cmd, struct Client *source_p,
 
       if (!HasOFlag(source_p, OPER_FLAG_REMOTEBAN))
       {
-        sendto_one_numeric(source_p, &me, ERR_NOPRIVS, "remoteban");
+        sendto_one_numeric(source_p, ERR_NOPRIVS, "remoteban");
         return -1;
       }
 
       if (parc == 0 || EmptyString(*parv))
       {
-        sendto_one_numeric(source_p, &me, ERR_NEEDMOREPARAMS, cmd);
+        sendto_one_numeric(source_p, ERR_NEEDMOREPARAMS, cmd);
         return -1;
       }
 

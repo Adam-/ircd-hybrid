@@ -457,7 +457,7 @@ conf_try_ban(struct Client *client_p, struct MaskItem *conf)
                        type_string, get_client_name(client_p, HIDE_IP));
 
   if (IsClient(client_p))
-    sendto_one_numeric(client_p, &me, ERR_YOUREBANNEDCREEP, user_reason);
+    sendto_one_numeric(client_p, ERR_YOUREBANNEDCREEP, user_reason);
 
   exit_client(client_p, user_reason);
 }
@@ -532,7 +532,7 @@ find_chasing(struct Client *source_p, const char *name)
 
   if (!target_p)
   {
-    sendto_one_numeric(source_p, &me, ERR_NOSUCHNICK, name);
+    sendto_one_numeric(source_p, ERR_NOSUCHNICK, name);
     return NULL;
   }
 

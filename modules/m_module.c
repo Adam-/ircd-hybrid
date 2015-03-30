@@ -182,12 +182,12 @@ module_list(struct Client *source_p, const char *arg)
     if (!EmptyString(arg) && match(arg, modp->name))
       continue;
 
-    sendto_one_numeric(source_p, &me, RPL_MODLIST,
+    sendto_one_numeric(source_p, RPL_MODLIST,
                        modp->name, modp->handle,
                        modp->version, (modp->flags & MODULE_FLAG_CORE) ? "(core)" : "");
   }
 
-  sendto_one_numeric(source_p, &me, RPL_ENDOFMODLIST);
+  sendto_one_numeric(source_p, RPL_ENDOFMODLIST);
 }
 
 struct ModuleStruct
@@ -226,13 +226,13 @@ mo_module(struct Client *source_p, int parc, char *parv[])
 
   if (!HasOFlag(source_p, OPER_FLAG_MODULE))
   {
-    sendto_one_numeric(source_p, &me, ERR_NOPRIVS, "module");
+    sendto_one_numeric(source_p, ERR_NOPRIVS, "module");
     return 0;
   }
 
   if (EmptyString(subcmd))
   {
-    sendto_one_numeric(source_p, &me, ERR_NEEDMOREPARAMS, "MODULE");
+    sendto_one_numeric(source_p, ERR_NEEDMOREPARAMS, "MODULE");
     return 0;
   }
 
@@ -243,7 +243,7 @@ mo_module(struct Client *source_p, int parc, char *parv[])
 
     if (tab->arg_required && EmptyString(module))
     {
-      sendto_one_numeric(source_p, &me, ERR_NEEDMOREPARAMS, "MODULE");
+      sendto_one_numeric(source_p, ERR_NEEDMOREPARAMS, "MODULE");
       return 0;
     }
 

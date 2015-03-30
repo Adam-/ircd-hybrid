@@ -58,7 +58,7 @@ ms_pong(struct Client *source_p, int parc, char *parv[])
 
   if (parc < 2 || EmptyString(parv[1]))
   {
-    sendto_one_numeric(source_p, &me, ERR_NOORIGIN);
+    sendto_one_numeric(source_p, ERR_NOORIGIN);
     return 0;
   }
 
@@ -79,7 +79,7 @@ ms_pong(struct Client *source_p, int parc, char *parv[])
                  ID_or_name(source_p, target_p), parv[1],
                  ID_or_name(target_p, target_p));
     else if (!IsDigit(*destination))
-      sendto_one_numeric(source_p, &me, ERR_NOSUCHSERVER, destination);
+      sendto_one_numeric(source_p, ERR_NOSUCHSERVER, destination);
   }
 
   return 0;
@@ -115,12 +115,12 @@ mr_pong(struct Client *source_p, int parc, char *parv[])
           register_local_user(source_p);
       }
       else
-        sendto_one_numeric(source_p, &me, ERR_WRONGPONG,
+        sendto_one_numeric(source_p, ERR_WRONGPONG,
                            source_p->connection->random_ping);
     }
   }
   else
-    sendto_one_numeric(source_p, &me, ERR_NOORIGIN);
+    sendto_one_numeric(source_p, ERR_NOORIGIN);
 
   return 0;
 }

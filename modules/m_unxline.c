@@ -107,7 +107,7 @@ mo_unxline(struct Client *source_p, int parc, char *parv[])
 
   if (!HasOFlag(source_p, OPER_FLAG_UNXLINE))
   {
-    sendto_one_numeric(source_p, &me, ERR_NOPRIVS, "unxline");
+    sendto_one_numeric(source_p, ERR_NOPRIVS, "unxline");
     return 0;
   }
 

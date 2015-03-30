@@ -61,7 +61,7 @@ mo_squit(struct Client *source_p, int parc, char *parv[])
 
   if (parc < 2 || EmptyString(parv[1]))
   {
-    sendto_one_numeric(source_p, &me, ERR_NEEDMOREPARAMS, "SQUIT");
+    sendto_one_numeric(source_p, ERR_NEEDMOREPARAMS, "SQUIT");
     return 0;
   }
 
@@ -82,19 +82,19 @@ mo_squit(struct Client *source_p, int parc, char *parv[])
 
   if (!target_p || IsMe(target_p))
   {
-    sendto_one_numeric(source_p, &me, ERR_NOSUCHSERVER, server);
+    sendto_one_numeric(source_p, ERR_NOSUCHSERVER, server);
     return 0;
   }
 
   if (!MyConnect(target_p) && !HasOFlag(source_p, OPER_FLAG_SQUIT_REMOTE))
   {
-    sendto_one_numeric(source_p, &me, ERR_NOPRIVS, "squit:remote");
+    sendto_one_numeric(source_p, ERR_NOPRIVS, "squit:remote");
     return 0;
   }
 
   if (MyConnect(target_p) && !HasOFlag(source_p, OPER_FLAG_SQUIT))
   {
-    sendto_one_numeric(source_p, &me, ERR_NOPRIVS, "squit");
+    sendto_one_numeric(source_p, ERR_NOPRIVS, "squit");
     return 0;
   }
 

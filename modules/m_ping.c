@@ -57,7 +57,7 @@ m_ping(struct Client *source_p, int parc, char *parv[])
 
   if (parc < 2 || EmptyString(parv[1]))
   {
-    sendto_one_numeric(source_p, &me, ERR_NOORIGIN);
+    sendto_one_numeric(source_p, ERR_NOORIGIN);
     return 0;
   }
 
@@ -77,7 +77,7 @@ m_ping(struct Client *source_p, int parc, char *parv[])
                  ID_or_name(source_p, target_p), source_p->name,
                  ID_or_name(target_p, target_p));
     else
-      sendto_one_numeric(source_p, &me, ERR_NOSUCHSERVER, destination);
+      sendto_one_numeric(source_p, ERR_NOSUCHSERVER, destination);
   }
   else
     sendto_one(source_p, ":%s PONG %s :%s", me.name,
@@ -105,7 +105,7 @@ ms_ping(struct Client *source_p, int parc, char *parv[])
 
   if (parc < 2 || EmptyString(parv[1]))
   {
-    sendto_one_numeric(source_p, &me, ERR_NOORIGIN);
+    sendto_one_numeric(source_p, ERR_NOORIGIN);
     return 0;
   }
 
@@ -121,7 +121,7 @@ ms_ping(struct Client *source_p, int parc, char *parv[])
                    ID_or_name(target_p, target_p));
     }
     else if (!IsDigit(*destination))
-      sendto_one_numeric(source_p, &me, ERR_NOSUCHSERVER, destination);
+      sendto_one_numeric(source_p, ERR_NOSUCHSERVER, destination);
   }
   else
     sendto_one(source_p, ":%s PONG %s :%s", ID_or_name(&me, source_p),

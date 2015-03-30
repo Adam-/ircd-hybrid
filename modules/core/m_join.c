@@ -67,7 +67,7 @@ m_join(struct Client *source_p, int parc, char *parv[])
 {
   if (EmptyString(parv[1]))
   {
-    sendto_one_numeric(source_p, &me, ERR_NEEDMOREPARAMS, "JOIN");
+    sendto_one_numeric(source_p, ERR_NEEDMOREPARAMS, "JOIN");
     return 0;
   }
 

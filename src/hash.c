@@ -795,7 +795,7 @@ list_one_channel(struct Client *source_p, struct Channel *chptr)
   else
     snprintf(listbuf, sizeof(listbuf), "[%s]",  modebuf);
 
-  sendto_one_numeric(source_p, &me, RPL_LIST, chptr->name,
+  sendto_one_numeric(source_p, RPL_LIST, chptr->name,
                      dlink_list_length(&chptr->members),
                      listbuf, chptr->topic);
 }
@@ -841,5 +841,5 @@ safe_list_channels(struct Client *source_p, int only_unmasked_channels)
   }
 
   free_list_task(source_p);
-  sendto_one_numeric(source_p, &me, RPL_LISTEND);
+  sendto_one_numeric(source_p, RPL_LISTEND);
 }
