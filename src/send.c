@@ -394,28 +394,33 @@ sendto_channel_butone(struct Client *one, struct Client *from,
   va_end(aremote);
   va_end(alocal);
 
-  ++current_serial;
-
-  DLINK_FOREACH(node, chptr->members.head)
+  DLINK_FOREACH(node, chptr->locmembers.head)
   {
     struct Membership *member = node->data;
     struct Client *target_p = member->client_p;
 
     assert(IsClient(target_p));
 
-    if (IsDefunct(target_p) || HasUMode(target_p, UMODE_DEAF) ||
-        (one && target_p->from == one->from))
+    if (IsDefunct(target_p) || HasUMode(target_p, UMODE_DEAF) || target_p == one)
       continue;
 
     if (type && (member->flags & type) == 0)
       continue;
 
-    if (MyConnect(target_p))
-      send_message(target_p, local_buf);
-    else if (target_p->from->connection->serial != current_serial)
-      send_message_remote(target_p->from, from, remote_buf);
+    send_message(target_p, local_buf);
+  }
 
-    target_p->from->connection->serial = current_serial;
+  DLINK_FOREACH(node, chptr->directions.head)
+  {
+    struct Direction *dir = node->data;
+    struct Client *target_p = dir->client_p;
+
+    assert(IsServer(target_p));
+
+    if (IsDefunct(target_p) || target_p == one->from)
+      continue;
+
+    send_message_remote(target_p, from, remote_buf);
   }
 
   dbuf_ref_free(local_buf);

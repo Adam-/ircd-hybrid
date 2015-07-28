@@ -77,6 +77,7 @@ struct Channel
   int received_number_of_privmsgs;
 
   dlink_list locmembers;  /*!< local members are here too */
+  dlink_list directions;
   dlink_list members;
   dlink_list invites;
   dlink_list banlist;
@@ -97,6 +98,13 @@ struct Membership
   struct Channel *chptr;   /**< Channel pointer */
   struct Client *client_p; /**< Client pointer */
   unsigned int flags;      /**< user/channel flags, e.g. CHFL_CHANOP */
+};
+
+struct Direction
+{
+  struct Client *client_p;
+  unsigned int count;
+  dlink_node node;
 };
 
 /*! \brief Ban structure. Used for b/e/I n!u\@h masks */

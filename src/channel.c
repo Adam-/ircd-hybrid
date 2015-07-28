@@ -54,7 +54,7 @@ struct event splitmode_event =
   .when = 5
 };
 
-static mp_pool_t *member_pool, *channel_pool;
+static mp_pool_t *member_pool, *channel_pool, *dir_pool;
 
 
 /*! \brief Initializes the channel blockheap, adds known channel CAPAB
@@ -68,6 +68,58 @@ channel_init(void)
   channel_pool = mp_pool_new(sizeof(struct Channel), MP_CHUNK_SIZE_CHANNEL);
   ban_pool = mp_pool_new(sizeof(struct Ban), MP_CHUNK_SIZE_BAN);
   member_pool = mp_pool_new(sizeof(struct Membership), MP_CHUNK_SIZE_MEMBER);
+  dir_pool = mp_pool_new(sizeof(struct Direction), MP_CHUNK_SIZE_MEMBER);//XXX
+}
+
+static void
+add_dir(struct Channel *chptr, struct Client *who)
+{
+  dlink_node *ptr;
+
+  if (MyConnect(who))
+    return;
+
+  DLINK_FOREACH(ptr, chptr->directions.head)
+  {
+    struct Direction *dir = ptr->data;
+
+    if (dir->client_p == who->from)
+    {
+      ++dir->count;
+      return;
+    }
+  }
+
+  struct Direction *dir = mp_pool_get(dir_pool);
+  dir->client_p = who->from;
+  dir->count = 1;
+  dlinkAdd(dir, &dir->node, &chptr->directions);
+}
+
+static void
+remove_dir(struct Channel *chptr, struct Client *who)
+{
+  dlink_node *ptr;
+
+  if (MyConnect(who))
+    return;
+
+  DLINK_FOREACH(ptr, chptr->directions.head)
+  {
+    struct Direction *dir = ptr->data;
+
+    if (dir->client_p == who->from)
+    {
+      if (!--dir->count)
+      {
+        dlinkDelete(&dir->node, &chptr->directions);
+        mp_pool_release(dir);
+      }
+      return;
+    }
+  }
+
+  assert(0);
 }
 
 /*! \brief Adds a user to a channel by adding another link to the
@@ -125,6 +177,8 @@ add_user_to_channel(struct Channel *chptr, struct Client *who,
 
   if (MyConnect(who))
     dlinkAdd(member, &member->locchannode, &chptr->locmembers);
+  else
+    add_dir(chptr, who);
 
   dlinkAdd(member, &member->usernode, &who->channel);
 }
@@ -143,6 +197,8 @@ remove_user_from_channel(struct Membership *member)
 
   if (MyConnect(client_p))
     dlinkDelete(&member->locchannode, &chptr->locmembers);
+  else
+    remove_dir(chptr, client_p);
 
   dlinkDelete(&member->usernode, &client_p->channel);
 
