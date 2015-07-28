@@ -399,7 +399,7 @@ sendto_channel_butone(struct Client *one, struct Client *from,
     struct Membership *member = node->data;
     struct Client *target_p = member->client_p;
 
-    assert(IsClient(target_p));
+    assert(MyClient(target_p));
 
     if (IsDefunct(target_p) || HasUMode(target_p, UMODE_DEAF) || target_p == one)
       continue;
