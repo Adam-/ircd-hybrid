@@ -76,7 +76,7 @@ add_dir(struct Channel *chptr, struct Client *who)
 {
   dlink_node *ptr;
 
-  assert(MyClient(who));
+  assert(!MyClient(who));
 
   DLINK_FOREACH(ptr, chptr->directions.head)
   {
@@ -100,7 +100,7 @@ remove_dir(struct Channel *chptr, struct Client *who)
 {
   dlink_node *ptr;
 
-  assert(MyClient(who));
+  assert(!MyClient(who));
 
   DLINK_FOREACH(ptr, chptr->directions.head)
   {
