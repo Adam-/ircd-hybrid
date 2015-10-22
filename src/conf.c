@@ -207,12 +207,8 @@ conf_free(struct MaskItem *conf)
   MyFree(conf->whois);
   MyFree(conf->user);
   MyFree(conf->host);
-#ifdef HAVE_LIBCRYPTO
   MyFree(conf->cipher_list);
 
-  if (conf->rsa_public_key)
-    RSA_free(conf->rsa_public_key);
-#endif
   DLINK_FOREACH_SAFE(node, node_next, conf->hub_list.head)
   {
     MyFree(node->data);
