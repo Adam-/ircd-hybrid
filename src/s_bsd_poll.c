@@ -156,9 +156,8 @@ comm_select(void)
 
   if (num < 0)
   {
-#ifdef HAVE_USLEEP
-    usleep(50000);  /* avoid 99% CPU in comm_select */
-#endif
+    const struct timespec req = { .tv_sec = 0, .tv_nsec = 50000000 };
+    nanosleep(&req, NULL);  /* Avoid 99% CPU in comm_select */
     return;
   }
 
@@ -177,7 +176,7 @@ comm_select(void)
 
     if (revents & (POLLRDNORM | POLLIN | POLLHUP | POLLERR))
     {
-      if ((hdl = F->read_handler) != NULL)
+      if ((hdl = F->read_handler))
       {
         F->read_handler = NULL;
         hdl(F, F->read_data);
@@ -188,7 +187,7 @@ comm_select(void)
 
     if (revents & (POLLWRNORM | POLLOUT | POLLHUP | POLLERR))
     {
-      if ((hdl = F->write_handler) != NULL)
+      if ((hdl = F->write_handler))
       {
         F->write_handler = NULL;
         hdl(F, F->write_data);

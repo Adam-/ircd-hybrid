@@ -35,6 +35,7 @@
 #include "conf.h"
 #include "server.h"
 #include "user.h"
+#include "isupport.h"
 
 
 /*! \brief AWAY command handler
@@ -139,31 +140,32 @@ ms_away(struct Client *source_p, int parc, char *parv[])
 
 static struct Message away_msgtab =
 {
-  "AWAY", NULL, 0, 0, 0, MAXPARA, MFLG_SLOW, 0,
-  { m_unregistered, m_away, ms_away, m_ignore, m_away, m_ignore }
+  .cmd = "AWAY",
+  .args_max = MAXPARA,
+  .handlers[UNREGISTERED_HANDLER] = m_unregistered,
+  .handlers[CLIENT_HANDLER] = m_away,
+  .handlers[SERVER_HANDLER] = ms_away,
+  .handlers[ENCAP_HANDLER] = m_ignore,
+  .handlers[OPER_HANDLER] = m_away
 };
 
 static void
 module_init(void)
 {
   mod_add_cmd(&away_msgtab);
-  add_isupport("AWAYLEN", NULL, AWAYLEN);
+  isupport_add("AWAYLEN", NULL, AWAYLEN);
 }
 
 static void
 module_exit(void)
 {
   mod_del_cmd(&away_msgtab);
-  delete_isupport("AWAYLEN");
+  isupport_delete("AWAYLEN");
 }
 
 struct module module_entry =
 {
-  .node    = { NULL, NULL, NULL },
-  .name    = NULL,
   .version = "$Revision$",
-  .handle  = NULL,
   .modinit = module_init,
   .modexit = module_exit,
-  .flags   = 0
 };

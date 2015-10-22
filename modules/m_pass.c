@@ -29,6 +29,7 @@
 #include "irc_string.h"
 #include "send.h"
 #include "numeric.h"
+#include "id.h"
 #include "ircd.h"
 #include "parse.h"
 #include "modules.h"
@@ -48,7 +49,7 @@
  * \note Valid arguments for this command are:
  *      - parv[0] = command
  *      - parv[1] = password
- *      - parv[2] = optional extra version information
+ *      - parv[2] = unused
  *      - parv[3] = TS protocol version
  *      - parv[4] = server ID (SID)
  */
@@ -66,20 +67,6 @@ mr_pass(struct Client *source_p, int parc, char *parv[])
   MyFree(source_p->connection->password);
   source_p->connection->password = xstrndup(parv[1], IRCD_MIN(strlen(parv[1]), PASSWDLEN));
 
-  if (parc > 2)
-  {
-    /*
-     * It looks to me as if orabidoo wanted to have more
-     * than one set of option strings possible here...
-     * i.e. ":AABBTS" as long as TS was the last two chars
-     * however, as we are now using CAPAB, I think we can
-     * safely assume if there is a ":TS" then it's a TS server
-     * -Dianora
-     */
-    if (!irccmp(parv[2], "TS") && source_p->tsinfo == 0)
-      source_p->tsinfo = TS_DOESTS;
-  }
-
   /* Only do this stuff if we are doing ts6 */
   if (parc > 4)
     if (atoi(parv[3]) >= 6 && valid_sid(parv[4]))
@@ -90,8 +77,14 @@ mr_pass(struct Client *source_p, int parc, char *parv[])
 
 static struct Message pass_msgtab =
 {
-  "PASS", NULL, 0, 0, 2, MAXPARA, MFLG_SLOW, 0,
-  { mr_pass, m_registered, m_ignore, m_ignore, m_registered, mr_pass }
+  .cmd = "PASS",
+  .args_min = 2,
+  .args_max = MAXPARA,
+  .handlers[UNREGISTERED_HANDLER] = mr_pass,
+  .handlers[CLIENT_HANDLER] = m_registered,
+  .handlers[SERVER_HANDLER] = m_ignore,
+  .handlers[ENCAP_HANDLER] = m_ignore,
+  .handlers[OPER_HANDLER] = m_registered
 };
 
 static void
@@ -108,11 +101,7 @@ module_exit(void)
 
 struct module module_entry =
 {
-  .node    = { NULL, NULL, NULL },
-  .name    = NULL,
   .version = "$Revision$",
-  .handle  = NULL,
   .modinit = module_init,
   .modexit = module_exit,
-  .flags   = 0
 };

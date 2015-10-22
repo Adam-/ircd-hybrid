@@ -64,13 +64,13 @@ ms_svsmode(struct Client *source_p, int parc, char *parv[])
   if (!HasFlag(source_p, FLAGS_SERVICE))
     return 0;
 
-  ts     = atol(parv[2]);
   modes  = parv[3];
   extarg = (parc > 4) ? parv[4] : NULL;
 
   if ((target_p = find_person(source_p, parv[1])) == NULL)
     return 0;
 
+  ts = atol(parv[2]);
   if (ts && (ts != target_p->tsinfo))
     return 0;
 
@@ -89,7 +89,13 @@ ms_svsmode(struct Client *source_p, int parc, char *parv[])
 
       case 'd':
         if (!EmptyString(extarg))
+        {
           strlcpy(target_p->account, extarg, sizeof(target_p->account));
+          sendto_common_channels_local(target_p, 1, CAP_ACCOUNT_NOTIFY, ":%s!%s@%s ACCOUNT %s",
+                                       target_p->name, target_p->username,
+                                       target_p->host, target_p->account);
+        }
+
         break;
 
       case 'x':
@@ -171,8 +177,14 @@ ms_svsmode(struct Client *source_p, int parc, char *parv[])
 
 static struct Message svsmode_msgtab =
 {
-  "SVSMODE", NULL, 0, 0, 4, MAXPARA, MFLG_SLOW, 0,
-  { m_ignore, m_ignore, ms_svsmode, m_ignore, m_ignore, m_ignore }
+  .cmd = "SVSMODE",
+  .args_min = 4,
+  .args_max = MAXPARA,
+  .handlers[UNREGISTERED_HANDLER] = m_ignore,
+  .handlers[CLIENT_HANDLER] = m_ignore,
+  .handlers[SERVER_HANDLER] = ms_svsmode,
+  .handlers[ENCAP_HANDLER] = m_ignore,
+  .handlers[OPER_HANDLER] = m_ignore
 };
 
 static void
@@ -189,11 +201,7 @@ module_exit(void)
 
 struct module module_entry =
 {
-  .node    = { NULL, NULL, NULL },
-  .name    = NULL,
   .version = "$Revision$",
-  .handle  = NULL,
   .modinit = module_init,
   .modexit = module_exit,
-  .flags   = 0
 };

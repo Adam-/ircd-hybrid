@@ -59,8 +59,8 @@ m_userhost(struct Client *source_p, int parc, char *parv[])
   cur_len = snprintf(buf, sizeof(buf), numeric_form(RPL_USERHOST), me.name, source_p->name, "");
   t = buf + cur_len;
 
-  for (nick = strtoken(&p, parv[1], " "); nick && i++ < 5;
-       nick = strtoken(&p,    NULL, " "))
+  for (nick = strtok_r(parv[1], " ", &p); nick && i++ < 5;
+       nick = strtok_r(NULL,    " ", &p))
   {
     if ((target_p = find_person(source_p, nick)))
     {
@@ -107,8 +107,14 @@ m_userhost(struct Client *source_p, int parc, char *parv[])
 
 static struct Message userhost_msgtab =
 {
-  "USERHOST", NULL, 0, 0, 2, 1, MFLG_SLOW, 0,
-  { m_unregistered, m_userhost, m_userhost, m_ignore, m_userhost, m_ignore }
+  .cmd = "USERHOST",
+  .args_min = 2,
+  .args_max = 1,
+  .handlers[UNREGISTERED_HANDLER] = m_unregistered,
+  .handlers[CLIENT_HANDLER] = m_userhost,
+  .handlers[SERVER_HANDLER] = m_ignore,
+  .handlers[ENCAP_HANDLER] = m_ignore,
+  .handlers[OPER_HANDLER] = m_userhost
 };
 
 static void
@@ -125,11 +131,7 @@ module_exit(void)
 
 struct module module_entry =
 {
-  .node    = { NULL, NULL, NULL },
-  .name    = NULL,
   .version = "$Revision$",
-  .handle  = NULL,
   .modinit = module_init,
   .modexit = module_exit,
-  .flags   = 0
 };

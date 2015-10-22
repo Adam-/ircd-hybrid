@@ -50,8 +50,8 @@ mr_capab(struct Client *source_p, int parc, char *parv[])
   char *p = NULL;
   char *s = NULL;
 
-  for (s = strtoken(&p, parv[1], " "); s;
-       s = strtoken(&p,    NULL, " "))
+  for (s = strtok_r(parv[1], " ", &p); s;
+       s = strtok_r(NULL,    " ", &p))
     if ((cap = find_capability(s)))
       SetCapable(source_p, cap);
 
@@ -60,8 +60,14 @@ mr_capab(struct Client *source_p, int parc, char *parv[])
 
 static struct Message capab_msgtab =
 {
-  "CAPAB", NULL, 0, 0, 2, MAXPARA, MFLG_SLOW, 0,
-  { mr_capab, m_ignore, m_ignore, m_ignore, m_ignore, m_ignore }
+  .cmd = "CAPAB",
+  .args_min = 2,
+  .args_max = MAXPARA,
+  .handlers[UNREGISTERED_HANDLER] = mr_capab,
+  .handlers[CLIENT_HANDLER] = m_ignore,
+  .handlers[SERVER_HANDLER] = m_ignore,
+  .handlers[ENCAP_HANDLER] = m_ignore,
+  .handlers[OPER_HANDLER] = m_ignore
 };
 
 static void
@@ -78,11 +84,7 @@ module_exit(void)
 
 struct module module_entry =
 {
-  .node    = { NULL, NULL, NULL },
-  .name    = NULL,
   .version = "$Revision$",
-  .handle  = NULL,
   .modinit = module_init,
   .modexit = module_exit,
-  .flags   = 0
 };

@@ -218,9 +218,9 @@ do_whois(struct Client *source_p, const char *name)
 {
   struct Client *target_p = NULL;
 
-  if ((target_p = find_person(source_p, name)))
+  if ((target_p = hash_find_client(name)) && IsClient(target_p))
     whois_person(source_p, target_p);
-  else if (!IsDigit(*name))
+  else
     sendto_one_numeric(source_p, &me, ERR_NOSUCHNICK, name);
 
   sendto_one_numeric(source_p, &me, RPL_ENDOFWHOIS, name);
@@ -315,8 +315,13 @@ mo_whois(struct Client *source_p, int parc, char *parv[])
 
 static struct Message whois_msgtab =
 {
-  "WHOIS", NULL, 0, 0, 0, MAXPARA, MFLG_SLOW, 0,
-  { m_unregistered, m_whois, mo_whois, m_ignore, mo_whois, m_ignore }
+  .cmd = "WHOIS",
+  .args_max = MAXPARA,
+  .handlers[UNREGISTERED_HANDLER] = m_unregistered,
+  .handlers[CLIENT_HANDLER] = m_whois,
+  .handlers[SERVER_HANDLER] = mo_whois,
+  .handlers[ENCAP_HANDLER] = m_ignore,
+  .handlers[OPER_HANDLER] = mo_whois
 };
 
 static void
@@ -333,11 +338,7 @@ module_exit(void)
 
 struct module module_entry =
 {
-  .node    = { NULL, NULL, NULL },
-  .name    = NULL,
   .version = "$Revision$",
-  .handle  = NULL,
   .modinit = module_init,
   .modexit = module_exit,
-  .flags   = 0
 };

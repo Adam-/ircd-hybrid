@@ -30,14 +30,12 @@
 #include "irc_string.h"
 #include "ircd.h"
 #include "listener.h"
-#include "gline.h"
 #include "conf.h"
 #include "conf_class.h"
 #include "hostmask.h"
 #include "numeric.h"
 #include "send.h"
 #include "fdlist.h"
-#include "s_bsd.h"
 #include "misc.h"
 #include "server.h"
 #include "user.h"
@@ -640,125 +638,21 @@ stats_exempt(struct Client *source_p, int parc, char *parv[])
 static void
 stats_events(struct Client *source_p, int parc, char *parv[])
 {
-  show_events(source_p);
-}
+  const dlink_node *node;
 
-/* stats_pending_glines()
- *
- * input        - client pointer
- * output       - none
- * side effects - client is shown list of pending glines
- */
-static void
-stats_pending_glines(struct Client *source_p, int parc, char *parv[])
-{
-  const dlink_node *node = NULL;
-  const struct gline_pending *glp_ptr = NULL;
-  char timebuffer[MAX_DATE_STRING] = "";
-  struct tm *tmptr = NULL;
+  sendto_one_numeric(source_p, &me, RPL_STATSDEBUG | SND_EXPLICIT,
+                     "E :Operation                      Next Execution");
+  sendto_one_numeric(source_p, &me, RPL_STATSDEBUG | SND_EXPLICIT,
+                     "E :---------------------------------------------");
 
-  if (!ConfigGeneral.glines)
+  DLINK_FOREACH(node, event_get_list()->head)
   {
-    sendto_one_notice(source_p, &me, ":This server does not support G-Lines");
-    return;
-  }
+    const struct event *ev = node->data;
 
-  if (dlink_list_length(&pending_glines[GLINE_PENDING_ADD_TYPE]))
-    sendto_one_notice(source_p, &me, ":Pending G-lines");
-
-  DLINK_FOREACH(node, pending_glines[GLINE_PENDING_ADD_TYPE].head)
-  {
-    glp_ptr = node->data;
-    tmptr   = localtime(&glp_ptr->vote_1.time_request);
-    strftime(timebuffer, MAX_DATE_STRING, "%Y/%m/%d %H:%M:%S", tmptr);
-
-    sendto_one_notice(source_p, &me, ":1) %s!%s@%s on %s requested gline at %s for %s@%s [%s]",
-                      glp_ptr->vote_1.oper_nick,
-                      glp_ptr->vote_1.oper_user, glp_ptr->vote_1.oper_host,
-                      glp_ptr->vote_1.oper_server, timebuffer,
-                      glp_ptr->user, glp_ptr->host, glp_ptr->vote_1.reason);
-
-    if (glp_ptr->vote_2.oper_nick[0])
-    {
-      tmptr = localtime(&glp_ptr->vote_2.time_request);
-      strftime(timebuffer, MAX_DATE_STRING, "%Y/%m/%d %H:%M:%S", tmptr);
-
-      sendto_one_notice(source_p, &me, ":2) %s!%s@%s on %s requested gline at %s for %s@%s [%s]",
-                        glp_ptr->vote_2.oper_nick,
-                        glp_ptr->vote_2.oper_user, glp_ptr->vote_2.oper_host,
-                        glp_ptr->vote_2.oper_server, timebuffer,
-                        glp_ptr->user, glp_ptr->host, glp_ptr->vote_2.reason);
-    }
-  }
-
-  sendto_one_notice(source_p, &me, ":End of Pending G-lines");
-
-  if (dlink_list_length(&pending_glines[GLINE_PENDING_DEL_TYPE]))
-    sendto_one_notice(source_p, &me, ":Pending UNG-lines");
-
-  DLINK_FOREACH(node, pending_glines[GLINE_PENDING_DEL_TYPE].head)
-  {
-    glp_ptr = node->data;
-    tmptr   = localtime(&glp_ptr->vote_1.time_request);
-    strftime(timebuffer, MAX_DATE_STRING, "%Y/%m/%d %H:%M:%S", tmptr);
-
-    sendto_one_notice(source_p, &me, ":1) %s!%s@%s on %s requested ungline at %s for %s@%s [%s]",
-                      glp_ptr->vote_1.oper_nick,
-                      glp_ptr->vote_1.oper_user, glp_ptr->vote_1.oper_host,
-                      glp_ptr->vote_1.oper_server, timebuffer,
-                      glp_ptr->user, glp_ptr->host, glp_ptr->vote_1.reason);
-
-    if (glp_ptr->vote_2.oper_nick[0])
-    {
-      tmptr = localtime(&glp_ptr->vote_2.time_request);
-      strftime(timebuffer, MAX_DATE_STRING, "%Y/%m/%d %H:%M:%S", tmptr);
-
-      sendto_one_notice(source_p, &me, ":2) %s!%s@%s on %s requested ungline at %s for %s@%s [%s]",
-                        glp_ptr->vote_2.oper_nick,
-                        glp_ptr->vote_2.oper_user, glp_ptr->vote_2.oper_host,
-                        glp_ptr->vote_2.oper_server, timebuffer,
-                        glp_ptr->user, glp_ptr->host, glp_ptr->vote_2.reason);
-
-    }
-  }
-
-  sendto_one_notice(source_p, &me, ":End of Pending UNG-lines");
-}
-
-/* stats_glines()
- *
- * input        - client pointer
- * output       - none
- * side effects - client is shown list of glines
- */
-static void
-stats_glines(struct Client *source_p, int parc, char *parv[])
-{
-  const dlink_node *node = NULL;
-
-  if (!ConfigGeneral.glines)
-  {
-    sendto_one_notice(source_p, &me, ":This server does not support G-Lines");
-    return;
-  }
-
-  for (unsigned int i = 0; i < ATABLE_SIZE; ++i)
-  {
-    DLINK_FOREACH(node, atable[i].head)
-    {
-      const struct AddressRec *arec = node->data;
-
-      if (arec->type == CONF_GLINE)
-      {
-        const struct MaskItem *conf = arec->conf;
-
-        sendto_one_numeric(source_p, &me, RPL_STATSKLINE, 'G',
-                           conf->host ? conf->host : "*",
-                           conf->user ? conf->user : "*",
-                           conf->reason);
-
-      }
-    }
+    sendto_one_numeric(source_p, &me, RPL_STATSDEBUG | SND_EXPLICIT,
+                       "E :%-30s %-4d seconds",
+                       ev->name,
+                       (int)(ev->next - CurrentTime));
   }
 }
 
@@ -794,9 +688,9 @@ stats_hubleaf(struct Client *source_p, int parc, char *parv[])
  * side effects - NONE
  */
 static const char *
-show_iline_prefix(const struct Client *sptr, const struct MaskItem *conf)
+show_iline_prefix(const struct Client *source_p, const struct MaskItem *conf)
 {
-  static char prefix_of_host[USERLEN + 15];
+  static char prefix_of_host[USERLEN + 16];
   char *prefix_ptr = prefix_of_host;
 
   if (IsConfWebIRC(conf))
@@ -811,12 +705,16 @@ show_iline_prefix(const struct Client *sptr, const struct MaskItem *conf)
     *prefix_ptr++ = '$';
   if (IsConfDoSpoofIp(conf))
     *prefix_ptr++ = '=';
-  if (MyOper(sptr) && IsConfExemptKline(conf))
-    *prefix_ptr++ = '^';
-  if (MyOper(sptr) && IsConfExemptGline(conf))
-    *prefix_ptr++ = '_';
-  if (MyOper(sptr) && IsConfExemptLimits(conf))
-    *prefix_ptr++ = '>';
+  if (HasUMode(source_p, UMODE_OPER))
+  {
+    if (IsConfExemptKline(conf))
+      *prefix_ptr++ = '^';
+    if (IsConfExemptXline(conf))
+      *prefix_ptr++ = '!';
+    if (IsConfExemptLimits(conf))
+      *prefix_ptr++ = '>';
+  }
+
   if (IsConfCanFlood(conf))
     *prefix_ptr++ = '|';
 
@@ -842,7 +740,7 @@ report_auth(struct Client *source_p, int parc, char *parv[])
 
       conf = arec->conf;
 
-      if (!MyOper(source_p) && IsConfDoSpoofIp(conf))
+      if (!HasUMode(source_p, UMODE_OPER) && IsConfDoSpoofIp(conf))
         continue;
 
       sendto_one_numeric(source_p, &me, RPL_STATSILINE, 'I',
@@ -1060,6 +958,51 @@ stats_operedup(struct Client *source_p, int parc, char *parv[])
                      "p :%u OPER(s)", opercount);
 }
 
+/* show_ports()
+ *
+ * inputs       - pointer to client to show ports to
+ * output       - none
+ * side effects - send port listing to a client
+ */
+static void
+show_ports(struct Client *source_p)
+{
+  char buf[IRCD_BUFSIZE] = "";
+  char *p = NULL;
+  const dlink_node *node = NULL;
+
+  DLINK_FOREACH(node, listener_get_list()->head)
+  {
+    const struct Listener *listener = node->data;
+    p = buf;
+
+    if (listener->flags & LISTENER_HIDDEN)
+    {
+      if (!HasUMode(source_p, UMODE_ADMIN))
+        continue;
+      *p++ = 'H';
+    }
+
+    if (listener->flags & LISTENER_SERVER)
+      *p++ = 'S';
+    if (listener->flags & LISTENER_SSL)
+      *p++ = 's';
+    *p = '\0';
+
+
+    if (HasUMode(source_p, UMODE_ADMIN) &&
+        (MyClient(source_p) || !ConfigServerHide.hide_server_ips))
+      sendto_one_numeric(source_p, &me, RPL_STATSPLINE, 'P', listener->port,
+                         listener->name,
+                         listener->ref_count, buf,
+                         listener->active ? "active" : "disabled");
+    else
+      sendto_one_numeric(source_p, &me, RPL_STATSPLINE, 'P', listener->port,
+                         me.name, listener->ref_count, buf,
+                         listener->active ? "active" : "disabled");
+  }
+}
+
 static void
 stats_ports(struct Client *source_p, int parc, char *parv[])
 {
@@ -1162,11 +1105,8 @@ stats_uptime(struct Client *source_p, int parc, char *parv[])
     sendto_one_numeric(source_p, &me, ERR_NOPRIVILEGES);
   else
   {
-    time_t now = CurrentTime - me.connection->since;
-
-    sendto_one_numeric(source_p, &me, RPL_STATSUPTIME, now / 86400,
-                       (now / 3600) % 24, (now / 60) % 60, now % 60);
-
+    sendto_one_numeric(source_p, &me, RPL_STATSUPTIME,
+                       time_dissect(CurrentTime - me.connection->since));
     if (!ConfigServerHide.disable_remote_commands || HasUMode(source_p, UMODE_OPER))
        sendto_one_numeric(source_p, &me, RPL_STATSCONN, Count.max_loc_con,
                           Count.max_loc_cli, Count.totalrestartcount);
@@ -1441,64 +1381,65 @@ stats_ltrace(struct Client *source_p, int parc, char *parv[])
     sendto_one_numeric(source_p, &me, ERR_NEEDMOREPARAMS, "STATS");
 }
 
-static const struct StatsStruct
+struct StatsStruct
 {
   const unsigned char letter;
   void (*handler)(struct Client *, int, char *[]);
-  const unsigned int need_oper;
-  const unsigned int need_admin;
-} stats_cmd_table[] = {
-  /* letter  function          need_oper need_admin */
-  { 'a',     stats_dns_servers,    1,      1 },
-  { 'A',     stats_dns_servers,    1,      1 },
-  { 'c',     stats_connect,        1,      0 },
-  { 'C',     stats_connect,        1,      0 },
-  { 'd',     stats_tdeny,          1,      0 },
-  { 'D',     stats_deny,           1,      0 },
-  { 'e',     stats_exempt,         1,      0 },
-  { 'E',     stats_events,         1,      1 },
-  { 'f',     fd_dump,              1,      1 },
-  { 'F',     fd_dump,              1,      1 },
-  { 'g',     stats_pending_glines, 1,      0 },
-  { 'G',     stats_glines,         1,      0 },
-  { 'h',     stats_hubleaf,        1,      1 },
-  { 'H',     stats_hubleaf,        1,      0 },
-  { 'i',     stats_auth,           0,      0 },
-  { 'I',     stats_auth,           0,      0 },
-  { 'k',     stats_tklines,        0,      0 },
-  { 'K',     stats_klines,         0,      0 },
-  { 'l',     stats_ltrace,         1,      0 },
-  { 'L',     stats_ltrace,         1,      0 },
-  { 'm',     stats_messages,       0,      0 },
-  { 'M',     stats_messages,       0,      0 },
-  { 'o',     stats_oper,           0,      0 },
-  { 'O',     stats_oper,           0,      0 },
-  { 'p',     stats_operedup,       0,      0 },
-  { 'P',     stats_ports,          0,      0 },
-  { 'q',     stats_resv,           1,      0 },
-  { 'Q',     stats_resv,           1,      0 },
-  { 'r',     stats_usage,          1,      0 },
-  { 'R',     stats_usage,          1,      0 },
-  { 's',     stats_service,        1,      0 },
-  { 'S',     stats_service,        1,      0 },
-  { 't',     stats_tstats,         1,      0 },
-  { 'T',     motd_report,          1,      0 },
-  { 'u',     stats_uptime,         0,      0 },
-  { 'U',     stats_shared,         1,      0 },
-  { 'v',     stats_servers,        1,      0 },
-  { 'x',     stats_gecos,          1,      0 },
-  { 'X',     stats_gecos,          1,      0 },
-  { 'y',     stats_class,          1,      0 },
-  { 'Y',     stats_class,          1,      0 },
-  { 'z',     stats_memory,         1,      0 },
-  { '?',     stats_servlinks,      0,      0 },
-  { '\0',    NULL,                 0,      0 }
+  const unsigned int required_modes;
+};
+
+static const struct StatsStruct *stats_map[256];
+static const struct StatsStruct  stats_tab[] =
+{
+  { 'a',  stats_dns_servers, UMODE_ADMIN },
+  { 'A',  stats_dns_servers, UMODE_ADMIN },
+  { 'c',  stats_connect,     UMODE_OPER  },
+  { 'C',  stats_connect,     UMODE_OPER  },
+  { 'd',  stats_tdeny,       UMODE_OPER  },
+  { 'D',  stats_deny,        UMODE_OPER  },
+  { 'e',  stats_exempt,      UMODE_OPER  },
+  { 'E',  stats_events,      UMODE_ADMIN },
+  { 'f',  fd_dump,           UMODE_ADMIN },
+  { 'F',  fd_dump,           UMODE_ADMIN },
+  { 'h',  stats_hubleaf,     UMODE_OPER  },
+  { 'H',  stats_hubleaf,     UMODE_OPER  },
+  { 'i',  stats_auth,        0           },
+  { 'I',  stats_auth,        0           },
+  { 'k',  stats_tklines,     0           },
+  { 'K',  stats_klines,      0           },
+  { 'l',  stats_ltrace,      UMODE_OPER  },
+  { 'L',  stats_ltrace,      UMODE_OPER  },
+  { 'm',  stats_messages,    0           },
+  { 'M',  stats_messages,    0           },
+  { 'o',  stats_oper,        0           },
+  { 'O',  stats_oper,        0           },
+  { 'p',  stats_operedup,    0           },
+  { 'P',  stats_ports,       0           },
+  { 'q',  stats_resv,        UMODE_OPER  },
+  { 'Q',  stats_resv,        UMODE_OPER  },
+  { 'r',  stats_usage,       UMODE_OPER  },
+  { 'R',  stats_usage,       UMODE_OPER  },
+  { 's',  stats_service,     UMODE_OPER  },
+  { 'S',  stats_service,     UMODE_OPER  },
+  { 't',  stats_tstats,      UMODE_OPER  },
+  { 'T',  motd_report,       UMODE_OPER  },
+  { 'u',  stats_uptime,      0           },
+  { 'U',  stats_shared,      UMODE_OPER  },
+  { 'v',  stats_servers,     UMODE_OPER  },
+  { 'x',  stats_gecos,       UMODE_OPER  },
+  { 'X',  stats_gecos,       UMODE_OPER  },
+  { 'y',  stats_class,       UMODE_OPER  },
+  { 'Y',  stats_class,       UMODE_OPER  },
+  { 'z',  stats_memory,      UMODE_OPER  },
+  { '?',  stats_servlinks,   0           },
+  { '\0', NULL,              0           }
 };
 
 static void
 do_stats(struct Client *source_p, int parc, char *parv[])
 {
-  const char statchar = *parv[1];
+  const unsigned char statchar = *parv[1];
+  const struct StatsStruct *tab;
 
   if (statchar == '\0')
   {
@@ -1506,25 +1447,17 @@ do_stats(struct Client *source_p, int parc, char *parv[])
     return;
   }
 
-  for (const struct StatsStruct *tab = stats_cmd_table; tab->handler; ++tab)
+  if ((tab = stats_map[statchar]))
   {
-    if (tab->letter == statchar)
-    {
-      /* The stats table says what privs are needed, so check --fl_ */
-      if ((tab->need_admin && !HasUMode(source_p, UMODE_ADMIN)) ||
-          (tab->need_oper && !HasUMode(source_p, UMODE_OPER)))
-      {
-        sendto_one_numeric(source_p, &me, ERR_NOPRIVILEGES);
-        break;
-      }
-
-      sendto_realops_flags(UMODE_SPY, L_ALL, SEND_NOTICE,
-                           "STATS %c requested by %s (%s@%s) [%s]",
-                           statchar, source_p->name, source_p->username,
-                           source_p->host, source_p->servptr->name);
+    if (!tab->required_modes || HasUMode(source_p, tab->required_modes))
       tab->handler(source_p, parc, parv);
-      break;
-    }
+    else
+      sendto_one_numeric(source_p, &me, ERR_NOPRIVILEGES);
+
+    sendto_realops_flags(UMODE_SPY, L_ALL, SEND_NOTICE,
+                         "STATS %c requested by %s (%s@%s) [%s]",
+                         statchar, source_p->name, source_p->username,
+                         source_p->host, source_p->servptr->name);
   }
 
   sendto_one_numeric(source_p, &me, RPL_ENDOFSTATS, statchar);
@@ -1575,15 +1508,29 @@ ms_stats(struct Client *source_p, int parc, char *parv[])
   return 0;
 }
 
+static void
+stats_init(void)
+{
+  for (const struct StatsStruct *tab = stats_tab; tab->letter; ++tab)
+    stats_map[tab->letter] = tab;
+}
+
 static struct Message stats_msgtab =
 {
-  "STATS", NULL, 0, 0, 2, MAXPARA, MFLG_SLOW, 0,
-  { m_unregistered, m_stats, ms_stats, m_ignore, ms_stats, m_ignore }
+  .cmd = "STATS",
+  .args_min = 2,
+  .args_max = MAXPARA,
+  .handlers[UNREGISTERED_HANDLER] = m_unregistered,
+  .handlers[CLIENT_HANDLER] = m_stats,
+  .handlers[SERVER_HANDLER] = ms_stats,
+  .handlers[ENCAP_HANDLER] = m_ignore,
+  .handlers[OPER_HANDLER] = ms_stats
 };
 
 static void
 module_init(void)
 {
+  stats_init();
   mod_add_cmd(&stats_msgtab);
 }
 
@@ -1595,11 +1542,7 @@ module_exit(void)
 
 struct module module_entry =
 {
-  .node    = { NULL, NULL, NULL },
-  .name    = NULL,
   .version = "$Revision$",
-  .handle  = NULL,
   .modinit = module_init,
   .modexit = module_exit,
-  .flags   = 0
 };

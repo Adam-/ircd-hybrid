@@ -38,12 +38,11 @@
 #include "server.h"
 #include "parse.h"
 #include "modules.h"
-#include "conf_db.h"
 #include "memory.h"
 
 
 static void
-check_kline(struct AddressRec *arec)
+kline_check(struct AddressRec *arec)
 {
   dlink_node *node = NULL, *node_next = NULL;
 
@@ -84,24 +83,40 @@ check_kline(struct AddressRec *arec)
  * side effects - tkline as given is placed
  */
 static void
-m_kline_add_kline(struct Client *source_p, struct MaskItem *conf,
-                  time_t tkline_time)
+kline_add(struct Client *source_p, const char *user, const char *host,
+          const char *reason, time_t duration)
 {
-  if (tkline_time)
+  char buf[IRCD_BUFSIZE];
+  struct MaskItem *conf;
+
+  if (duration)
+    snprintf(buf, sizeof(buf), "Temporary K-line %d min. - %.*s (%s)",
+             (int)(duration/60), REASONLEN, reason, date_iso8601(0));
+  else
+    snprintf(buf, sizeof(buf), "%.*s (%s)", REASONLEN, reason, date_iso8601(0));
+
+  conf = conf_make(CONF_KLINE);
+  conf->host = xstrdup(host);
+  conf->user = xstrdup(user);
+  conf->setat = CurrentTime;
+  conf->reason = xstrdup(buf);
+  SetConfDatabase(conf);
+
+  if (duration)
   {
-    conf->until = CurrentTime + tkline_time;
+    conf->until = CurrentTime + duration;
 
     if (IsClient(source_p))
       sendto_one_notice(source_p, &me, ":Added temporary %d min. K-Line [%s@%s]",
-                        tkline_time/60, conf->user, conf->host);
+                        duration/60, conf->user, conf->host);
 
-    sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
+    sendto_realops_flags(UMODE_SERVNOTICE, L_ALL, SEND_NOTICE,
                          "%s added temporary %d min. K-Line for [%s@%s] [%s]",
-                         get_oper_name(source_p), tkline_time/60,
+                         get_oper_name(source_p), duration/60,
                          conf->user, conf->host,
                          conf->reason);
     ilog(LOG_TYPE_KLINE, "%s added temporary %d min. K-Line for [%s@%s] [%s]",
-         get_oper_name(source_p), tkline_time/60,
+         get_oper_name(source_p), duration/60,
          conf->user, conf->host, conf->reason);
   }
   else
@@ -110,7 +125,7 @@ m_kline_add_kline(struct Client *source_p, struct MaskItem *conf,
       sendto_one_notice(source_p, &me, ":Added K-Line [%s@%s]",
                         conf->user, conf->host);
 
-    sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
+    sendto_realops_flags(UMODE_SERVNOTICE, L_ALL, SEND_NOTICE,
                          "%s added K-Line for [%s@%s] [%s]",
                          get_oper_name(source_p),
                          conf->user, conf->host, conf->reason);
@@ -118,10 +133,7 @@ m_kline_add_kline(struct Client *source_p, struct MaskItem *conf,
          get_oper_name(source_p), conf->user, conf->host, conf->reason);
   }
 
-  conf->setat = CurrentTime;
-  SetConfDatabase(conf);
-
-  check_kline(add_conf_by_address(CONF_KLINE, conf));
+  kline_check(add_conf_by_address(CONF_KLINE, conf));
 }
 
 /* already_placed_kline()
@@ -135,29 +147,30 @@ m_kline_add_kline(struct Client *source_p, struct MaskItem *conf,
  *       have to walk the hash and check every existing K-line. -A1kmm.
  */
 static int
-already_placed_kline(struct Client *source_p, const char *luser, const char *lhost, int warn)
+already_placed_kline(struct Client *source_p, const char *user, const char *host)
 {
   struct irc_ssaddr iphost, *piphost;
   struct MaskItem *conf = NULL;
   int t = 0;
   int aftype = 0;
 
-  if ((t = parse_netmask(lhost, &iphost, NULL)) != HM_HOST)
+  if ((t = parse_netmask(host, &iphost, NULL)) != HM_HOST)
   {
     if (t == HM_IPV6)
       aftype = AF_INET6;
     else
       aftype = AF_INET;
+
     piphost = &iphost;
   }
   else
     piphost = NULL;
 
-  if ((conf = find_conf_by_address(lhost, piphost, CONF_KLINE, aftype, luser, NULL, 0)))
+  if ((conf = find_conf_by_address(host, piphost, CONF_KLINE, aftype, user, NULL, 0)))
   {
-    if (IsClient(source_p) && warn)
+    if (IsClient(source_p))
       sendto_one_notice(source_p, &me, ":[%s@%s] already K-Lined by [%s@%s] - %s",
-                        luser, lhost, conf->user, conf->host, conf->reason);
+                        user, host, conf->user, conf->host, conf->reason);
     return 1;
   }
 
@@ -176,13 +189,12 @@ already_placed_kline(struct Client *source_p, const char *luser, const char *lho
 static int
 mo_kline(struct Client *source_p, int parc, char *parv[])
 {
-  char buffer[IRCD_BUFSIZE];
   char *reason = NULL;
   char *user = NULL;
   char *host = NULL;
   char *target_server = NULL;
-  struct MaskItem *conf;
-  time_t tkline_time = 0;
+  time_t duration = 0;
+  int bits = 0;
 
   if (!HasOFlag(source_p, OPER_FLAG_KLINE))
   {
@@ -190,14 +202,14 @@ mo_kline(struct Client *source_p, int parc, char *parv[])
     return 0;
   }
 
-  if (parse_aline("KLINE", source_p, parc, parv, AWILD, &user, &host,
-                  &tkline_time, &target_server, &reason) < 0)
+  if (!parse_aline("KLINE", source_p, parc, parv, AWILD, &user, &host,
+                   &duration, &target_server, &reason))
     return 0;
 
   if (target_server)
   {
-    sendto_match_servs(source_p, target_server, CAP_KLN, "KLINE %s %lu %s %s :%s",
-                       target_server, (unsigned long)tkline_time,
+    sendto_match_servs(source_p, target_server, CAPAB_KLN, "KLINE %s %lu %s %s :%s",
+                       target_server, (unsigned long)duration,
                        user, host, reason);
 
     /* Allow ON to apply local kline as well if it matches */
@@ -205,24 +217,37 @@ mo_kline(struct Client *source_p, int parc, char *parv[])
       return 0;
   }
   else
-    cluster_a_line(source_p, "KLINE", CAP_KLN, SHARED_KLINE,
-                   "%d %s %s :%s", tkline_time, user, host, reason);
+    cluster_a_line(source_p, "KLINE", CAPAB_KLN, SHARED_KLINE,
+                   "%d %s %s :%s", duration, user, host, reason);
 
-  if (already_placed_kline(source_p, user, host, 1))
+  if (already_placed_kline(source_p, user, host))
     return 0;
 
-  conf = conf_make(CONF_KLINE);
-  conf->host = xstrdup(host);
-  conf->user = xstrdup(user);
+  switch (parse_netmask(host, NULL, &bits))
+  {
+    case HM_IPV4:
+      if ((unsigned int)bits < ConfigGeneral.kline_min_cidr)
+      {
+        sendto_one_notice(source_p, &me, ":For safety, bitmasks less than %u require conf access.",
+                          ConfigGeneral.kline_min_cidr);
+        return 0;
+      }
 
-  if (tkline_time)
-    snprintf(buffer, sizeof(buffer), "Temporary K-line %d min. - %.*s (%s)",
-             (int)(tkline_time/60), REASONLEN, reason, smalldate(0));
-  else
-    snprintf(buffer, sizeof(buffer), "%.*s (%s)", REASONLEN, reason, smalldate(0));
+      break;
+    case HM_IPV6:
+      if ((unsigned int)bits < ConfigGeneral.kline_min_cidr6)
+      {
+        sendto_one_notice(source_p, &me, ":For safety, bitmasks less than %u require conf access.",
+                          ConfigGeneral.kline_min_cidr6);
+        return 0;
+      }
 
-  conf->reason = xstrdup(buffer);
-  m_kline_add_kline(source_p, conf, tkline_time);
+      break;
+    default:  /* HM_HOST */
+      break;
+  }
+
+  kline_add(source_p, user, host, reason, duration);
   return 0;
 }
 
@@ -230,47 +255,64 @@ mo_kline(struct Client *source_p, int parc, char *parv[])
 static int
 ms_kline(struct Client *source_p, int parc, char *parv[])
 {
-  char buffer[IRCD_BUFSIZE];
-  struct MaskItem *conf = NULL;
-  time_t tkline_time = 0;
-  char *kuser, *khost, *kreason;
+  time_t duration = 0;
+  const char *user, *host, *reason;
+  int bits = 0;
 
   if (parc != 6 || EmptyString(parv[5]))
     return 0;
 
   /* parv[0]  parv[1]        parv[2]      parv[3]  parv[4]  parv[5] */
-  /* command  target_server  tkline_time  user     host     reason */
-  sendto_match_servs(source_p, parv[1], CAP_KLN, "KLINE %s %s %s %s :%s",
+  /* command  target_server  duration  user     host     reason */
+  sendto_match_servs(source_p, parv[1], CAPAB_KLN, "KLINE %s %s %s %s :%s",
                      parv[1], parv[2], parv[3], parv[4], parv[5]);
 
   if (match(parv[1], me.name))
     return 0;
 
-  tkline_time = valid_tkline(parv[2], TK_SECONDS);
-  kuser = parv[3];
-  khost = parv[4];
-  kreason = parv[5];
+  duration = valid_tkline(parv[2], TK_SECONDS);
+  user = parv[3];
+  host = parv[4];
+  reason = parv[5];
 
   if (HasFlag(source_p, FLAGS_SERVICE) ||
       find_matching_name_conf(CONF_ULINE, source_p->servptr->name,
                               source_p->username, source_p->host,
                               SHARED_KLINE))
   {
-    if (already_placed_kline(source_p, kuser, khost, 1))
+    if (!valid_wild_card(source_p, 2, user, host))
       return 0;
 
-    conf = conf_make(CONF_KLINE);
-    conf->host = xstrdup(khost);
-    conf->user = xstrdup(kuser);
+    if (already_placed_kline(source_p, user, host))
+      return 0;
 
-    if (tkline_time)
-      snprintf(buffer, sizeof(buffer), "Temporary K-line %u min. - %.*s (%s)",
-               (unsigned int)(tkline_time/60), REASONLEN, kreason, smalldate(0));
-    else
-      snprintf(buffer, sizeof(buffer), "%.*s (%s)", REASONLEN, kreason, smalldate(0));
+    switch (parse_netmask(host, NULL, &bits))
+    {
+      case HM_IPV4:
+        if ((unsigned int)bits < ConfigGeneral.kline_min_cidr)
+        {
+          if (IsClient(source_p))
+            sendto_one_notice(source_p, &me, ":For safety, bitmasks less than %u require conf access.",
+                              ConfigGeneral.kline_min_cidr);
+          return 0;
+        }
 
-    conf->reason = xstrdup(buffer);
-    m_kline_add_kline(source_p, conf, tkline_time);
+        break;
+      case HM_IPV6:
+        if ((unsigned int)bits < ConfigGeneral.kline_min_cidr6)
+        {
+          if (IsClient(source_p))
+            sendto_one_notice(source_p, &me, ":For safety, bitmasks less than %u require conf access.",
+                              ConfigGeneral.kline_min_cidr6);
+          return 0;
+        }
+
+        break;
+      default:  /* HM_HOST */
+        break;
+    }
+
+    kline_add(source_p, user, host, reason, duration);
   }
 
   return 0;
@@ -278,15 +320,21 @@ ms_kline(struct Client *source_p, int parc, char *parv[])
 
 static struct Message kline_msgtab =
 {
-  "KLINE", NULL, 0, 0, 2, MAXPARA, MFLG_SLOW, 0,
-  { m_unregistered, m_not_oper, ms_kline, m_ignore, mo_kline, m_ignore }
+  .cmd = "KLINE",
+  .args_min = 2,
+  .args_max = MAXPARA,
+  .handlers[UNREGISTERED_HANDLER] = m_unregistered,
+  .handlers[CLIENT_HANDLER] = m_not_oper,
+  .handlers[SERVER_HANDLER] = ms_kline,
+  .handlers[ENCAP_HANDLER] = m_ignore,
+  .handlers[OPER_HANDLER] = mo_kline
 };
 
 static void
 module_init(void)
 {
   mod_add_cmd(&kline_msgtab);
-  add_capability("KLN", CAP_KLN, 1);
+  add_capability("KLN", CAPAB_KLN);
 }
 
 static void
@@ -298,11 +346,7 @@ module_exit(void)
 
 struct module module_entry =
 {
-  .node    = { NULL, NULL, NULL },
-  .name    = NULL,
   .version = "$Revision$",
-  .handle  = NULL,
   .modinit = module_init,
   .modexit = module_exit,
-  .flags   = 0
 };

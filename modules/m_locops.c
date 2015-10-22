@@ -85,26 +85,35 @@ mo_locops(struct Client *source_p, int parc, char *parv[])
 static int
 ms_locops(struct Client *source_p, int parc, char *parv[])
 {
-  if (parc != 3 || EmptyString(parv[2]))
+  const char *const targets = parv[1];
+  const char *const message = parv[2];
+
+  if (parc != 3 || EmptyString(message))
     return 0;
 
-  sendto_match_servs(source_p, parv[1], CAP_CLUSTER, "LOCOPS %s :%s",
-                     parv[1], parv[2]);
+  sendto_match_servs(source_p, targets, CAPAB_CLUSTER, "LOCOPS %s :%s",
+                     targets, message);
 
-  if (match(parv[1], me.name))
+  if (match(targets, me.name))
     return 0;
 
   if (find_matching_name_conf(CONF_ULINE, source_p->servptr->name,
                               "*", "*", SHARED_LOCOPS))
     sendto_realops_flags(UMODE_LOCOPS, L_ALL, SEND_LOCOPS, "from %s: %s",
-                         source_p->name, parv[2]);
+                         source_p->name, message);
   return 0;
 }
 
 static struct Message locops_msgtab =
 {
-  "LOCOPS", NULL, 0, 0, 2, MAXPARA, MFLG_SLOW, 0,
-  { m_unregistered, m_not_oper, ms_locops, m_ignore, mo_locops, m_ignore }
+  .cmd = "LOCOPS",
+  .args_min = 2,
+  .args_max = MAXPARA,
+  .handlers[UNREGISTERED_HANDLER] = m_unregistered,
+  .handlers[CLIENT_HANDLER] = m_not_oper,
+  .handlers[SERVER_HANDLER] = ms_locops,
+  .handlers[ENCAP_HANDLER] = m_ignore,
+  .handlers[OPER_HANDLER] = mo_locops
 };
 
 static void
@@ -121,11 +130,7 @@ module_exit(void)
 
 struct module module_entry =
 {
-  .node    = { NULL, NULL, NULL },
-  .name    = NULL,
   .version = "$Revision$",
-  .handle  = NULL,
   .modinit = module_init,
   .modexit = module_exit,
-  .flags   = 0
 };

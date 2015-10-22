@@ -53,18 +53,6 @@
 #include "mempool.h"
 
 
-static const char *const HeaderMessages[] =
-{
-  ":*** Looking up your hostname",
-  ":*** Found your hostname",
-  ":*** Couldn't look up your hostname",
-  ":*** Checking Ident",
-  ":*** Got Ident response",
-  ":*** No Ident response",
-  ":*** Your forward and reverse DNS do not match, ignoring hostname",
-  ":*** Your hostname is too long, ignoring hostname"
-};
-
 enum
 {
   REPORT_DO_DNS,
@@ -77,9 +65,21 @@ enum
   REPORT_HOST_TOOLONG
 };
 
+static const char *const HeaderMessages[] =
+{
+  [REPORT_DO_DNS] = ":*** Looking up your hostname",
+  [REPORT_FIN_DNS] = ":*** Found your hostname",
+  [REPORT_FAIL_DNS] = ":*** Couldn't look up your hostname",
+  [REPORT_DO_ID] = ":*** Checking Ident",
+  [REPORT_FIN_ID] = ":*** Got Ident response",
+  [REPORT_FAIL_ID] = ":*** No Ident response",
+  [REPORT_IP_MISMATCH] = ":*** Your forward and reverse DNS do not match, ignoring hostname",
+  [REPORT_HOST_TOOLONG] = ":*** Your hostname is too long, ignoring hostname"
+};
+
 #define sendheader(c, i) sendto_one_notice((c), &me, "%s", HeaderMessages[(i)])
 
-static dlink_list auth_pending_list;
+static dlink_list auth_list;
 static void read_auth_reply(fde_t *, void *);
 static void auth_connect_callback(fde_t *, int, void *);
 
@@ -115,7 +115,7 @@ release_auth_client(struct AuthRequest *auth)
 
   if (IsInAuth(auth))
   {
-    dlinkDelete(&auth->node, &auth_pending_list);
+    dlinkDelete(&auth->node, &auth_list);
     ClearInAuth(auth);
   }
 
@@ -156,7 +156,7 @@ auth_dns_callback(void *vptr, const struct irc_ssaddr *addr, const char *name, s
       const struct sockaddr_in6 *const v6 = (const struct sockaddr_in6 *)&auth->client->connection->ip;
       const struct sockaddr_in6 *const v6dns = (const struct sockaddr_in6 *)addr;
 
-      if (memcmp(&v6->sin6_addr, &v6dns->sin6_addr, sizeof(struct in6_addr)) != 0)
+      if (memcmp(&v6->sin6_addr, &v6dns->sin6_addr, sizeof(struct in6_addr)))
       {
         sendheader(auth->client, REPORT_IP_MISMATCH);
         release_auth_client(auth);
@@ -267,7 +267,7 @@ start_auth(struct Client *client_p)
   struct AuthRequest *const auth = make_auth_request(client_p);
 
   SetInAuth(auth);
-  dlinkAddTail(auth, &auth->node, &auth_pending_list);
+  dlinkAddTail(auth, &auth->node, &auth_list);
 
   sendheader(client_p, REPORT_DO_DNS);
 
@@ -291,7 +291,7 @@ timeout_auth_queries_event(void *notused)
 {
   dlink_node *node = NULL, *node_next = NULL;
 
-  DLINK_FOREACH_SAFE(node, node_next, auth_pending_list.head)
+  DLINK_FOREACH_SAFE(node, node_next, auth_list.head)
   {
     struct AuthRequest *auth = node->data;
 
@@ -498,7 +498,7 @@ read_auth_reply(fde_t *fd, void *data)
     strlcpy(auth->client->username, username, sizeof(auth->client->username));
     sendheader(auth->client, REPORT_FIN_ID);
     ++ServerStats.is_asuc;
-    SetGotId(auth->client);
+    AddFlag(auth->client, FLAGS_GOTID);
   }
 
   release_auth_client(auth);
@@ -518,7 +518,7 @@ delete_auth(struct AuthRequest *auth)
 
   if (IsInAuth(auth))
   {
-    dlinkDelete(&auth->node, &auth_pending_list);
+    dlinkDelete(&auth->node, &auth_list);
     ClearInAuth(auth);
   }
 }

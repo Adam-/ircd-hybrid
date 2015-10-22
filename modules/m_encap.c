@@ -68,7 +68,7 @@ ms_encap(struct Client *source_p, int parc, char *parv[])
   else
     snprintf(ptr, sizeof(buffer) - cur_len, ":%s", parv[parc - 1]);
 
-  sendto_match_servs(source_p, parv[1], CAP_ENCAP,
+  sendto_match_servs(source_p, parv[1], CAPAB_ENCAP,
                      "ENCAP %s", buffer);
 
   if (match(parv[1], me.name))
@@ -93,15 +93,21 @@ ms_encap(struct Client *source_p, int parc, char *parv[])
 
 static struct Message encap_msgtab =
 {
-  "ENCAP", NULL, 0, 0, 3, MAXPARA, MFLG_SLOW, 0,
-  { m_ignore, m_ignore, ms_encap, m_ignore, m_ignore, m_ignore }
+  .cmd = "ENCAP",
+  .args_min = 3,
+  .args_max = MAXPARA,
+  .handlers[UNREGISTERED_HANDLER] = m_ignore,
+  .handlers[CLIENT_HANDLER] = m_ignore,
+  .handlers[SERVER_HANDLER] = ms_encap,
+  .handlers[ENCAP_HANDLER] = m_ignore,
+  .handlers[OPER_HANDLER] = m_ignore
 };
 
 static void
 module_init(void)
 {
   mod_add_cmd(&encap_msgtab);
-  add_capability("ENCAP", CAP_ENCAP, 1);
+  add_capability("ENCAP", CAPAB_ENCAP);
 }
 
 static void
@@ -113,11 +119,7 @@ module_exit(void)
 
 struct module module_entry =
 {
-  .node    = { NULL, NULL, NULL },
-  .name    = NULL,
   .version = "$Revision$",
-  .handle  = NULL,
   .modinit = module_init,
   .modexit = module_exit,
-  .flags   = 0
 };

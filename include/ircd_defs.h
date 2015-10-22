@@ -52,13 +52,13 @@
 #define REALLEN         50
 #define CHANNELLEN      50
 #define TOPICLEN        300
-#define KILLLEN         180
-#define REASONLEN       180
+#define KILLLEN         240
+#define REASONLEN       240
 #define KICKLEN         180
 #define AWAYLEN         180
 #define KEYLEN          23
 
-#define USERHOST_REPLYLEN       (NICKLEN+HOSTLEN+USERLEN+5)
+#define USERHOST_REPLYLEN       (NICKLEN+USERLEN+HOSTLEN+3)  /* +3 for !, @, \0 */
 #define MAX_DATE_STRING 32      /* maximum string length for a date string */
 #define IRCD_MAXNS      3       /* Maximum number of nameservers in
                                    /etc/resolv.conf we care about */

@@ -112,7 +112,7 @@ ms_join(struct Client *source_p, int parc, char *parv[])
   if (parc < 4)
     return 0;
 
-  if (!check_channel_name(parv[2], 0))
+  if (!channel_check_name(parv[2], 0))
   {
     sendto_realops_flags(UMODE_DEBUG, L_ALL, SEND_NOTICE,
                          "*** Too long or invalid channel name from %s(via %s): %s",
@@ -127,7 +127,7 @@ ms_join(struct Client *source_p, int parc, char *parv[])
   if ((chptr = hash_find_channel(parv[2])) == NULL)
   {
     isnew = 1;
-    chptr = make_channel(parv[2]);
+    chptr = channel_make(parv[2]);
   }
 
   newts   = atol(parv[1]);
@@ -153,7 +153,7 @@ ms_join(struct Client *source_p, int parc, char *parv[])
       sendto_channel_local(0, chptr,
                            ":%s NOTICE %s :*** Notice -- TS for %s changed from %lu to 0",
                            me.name, chptr->name, chptr->name, (unsigned long)oldts);
-      sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
+      sendto_realops_flags(UMODE_SERVNOTICE, L_ALL, SEND_NOTICE,
                            "Server %s changing TS on %s from %lu to 0",
                            source_p->name, chptr->name, (unsigned long)oldts);
     }
@@ -438,8 +438,14 @@ remove_a_mode(struct Channel *chptr, struct Client *source_p, int mask, const ch
 
 static struct Message join_msgtab =
 {
-  "JOIN", NULL, 0, 0, 2, MAXPARA, MFLG_SLOW, 0,
-  { m_unregistered, m_join, ms_join, m_ignore, m_join, m_ignore }
+  .cmd = "JOIN",
+  .args_min = 2,
+  .args_max = MAXPARA,
+  .handlers[UNREGISTERED_HANDLER] = m_unregistered,
+  .handlers[CLIENT_HANDLER] = m_join,
+  .handlers[SERVER_HANDLER] = ms_join,
+  .handlers[ENCAP_HANDLER] = m_ignore,
+  .handlers[OPER_HANDLER] = m_join
 };
 
 static void
@@ -456,10 +462,7 @@ module_exit(void)
 
 struct module module_entry =
 {
-  .node    = { NULL, NULL, NULL },
-  .name    = NULL,
   .version = "$Revision$",
-  .handle  = NULL,
   .modinit = module_init,
   .modexit = module_exit,
   .flags   = MODULE_FLAG_CORE

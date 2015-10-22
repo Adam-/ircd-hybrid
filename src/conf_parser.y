@@ -38,8 +38,9 @@
 #include "conf_class.h"
 #include "conf_pseudo.h"
 #include "event.h"
+#include "id.h"
 #include "log.h"
-#include "client.h"	/* for UMODE_ALL only */
+#include "client.h"	/* for UMODE_SERVNOTICE only */
 #include "irc_string.h"
 #include "memory.h"
 #include "modules.h"
@@ -161,6 +162,7 @@ reset_block_state(void)
 %token  CIDR_BITLEN_IPV4
 %token  CIDR_BITLEN_IPV6
 %token  CLASS
+%token  CLOSE
 %token  CONNECT
 %token  CONNECTFREQ
 %token  CYCLE_ON_HOST_CHANGE
@@ -168,14 +170,14 @@ reset_block_state(void)
 %token  DEFAULT_JOIN_FLOOD_COUNT
 %token  DEFAULT_JOIN_FLOOD_TIME
 %token  DEFAULT_MAX_CLIENTS
-%token  DEFAULT_SPLIT_SERVER_COUNT
-%token  DEFAULT_SPLIT_USER_COUNT
 %token  DENY
 %token  DESCRIPTION
 %token  DIE
 %token  DISABLE_AUTH
 %token  DISABLE_FAKE_CHANNELS
 %token  DISABLE_REMOTE_COMMANDS
+%token  DLINE_MIN_CIDR
+%token  DLINE_MIN_CIDR6
 %token  DOTS_IN_IDENT
 %token  EMAIL
 %token  ENCRYPTED
@@ -185,14 +187,6 @@ reset_block_state(void)
 %token  FLATTEN_LINKS
 %token  GECOS
 %token  GENERAL
-%token  GLINE
-%token  GLINE_DURATION
-%token  GLINE_ENABLE
-%token  GLINE_EXEMPT
-%token  GLINE_MIN_CIDR
-%token  GLINE_MIN_CIDR6
-%token  GLINE_REQUEST_DURATION
-%token  HAVENT_READ_CONF
 %token  HIDDEN
 %token  HIDDEN_NAME
 %token  HIDE_CHANS
@@ -212,10 +206,13 @@ reset_block_state(void)
 %token  IRCD_AUTH
 %token  IRCD_FLAGS
 %token  IRCD_SID
+%token  JOIN
 %token  KILL
 %token  KILL_CHASE_TIME_LIMIT
 %token  KLINE
 %token  KLINE_EXEMPT
+%token  KLINE_MIN_CIDR
+%token  KLINE_MIN_CIDR6
 %token  KNOCK_CLIENT_COUNT
 %token  KNOCK_CLIENT_TIME
 %token  KNOCK_DELAY_CHANNEL
@@ -249,15 +246,12 @@ reset_block_state(void)
 %token  NETWORK_DESC
 %token  NETWORK_NAME
 %token  NICK
-%token  NO_CREATE_ON_SPLIT
-%token  NO_JOIN_ON_SPLIT
 %token  NO_OPER_FLOOD
 %token  NO_TILDE
 %token  NUMBER
 %token  NUMBER_PER_CIDR
 %token  NUMBER_PER_IP
 %token  OPER_ONLY_UMODES
-%token  OPER_PASS_RESV
 %token  OPER_UMODES
 %token  OPERATOR
 %token  OPERS_BYPASS_CALLERID
@@ -279,7 +273,6 @@ reset_block_state(void)
 %token  RESV
 %token  RESV_EXEMPT
 %token  RSA_PRIVATE_KEY_FILE
-%token  RSA_PUBLIC_KEY_FILE
 %token  SECONDS MINUTES HOURS DAYS WEEKS MONTHS YEARS
 %token  SEND_PASSWORD
 %token  SENDQ
@@ -367,6 +360,7 @@ reset_block_state(void)
 %token  WARN_NO_CONNECT_BLOCK
 %token  WHOIS
 %token  XLINE
+%token  XLINE_EXEMPT
 
 %type  <string> QSTRING
 %type  <number> NUMBER
@@ -938,10 +932,6 @@ logging_file_type_item:  USER
 {
   if (conf_parser_ctx.pass == 2)
     block_state.type.value = LOG_TYPE_OPER;
-} | GLINE
-{
-  if (conf_parser_ctx.pass == 2)
-    block_state.type.value = LOG_TYPE_GLINE;
 } | XLINE
 {
   if (conf_parser_ctx.pass == 2)
@@ -1026,33 +1016,6 @@ oper_entry: OPERATOR
     conf->htype = parse_netmask(conf->host, &conf->addr, &conf->bits);
 
     conf_add_class_to_conf(conf, block_state.class.buf);
-
-#ifdef HAVE_TLS_OPENSSL
-    if (block_state.file.buf[0])
-    {
-      BIO *file = NULL;
-      RSA *pkey = NULL;
-
-      if ((file = BIO_new_file(block_state.file.buf, "r")) == NULL)
-      {
-        ilog(LOG_TYPE_IRCD, "Ignoring rsa_public_key_file -- file doesn't exist");
-        break;
-      }
-
-      if ((pkey = PEM_read_bio_RSA_PUBKEY(file, NULL, 0, NULL)) == NULL)
-        ilog(LOG_TYPE_IRCD, "Ignoring rsa_public_key_file -- key invalid; check key syntax");
-      else
-      {
-        if (RSA_size(pkey) > 128)
-          ilog(LOG_TYPE_IRCD, "Ignoring rsa_public_key_file -- key size must be 1024 or below");
-        else
-          conf->rsa_public_key = pkey;
-      }
-
-      BIO_set_close(file, BIO_CLOSE);
-      BIO_free(file);
-    }
-#endif /* HAVE_TLS_OPENSSL */
   }
 };
 
@@ -1064,7 +1027,6 @@ oper_item:      oper_name |
                 oper_umodes |
                 oper_class |
                 oper_encrypted |
-                oper_rsa_public_key_file |
                 oper_ssl_certificate_fingerprint |
                 oper_ssl_connection_required |
                 oper_flags |
@@ -1103,12 +1065,6 @@ oper_encrypted: ENCRYPTED '=' TBOOL ';'
     block_state.flags.value |= CONF_FLAGS_ENCRYPTED;
   else
     block_state.flags.value &= ~CONF_FLAGS_ENCRYPTED;
-};
-
-oper_rsa_public_key_file: RSA_PUBLIC_KEY_FILE '=' QSTRING ';'
-{
-  if (conf_parser_ctx.pass == 2)
-    strlcpy(block_state.file.buf, yylval.string, sizeof(block_state.file.buf));
 };
 
 oper_ssl_certificate_fingerprint: SSL_CERTIFICATE_FINGERPRINT '=' QSTRING ';'
@@ -1286,10 +1242,6 @@ oper_flags_item: KILL ':' REMOTE
 {
   if (conf_parser_ctx.pass == 2)
     block_state.port.value |= OPER_FLAG_UNXLINE;
-} | GLINE
-{
-  if (conf_parser_ctx.pass == 2)
-    block_state.port.value |= OPER_FLAG_GLINE;
 } | DIE
 {
   if (conf_parser_ctx.pass == 2)
@@ -1334,6 +1286,26 @@ oper_flags_item: KILL ':' REMOTE
 {
   if (conf_parser_ctx.pass == 2)
     block_state.port.value |= OPER_FLAG_OPME;
+} | NICK ':' RESV
+{
+  if (conf_parser_ctx.pass == 2)
+    block_state.port.value |= OPER_FLAG_NICK_RESV;
+} | JOIN ':' RESV
+{
+  if (conf_parser_ctx.pass == 2)
+    block_state.port.value |= OPER_FLAG_JOIN_RESV;
+} | RESV
+{
+  if (conf_parser_ctx.pass == 2)
+    block_state.port.value |= OPER_FLAG_RESV;
+} | T_UNRESV
+{
+  if (conf_parser_ctx.pass == 2)
+    block_state.port.value |= OPER_FLAG_UNRESV;
+} | CLOSE
+{
+  if (conf_parser_ctx.pass == 2)
+    block_state.port.value |= OPER_FLAG_CLOSE;
 };
 
 
@@ -1390,12 +1362,7 @@ class_entry: CLASS
   class->min_idle = block_state.min_idle.value;
   class->max_idle = block_state.max_idle.value;
 
-  if (class->number_per_cidr && block_state.number_per_cidr.value)
-    if ((class->cidr_bitlen_ipv4 && block_state.cidr_bitlen_ipv4.value) ||
-        (class->cidr_bitlen_ipv6 && block_state.cidr_bitlen_ipv6.value))
-      if ((class->cidr_bitlen_ipv4 != block_state.cidr_bitlen_ipv4.value) ||
-          (class->cidr_bitlen_ipv6 != block_state.cidr_bitlen_ipv6.value))
-        rebuild_cidr_list(class);
+  rebuild_cidr_list(class);
 
   class->cidr_bitlen_ipv4 = block_state.cidr_bitlen_ipv4.value;
   class->cidr_bitlen_ipv6 = block_state.cidr_bitlen_ipv6.value;
@@ -1589,7 +1556,7 @@ port_item: NUMBER
       break;
     }
 #endif
-    add_listener($1, block_state.addr.buf, block_state.flags.value);
+    listener_add($1, block_state.addr.buf, block_state.flags.value);
   }
 } | NUMBER TWODOTS NUMBER
 {
@@ -1604,7 +1571,7 @@ port_item: NUMBER
 #endif
 
     for (int i = $1; i <= $3; ++i)
-      add_listener(i, block_state.addr.buf, block_state.flags.value);
+      listener_add(i, block_state.addr.buf, block_state.flags.value);
   }
 };
 
@@ -1724,6 +1691,10 @@ auth_flags_item: SPOOF_NOTICE
 {
   if (conf_parser_ctx.pass == 2)
     block_state.flags.value |= CONF_FLAGS_EXEMPTKLINE;
+} | XLINE_EXEMPT
+{
+  if (conf_parser_ctx.pass == 2)
+    block_state.flags.value |= CONF_FLAGS_EXEMPTXLINE;
 } | NEED_IDENT
 {
   if (conf_parser_ctx.pass == 2)
@@ -1736,10 +1707,6 @@ auth_flags_item: SPOOF_NOTICE
 {
   if (conf_parser_ctx.pass == 2)
     block_state.flags.value |= CONF_FLAGS_NO_TILDE;
-} | GLINE_EXEMPT
-{
-  if (conf_parser_ctx.pass == 2)
-    block_state.flags.value |= CONF_FLAGS_EXEMPTGLINE;
 } | RESV_EXEMPT
 {
   if (conf_parser_ctx.pass == 2)
@@ -2447,7 +2414,6 @@ general_item:       general_away_count |
                     general_pace_wait_simple |
                     general_short_motd |
                     general_no_oper_flood |
-                    general_oper_pass_resv |
                     general_oper_only_umodes |
                     general_max_targets |
                     general_oper_umodes |
@@ -2458,15 +2424,13 @@ general_item:       general_away_count |
                     general_min_nonwildcard_simple |
                     general_throttle_count |
                     general_throttle_time |
-                    general_havent_read_conf |
                     general_ping_cookie |
                     general_disable_auth |
                     general_tkline_expire_notices |
-                    general_gline_enable |
-                    general_gline_duration |
-                    general_gline_request_duration |
-                    general_gline_min_cidr |
-                    general_gline_min_cidr6 |
+                    general_dline_min_cidr |
+                    general_dline_min_cidr6 |
+                    general_kline_min_cidr |
+                    general_kline_min_cidr6 |
                     general_stats_e_disabled |
                     general_max_watch |
                     general_cycle_on_host_change |
@@ -2494,32 +2458,24 @@ general_cycle_on_host_change: CYCLE_ON_HOST_CHANGE '=' TBOOL ';'
     ConfigGeneral.cycle_on_host_change = yylval.number;
 };
 
-general_gline_enable: GLINE_ENABLE '=' TBOOL ';'
+general_dline_min_cidr: DLINE_MIN_CIDR '=' NUMBER ';'
 {
-  if (conf_parser_ctx.pass == 2)
-    ConfigGeneral.glines = yylval.number;
+  ConfigGeneral.dline_min_cidr = $3;
 };
 
-general_gline_duration: GLINE_DURATION '=' timespec ';'
+general_dline_min_cidr6: DLINE_MIN_CIDR6 '=' NUMBER ';'
 {
-  if (conf_parser_ctx.pass == 2)
-    ConfigGeneral.gline_time = $3;
+  ConfigGeneral.dline_min_cidr6 = $3;
 };
 
-general_gline_request_duration: GLINE_REQUEST_DURATION '=' timespec ';'
+general_kline_min_cidr: KLINE_MIN_CIDR '=' NUMBER ';'
 {
-  if (conf_parser_ctx.pass == 2)
-    ConfigGeneral.gline_request_time = $3;
+  ConfigGeneral.kline_min_cidr = $3;
 };
 
-general_gline_min_cidr: GLINE_MIN_CIDR '=' NUMBER ';'
+general_kline_min_cidr6: KLINE_MIN_CIDR6 '=' NUMBER ';'
 {
-  ConfigGeneral.gline_min_cidr = $3;
-};
-
-general_gline_min_cidr6: GLINE_MIN_CIDR6 '=' NUMBER ';'
-{
-  ConfigGeneral.gline_min_cidr6 = $3;
+  ConfigGeneral.kline_min_cidr6 = $3;
 };
 
 general_tkline_expire_notices: TKLINE_EXPIRE_NOTICES '=' TBOOL ';'
@@ -2576,17 +2532,6 @@ general_ts_max_delta: TS_MAX_DELTA '=' timespec ';'
 {
   if (conf_parser_ctx.pass == 2)
     ConfigGeneral.ts_max_delta = $3;
-};
-
-general_havent_read_conf: HAVENT_READ_CONF '=' NUMBER ';'
-{
-  if (($3 > 0) && conf_parser_ctx.pass == 1)
-  {
-    ilog(LOG_TYPE_IRCD, "You haven't read your config file properly.");
-    ilog(LOG_TYPE_IRCD, "There is a line in the example conf that will kill your server if not removed.");
-    ilog(LOG_TYPE_IRCD, "Consider actually reading/editing the conf file, and removing this line.");
-    exit(0);
-  }
 };
 
 general_invisible_on_connect: INVISIBLE_ON_CONNECT '=' TBOOL ';'
@@ -2668,11 +2613,6 @@ general_short_motd: SHORT_MOTD '=' TBOOL ';'
 general_no_oper_flood: NO_OPER_FLOOD '=' TBOOL ';'
 {
   ConfigGeneral.no_oper_flood = yylval.number;
-};
-
-general_oper_pass_resv: OPER_PASS_RESV '=' TBOOL ';'
-{
-  ConfigGeneral.oper_pass_resv = yylval.number;
 };
 
 general_dots_in_ident: DOTS_IN_IDENT '=' NUMBER ';'
@@ -2877,10 +2817,6 @@ channel_item:       channel_max_bans |
                     channel_knock_client_time |
                     channel_knock_delay_channel |
                     channel_max_channels |
-                    channel_default_split_user_count |
-                    channel_default_split_server_count |
-                    channel_no_create_on_split |
-                    channel_no_join_on_split |
                     channel_default_join_flood_count |
                     channel_default_join_flood_time |
                     channel_disable_fake_channels |
@@ -2924,26 +2860,6 @@ channel_max_channels: MAX_CHANNELS '=' NUMBER ';'
 channel_max_bans: MAX_BANS '=' NUMBER ';'
 {
   ConfigChannel.max_bans = $3;
-};
-
-channel_default_split_user_count: DEFAULT_SPLIT_USER_COUNT '=' NUMBER ';'
-{
-  ConfigChannel.default_split_user_count = $3;
-};
-
-channel_default_split_server_count: DEFAULT_SPLIT_SERVER_COUNT '=' NUMBER ';'
-{
-  ConfigChannel.default_split_server_count = $3;
-};
-
-channel_no_create_on_split: NO_CREATE_ON_SPLIT '=' TBOOL ';'
-{
-  ConfigChannel.no_create_on_split = yylval.number;
-};
-
-channel_no_join_on_split: NO_JOIN_ON_SPLIT '=' TBOOL ';'
-{
-  ConfigChannel.no_join_on_split = yylval.number;
 };
 
 channel_default_join_flood_count: DEFAULT_JOIN_FLOOD_COUNT '=' NUMBER ';'

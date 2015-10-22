@@ -24,10 +24,9 @@
  * \version $Id$
  */
 
-#ifndef INCLUDED_s_conf_h
-#define INCLUDED_s_conf_h
+#ifndef INCLUDED_conf_h
+#define INCLUDED_conf_h
 #include "config.h"
-#include "ircd_defs.h"
 #include "client.h"
 #include "conf_class.h"
 #include "tls.h"
@@ -35,27 +34,26 @@
 
 #define CONF_NOREASON "<No reason supplied>"
 
-#define IsConfKill(x)           ((x)->type == CONF_KLINE)
-#define IsConfClient(x)         ((x)->type == CONF_CLIENT)
-#define IsConfGline(x)          ((x)->type == CONF_GLINE)
-
 /* MaskItem->flags */
-#define CONF_FLAGS_NO_TILDE             0x00000001U
-#define CONF_FLAGS_NEED_IDENTD          0x00000002U
-#define CONF_FLAGS_EXEMPTKLINE          0x00000004U
-#define CONF_FLAGS_NOLIMIT              0x00000008U
-#define CONF_FLAGS_SPOOF_IP             0x00000010U
-#define CONF_FLAGS_SPOOF_NOTICE         0x00000020U
-#define CONF_FLAGS_REDIR                0x00000040U
-#define CONF_FLAGS_EXEMPTGLINE          0x00000080U
-#define CONF_FLAGS_CAN_FLOOD            0x00000100U
-#define CONF_FLAGS_NEED_PASSWORD        0x00000200U
-#define CONF_FLAGS_ALLOW_AUTO_CONN      0x00000400U
-#define CONF_FLAGS_ENCRYPTED            0x00000800U
-#define CONF_FLAGS_IN_DATABASE          0x00001000U
-#define CONF_FLAGS_EXEMPTRESV           0x00002000U
-#define CONF_FLAGS_SSL                  0x00004000U
-#define CONF_FLAGS_WEBIRC               0x00008000U
+enum
+{
+  CONF_FLAGS_NO_TILDE        = 0x00000001U,
+  CONF_FLAGS_NEED_IDENTD     = 0x00000002U,
+  CONF_FLAGS_EXEMPTKLINE     = 0x00000004U,
+  CONF_FLAGS_NOLIMIT         = 0x00000008U,
+  CONF_FLAGS_SPOOF_IP        = 0x00000010U,
+  CONF_FLAGS_SPOOF_NOTICE    = 0x00000020U,
+  CONF_FLAGS_REDIR           = 0x00000040U,
+  CONF_FLAGS_CAN_FLOOD       = 0x00000080U,
+  CONF_FLAGS_NEED_PASSWORD   = 0x00000100U,
+  CONF_FLAGS_ALLOW_AUTO_CONN = 0x00000200U,
+  CONF_FLAGS_ENCRYPTED       = 0x00000400U,
+  CONF_FLAGS_IN_DATABASE     = 0x00000800U,
+  CONF_FLAGS_EXEMPTRESV      = 0x00001000U,
+  CONF_FLAGS_SSL             = 0x00002000U,
+  CONF_FLAGS_WEBIRC          = 0x00004000U,
+  CONF_FLAGS_EXEMPTXLINE     = 0x00008000U
+};
 
 /* Macros for struct MaskItem */
 #define IsConfWebIRC(x)           ((x)->flags & CONF_FLAGS_WEBIRC)
@@ -64,8 +62,8 @@
 #define IsNeedPassword(x)         ((x)->flags & CONF_FLAGS_NEED_PASSWORD)
 #define IsNeedIdentd(x)           ((x)->flags & CONF_FLAGS_NEED_IDENTD)
 #define IsConfExemptKline(x)      ((x)->flags & CONF_FLAGS_EXEMPTKLINE)
+#define IsConfExemptXline(x)      ((x)->flags & CONF_FLAGS_EXEMPTXLINE)
 #define IsConfExemptLimits(x)     ((x)->flags & CONF_FLAGS_NOLIMIT)
-#define IsConfExemptGline(x)      ((x)->flags & CONF_FLAGS_EXEMPTGLINE)
 #define IsConfExemptResv(x)       ((x)->flags & CONF_FLAGS_EXEMPTRESV)
 #define IsConfDoSpoofIp(x)        ((x)->flags & CONF_FLAGS_SPOOF_IP)
 #define IsConfSpoofNotice(x)      ((x)->flags & CONF_FLAGS_SPOOF_NOTICE)
@@ -81,20 +79,19 @@
 /* shared/cluster server entry types
  * These defines are used for both shared and cluster.
  */
-#define SHARED_KLINE            0x00000001U
-#define SHARED_UNKLINE          0x00000002U
-#define SHARED_XLINE            0x00000004U
-#define SHARED_UNXLINE          0x00000008U
-#define SHARED_RESV             0x00000010U
-#define SHARED_UNRESV           0x00000020U
-#define SHARED_LOCOPS           0x00000040U
-#define SHARED_DLINE            0x00000080U
-#define SHARED_UNDLINE          0x00000100U
-#define SHARED_ALL              (SHARED_KLINE | SHARED_UNKLINE |\
-                                 SHARED_XLINE | SHARED_UNXLINE |\
-                                 SHARED_RESV | SHARED_UNRESV |\
-                                 SHARED_LOCOPS | SHARED_DLINE | SHARED_UNDLINE)
-
+enum
+{
+  SHARED_KLINE   = 0x00000001U,
+  SHARED_UNKLINE = 0x00000002U,
+  SHARED_XLINE   = 0x00000004U,
+  SHARED_UNXLINE = 0x00000008U,
+  SHARED_RESV    = 0x00000010U,
+  SHARED_UNRESV  = 0x00000020U,
+  SHARED_LOCOPS  = 0x00000040U,
+  SHARED_DLINE   = 0x00000080U,
+  SHARED_UNDLINE = 0x00000100U,
+  SHARED_ALL     = 0xFFFFFFFFU
+};
 
 enum maskitem_type
 {
@@ -106,12 +103,14 @@ enum maskitem_type
   CONF_CLUSTER  = 1 <<  5,
   CONF_XLINE    = 1 <<  6,
   CONF_ULINE    = 1 <<  7,
-  CONF_GLINE    = 1 <<  8,
-  CONF_CRESV    = 1 <<  9,
-  CONF_NRESV    = 1 << 10,
-  CONF_SERVICE  = 1 << 11,
-  CONF_OPER     = 1 << 12
+  CONF_CRESV    = 1 <<  8,
+  CONF_NRESV    = 1 <<  9,
+  CONF_SERVICE  = 1 << 10,
+  CONF_OPER     = 1 << 11
 };
+
+#define IsConfKill(x)           ((x)->type == CONF_KLINE)
+#define IsConfClient(x)         ((x)->type == CONF_CLIENT)
 
 enum
 {
@@ -208,13 +207,14 @@ struct config_general_entry
   const char *spath;
   const char *configfile;
   const char *klinefile;
-  const char *glinefile;
   const char *xlinefile;
   const char *dlinefile;
   const char *resvfile;
 
-  unsigned int gline_min_cidr;
-  unsigned int gline_min_cidr6;
+  unsigned int dline_min_cidr;
+  unsigned int dline_min_cidr6;
+  unsigned int kline_min_cidr;
+  unsigned int kline_min_cidr6;
   unsigned int dots_in_ident;
   unsigned int failed_oper_notice;
   unsigned int anti_spam_exit_message_time;
@@ -238,15 +238,11 @@ struct config_general_entry
   unsigned int stats_u_oper_only;
   unsigned int short_motd;
   unsigned int no_oper_flood;
-  unsigned int oper_pass_resv;
-  unsigned int glines;
   unsigned int tkline_expire_notices;
   unsigned int opers_bypass_callerid;
   unsigned int ignore_bogus_ts;
   unsigned int pace_wait;
   unsigned int pace_wait_simple;
-  unsigned int gline_time;
-  unsigned int gline_request_time;
   unsigned int oper_only_umodes;
   unsigned int oper_umodes;
   unsigned int max_targets;
@@ -274,10 +270,6 @@ struct config_channel_entry
   unsigned int max_channels;
   unsigned int default_join_flood_count;
   unsigned int default_join_flood_time;
-  unsigned int no_create_on_split;
-  unsigned int no_join_on_split;
-  unsigned int default_split_server_count;
-  unsigned int default_split_user_count;
 };
 
 struct config_serverhide_entry
@@ -351,7 +343,7 @@ extern struct config_serverinfo_entry ConfigServerInfo;
 extern struct config_admin_entry ConfigAdminInfo;
 
 extern int valid_wild_card_simple(const char *);
-extern int valid_wild_card(struct Client *, int, int, ...);
+extern int valid_wild_card(struct Client *, int, ...);
 /* End GLOBAL section */
 
 extern struct MaskItem *conf_make(enum maskitem_type);
@@ -374,7 +366,7 @@ extern void conf_free(struct MaskItem *);
 extern void yyerror(const char *);
 extern void conf_error_report(const char *);
 extern void cleanup_tklines(void *);
-extern int conf_rehash(int);
+extern void conf_rehash(int);
 extern void lookup_confhost(struct MaskItem *);
 extern void conf_add_class_to_conf(struct MaskItem *, const char *);
 
@@ -384,15 +376,13 @@ extern const char *get_oper_name(const struct Client *);
 #define AWILD 0x1  /* check wild cards */
 extern int parse_aline(const char *, struct Client *, int, char **,
                        int, char **, char **, time_t *, char **, char **);
-extern int valid_comment(struct Client *, char *, int);
-
 
 #define TK_SECONDS 0
 #define TK_MINUTES 1
 extern time_t valid_tkline(const char *, const int);
 extern int match_conf_password(const char *, const struct MaskItem *);
 
-#define CLEANUP_TKLINES_TIME 60
+enum { CLEANUP_TKLINES_TIME = 60 };
 
 extern void cluster_a_line(struct Client *, const char *, unsigned int, unsigned int, const char *,...);
 #endif /* INCLUDED_s_conf_h */

@@ -39,7 +39,8 @@
 #include "send.h"
 #include "misc.h"
 
-#define READBUF_SIZE 16384
+
+enum { READBUF_SIZE = 16384 };
 
 static char readBuf[READBUF_SIZE];
 
@@ -48,7 +49,7 @@ static char readBuf[READBUF_SIZE];
  * client_dopacket - copy packet to client buf and parse it
  *      client_p - pointer to client structure for which the buffer data
  *             applies.
- *      buffer - pointr to the buffer containing the newly read data
+ *      buffer - pointer to the buffer containing the newly read data
  *      length - number of valid bytes of data in the buffer
  *
  * Note:
@@ -186,7 +187,7 @@ parse_client_queued(struct Client *client_p)
 
     if (ConfigGeneral.no_oper_flood && HasUMode(client_p, UMODE_OPER))
       checkflood = 0;
-    else if (IsCanFlood(client_p))
+    else if (HasFlag(client_p, FLAGS_CANFLOOD))
       checkflood = 0;
 
     /*
@@ -235,7 +236,7 @@ parse_client_queued(struct Client *client_p)
 void
 flood_endgrace(struct Client *client_p)
 {
-  SetFloodDone(client_p);
+  AddFlag(client_p, FLAGS_FLOODDONE);
 
   /* Drop their flood limit back down */
   client_p->connection->allow_read = MAX_FLOOD;
@@ -260,7 +261,7 @@ flood_recalc(fde_t *fd, void *data)
 
   /*
    * Allow a bursting client their allocation per second, allow
-   * a client whos flooding an extra 2 per second
+   * a client who is flooding an extra 2 per second
    */
   if (IsFloodDone(client_p))
     client_p->connection->sent_parsed -= 2;
@@ -336,7 +337,7 @@ read_packet(fde_t *fd, void *data)
     if (client_p->connection->lasttime > client_p->connection->since)
       client_p->connection->since = CurrentTime;
 
-    ClearPingSent(client_p);
+    DelFlag(client_p, FLAGS_PINGSENT);
 
     /* Attempt to parse what we have */
     parse_client_queued(client_p);

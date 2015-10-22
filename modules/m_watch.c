@@ -36,6 +36,7 @@
 #include "modules.h"
 #include "user.h"
 #include "watch.h"
+#include "isupport.h"
 
 
 /*
@@ -85,8 +86,8 @@ m_watch(struct Client *source_p, int parc, char *parv[])
   if (parc < 2)
     parv[1] = def;
 
-  for (s = strtoken(&p, parv[1], ", "); s;
-       s = strtoken(&p,    NULL, ", "))
+  for (s = strtok_r(parv[1], ", ", &p); s;
+       s = strtok_r(NULL,    ", ", &p))
   {
     if ((user = strchr(s, '!')))
       *user++ = '\0'; /* Not used */
@@ -242,31 +243,32 @@ m_watch(struct Client *source_p, int parc, char *parv[])
 
 static struct Message watch_msgtab =
 {
-  "WATCH", NULL, 0, 0, 0, 1, MFLG_SLOW, 0,
-  { m_unregistered, m_watch, m_ignore, m_ignore, m_watch, m_ignore }
+  .cmd = "WATCH",
+  .args_max = 1,
+  .handlers[UNREGISTERED_HANDLER] = m_unregistered,
+  .handlers[CLIENT_HANDLER] = m_watch,
+  .handlers[SERVER_HANDLER] = m_ignore,
+  .handlers[ENCAP_HANDLER] = m_ignore,
+  .handlers[OPER_HANDLER] = m_watch
 };
 
 static void
 module_init(void)
 {
   mod_add_cmd(&watch_msgtab);
-  add_isupport("WATCH", NULL, ConfigGeneral.max_watch);
+  isupport_add("WATCH", NULL, ConfigGeneral.max_watch);
 }
 
 static void
 module_exit(void)
 {
   mod_del_cmd(&watch_msgtab);
-  delete_isupport("WATCH");
+  isupport_delete("WATCH");
 }
 
 struct module module_entry =
 {
-  .node    = { NULL, NULL, NULL },
-  .name    = NULL,
   .version = "$Revision$",
-  .handle  = NULL,
   .modinit = module_init,
   .modexit = module_exit,
-  .flags   = 0
 };

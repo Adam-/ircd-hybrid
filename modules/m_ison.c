@@ -58,8 +58,8 @@ m_ison(struct Client *source_p, int parc, char *parv[])
   len = snprintf(buf, sizeof(buf), numeric_form(RPL_ISON), me.name, source_p->name);
   current_insert_point = buf + len;
 
-  for (nick = strtoken(&p, parv[1], " "); nick;
-       nick = strtoken(&p,    NULL, " "))
+  for (nick = strtok_r(parv[1], " ", &p); nick;
+       nick = strtok_r(NULL,    " ", &p))
   {
     if ((target_p = find_person(source_p, nick)))
     {
@@ -85,8 +85,14 @@ m_ison(struct Client *source_p, int parc, char *parv[])
 
 static struct Message ison_msgtab =
 {
-  "ISON", NULL, 0, 0, 2, 1, MFLG_SLOW, 0,
-  { m_unregistered, m_ison, m_ignore, m_ignore, m_ison, m_ignore }
+  .cmd = "ISON",
+  .args_min = 2,
+  .args_max = 1,
+  .handlers[UNREGISTERED_HANDLER] = m_unregistered,
+  .handlers[CLIENT_HANDLER] = m_ison,
+  .handlers[SERVER_HANDLER] = m_ignore,
+  .handlers[ENCAP_HANDLER] = m_ignore,
+  .handlers[OPER_HANDLER] = m_ison
 };
 
 static void
@@ -103,11 +109,7 @@ module_exit(void)
 
 struct module module_entry =
 {
-  .node    = { NULL, NULL, NULL },
-  .name    = NULL,
   .version = "$Revision$",
-  .handle  = NULL,
   .modinit = module_init,
   .modexit = module_exit,
-  .flags   = 0
 };

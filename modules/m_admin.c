@@ -36,7 +36,6 @@
 #include "modules.h"
 
 
-
 /*! \brief Sends administrative information about this server.
  *
  * \param source_p Pointer to client to report to
@@ -114,8 +113,13 @@ ms_admin(struct Client *source_p, int parc, char *parv[])
 
 static struct Message admin_msgtab =
 {
-  "ADMIN", NULL, 0, 0, 0, MAXPARA, MFLG_SLOW, 0,
-  { m_unregistered, m_admin, ms_admin, m_ignore, ms_admin, m_ignore }
+  .cmd = "ADMIN",
+  .args_max = MAXPARA,
+  .handlers[UNREGISTERED_HANDLER] = m_unregistered,
+  .handlers[CLIENT_HANDLER] = m_admin,
+  .handlers[SERVER_HANDLER] = ms_admin,
+  .handlers[ENCAP_HANDLER] = m_ignore,
+  .handlers[OPER_HANDLER] = ms_admin
 };
 
 static void
@@ -132,11 +136,7 @@ module_exit(void)
 
 struct module module_entry =
 {
-  .node    = { NULL, NULL, NULL },
-  .name    = NULL,
   .version = "$Revision$",
-  .handle  = NULL,
   .modinit = module_init,
   .modexit = module_exit,
-  .flags   = 0
 };

@@ -57,9 +57,9 @@ init_netio(void)
 
   if ((fd = open("/dev/poll", O_RDWR)) < 0)
   {
-    ilog(LOG_TYPE_IRCD, "init_netio: Couldn't open /dev/poll - %d: %s",
-         errno, strerror(errno));
-    exit(115); /* Whee! */
+    ilog(LOG_TYPE_IRCD, "init_netio: couldn't open /dev/poll: %s",
+         strerror(errno));
+    exit(EXIT_FAILURE); /* Whee! */
   }
 
   fd_open(&dpfd, fd, 0, "/dev/poll file descriptor");
@@ -155,9 +155,8 @@ comm_select(void)
 
   if (num < 0)
   {
-#ifdef HAVE_USLEEP
-    usleep(50000);  /* avoid 99% CPU in comm_select */
-#endif
+    const struct timespec req = { .tv_sec = 0, .tv_nsec = 50000000 };
+    nanosleep(&req, NULL);  /* Avoid 99% CPU in comm_select */
     return;
   }
 

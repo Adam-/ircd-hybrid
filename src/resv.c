@@ -26,19 +26,14 @@
 
 #include "stdinc.h"
 #include "list.h"
-#include "ircd.h"
 #include "send.h"
 #include "client.h"
 #include "memory.h"
-#include "numeric.h"
 #include "resv.h"
-#include "hash.h"
 #include "irc_string.h"
 #include "ircd_defs.h"
 #include "misc.h"
 #include "conf.h"
-#include "conf_db.h"
-#include "channel.h"
 #include "hostmask.h"
 
 

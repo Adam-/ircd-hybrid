@@ -100,12 +100,6 @@ static const struct InfoStruct info_table[] =
     "Path to K-line database file"
   },
   {
-    "GPATH",
-    OUTPUT_STRING,
-    &ConfigGeneral.glinefile,
-    "Path to G-line database file"
-  },
-  {
     "XPATH",
     OUTPUT_STRING,
     &ConfigGeneral.xlinefile,
@@ -171,7 +165,6 @@ static const struct InfoStruct info_table[] =
     &ConfigChannel.invite_client_count,
     "How many INVITE attempts are permitted in invite_client_time"
   },
-
   {
     "invite_client_time",
     OUTPUT_DECIMAL,
@@ -207,30 +200,6 @@ static const struct InfoStruct info_table[] =
     OUTPUT_DECIMAL,
     &ConfigChannel.max_bans,
     "Total +b/e/I modes allowed in a channel"
-  },
-  {
-    "default_split_user_count",
-    OUTPUT_DECIMAL,
-    &ConfigChannel.default_split_user_count,
-    "Startup value of SPLITUSERS"
-  },
-  {
-    "default_split_server_count",
-    OUTPUT_DECIMAL,
-    &ConfigChannel.default_split_server_count,
-    "Startup value of SPLITNUM"
-  },
-  {
-    "no_create_on_split",
-    OUTPUT_BOOLEAN_YN,
-    &ConfigChannel.no_create_on_split,
-    "Disallow creation of channels when split"
-  },
-  {
-    "no_join_on_split",
-    OUTPUT_BOOLEAN_YN,
-    &ConfigChannel.no_join_on_split,
-    "Disallow joining channels when split"
   },
   {
     "flatten_links",
@@ -287,16 +256,28 @@ static const struct InfoStruct info_table[] =
     "How many away_count aways are allowed in this time"
   },
   {
-    "gline_min_cidr",
+    "dline_min_cidr",
     OUTPUT_DECIMAL,
-    &ConfigGeneral.gline_min_cidr,
-    "Minimum required length of a CIDR bitmask for IPv4 G-Lines"
+    &ConfigGeneral.dline_min_cidr,
+    "Minimum required length of a CIDR bitmask for IPv4 D-Lines"
   },
   {
-    "gline_min_cidr6",
+    "dline_min_cidr6",
     OUTPUT_DECIMAL,
-    &ConfigGeneral.gline_min_cidr6,
-    "Minimum required length of a CIDR bitmask for IPv6 G-Lines"
+    &ConfigGeneral.dline_min_cidr6,
+    "Minimum required length of a CIDR bitmask for IPv6 D-Lines"
+  },
+  {
+    "kline_min_cidr",
+    OUTPUT_DECIMAL,
+    &ConfigGeneral.kline_min_cidr,
+    "Minimum required length of a CIDR bitmask for IPv4 K-Lines"
+  },
+  {
+    "kline_min_cidr6",
+    OUTPUT_DECIMAL,
+    &ConfigGeneral.kline_min_cidr6,
+    "Minimum required length of a CIDR bitmask for IPv6 K-Lines"
   },
   {
     "invisible_on_connect",
@@ -362,7 +343,7 @@ static const struct InfoStruct info_table[] =
     "min_nonwildcard",
     OUTPUT_DECIMAL,
     &ConfigGeneral.min_nonwildcard,
-    "Minimum non-wildcard chars in K/G lines"
+    "Minimum non-wildcard chars in K/D lines"
   },
   {
     "min_nonwildcard_simple",
@@ -446,13 +427,13 @@ static const struct InfoStruct info_table[] =
     "stats_P_oper_only",
     OUTPUT_BOOLEAN_YN,
     &ConfigGeneral.stats_P_oper_only,
-    "STATS P is only shown to operators"
+    "STATS P output is only shown to operators"
   },
   {
     "stats_u_oper_only",
     OUTPUT_BOOLEAN_YN,
     &ConfigGeneral.stats_u_oper_only,
-    "STATS u is only shown to operators"
+    "STATS u output is only shown to operators"
   },
   {
     "stats_i_oper_only",
@@ -509,12 +490,6 @@ static const struct InfoStruct info_table[] =
     "Reduce flood control for operators"
   },
   {
-    "oper_pass_resv",
-    OUTPUT_BOOLEAN_YN,
-    &ConfigGeneral.oper_pass_resv,
-    "Opers can over-ride RESVs"
-  },
-  {
     "max_targets",
     OUTPUT_DECIMAL,
     &ConfigGeneral.max_targets,
@@ -531,24 +506,6 @@ static const struct InfoStruct info_table[] =
     OUTPUT_DECIMAL,
     &ConfigGeneral.throttle_time,
     "Minimum time between client reconnects"
-  },
-  {
-    "gline_enable",
-    OUTPUT_BOOLEAN_YN,
-    &ConfigGeneral.glines,
-    "G-line (network-wide K-line) support"
-  },
-  {
-    "gline_duration",
-    OUTPUT_DECIMAL,
-    &ConfigGeneral.gline_time,
-    "Expiry time for G-lines"
-  },
-  {
-    "gline_request_duration",
-    OUTPUT_DECIMAL,
-    &ConfigGeneral.gline_request_time,
-    "Expiry time for pending G-lines"
   },
 
   /* --[  END OF TABLE  ]---------------------------------------------- */
@@ -571,7 +528,7 @@ send_birthdate_online_time(struct Client *source_p)
 {
   sendto_one_numeric(source_p, &me, RPL_INFO | SND_EXPLICIT,
                      ":On-line since %s",
-                     myctime(me.connection->firsttime));
+                     date(me.connection->firsttime));
 }
 
 /* send_conf_options()
@@ -617,10 +574,10 @@ send_conf_options(struct Client *source_p)
       /* Output info_table[i].option as a decimal value. */
       case OUTPUT_DECIMAL:
       {
-        const int option = *((const int *const)iptr->option);
+        const unsigned int option = *((const unsigned int *const)iptr->option);
 
         sendto_one_numeric(source_p, &me, RPL_INFO | SND_EXPLICIT,
-                           ":%-30s %-5d [%s]",
+                           ":%-30s %-5u [%s]",
                            iptr->name, option, iptr->desc ? iptr->desc : "<none>");
         break;
       }
@@ -628,7 +585,7 @@ send_conf_options(struct Client *source_p)
       /* Output info_table[i].option as "ON" or "OFF" */
       case OUTPUT_BOOLEAN:
       {
-        const int option = *((const int *const)iptr->option);
+        const unsigned int option = *((const unsigned int *const)iptr->option);
 
         sendto_one_numeric(source_p, &me, RPL_INFO | SND_EXPLICIT,
                            ":%-30s %-5s [%s]",
@@ -641,7 +598,7 @@ send_conf_options(struct Client *source_p)
       /* Output info_table[i].option as "YES" or "NO" */
       case OUTPUT_BOOLEAN_YN:
       {
-        const int option = *((const int *const)iptr->option);
+        const unsigned int option = *((const unsigned int *const)iptr->option);
 
         sendto_one_numeric(source_p, &me, RPL_INFO | SND_EXPLICIT,
                            ":%-30s %-5s [%s]",
@@ -652,7 +609,7 @@ send_conf_options(struct Client *source_p)
 
       case OUTPUT_BOOLEAN2:
       {
-        const int option = *((const int *const)iptr->option);
+        const unsigned int option = *((const unsigned int *const)iptr->option);
 
         sendto_one_numeric(source_p, &me, RPL_INFO | SND_EXPLICIT,
                            ":%-30s %-5s [%s]",
@@ -753,8 +710,13 @@ ms_info(struct Client *source_p, int parc, char *parv[])
 
 static struct Message info_msgtab =
 {
-  "INFO", NULL, 0, 0, 0, MAXPARA, MFLG_SLOW, 0,
-  { m_unregistered, m_info, ms_info, m_ignore, ms_info, m_ignore }
+  .cmd = "INFO",
+  .args_max = MAXPARA,
+  .handlers[UNREGISTERED_HANDLER] = m_unregistered,
+  .handlers[CLIENT_HANDLER] = m_info,
+  .handlers[SERVER_HANDLER] = ms_info,
+  .handlers[ENCAP_HANDLER] = m_ignore,
+  .handlers[OPER_HANDLER] = ms_info
 };
 
 static void
@@ -771,11 +733,7 @@ module_exit(void)
 
 struct module module_entry =
 {
-  .node    = { NULL, NULL, NULL },
-  .name    = NULL,
   .version = "$Revision$",
-  .handle  = NULL,
   .modinit = module_init,
   .modexit = module_exit,
-  .flags   = 0
 };

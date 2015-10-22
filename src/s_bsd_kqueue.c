@@ -32,7 +32,7 @@
 #include "s_bsd.h"
 #include "log.h"
 
-#define KE_LENGTH 128
+enum { KE_LENGTH = 128 };
 
 static fde_t kqfd;
 static struct kevent kq_fdlist[KE_LENGTH];  /* kevent buffer */
@@ -52,8 +52,8 @@ init_netio(void)
 
   if ((fd = kqueue()) < 0)
   {
-    ilog(LOG_TYPE_IRCD, "init_netio: Couldn't open kqueue fd!");
-    exit(115); /* Whee! */
+    ilog(LOG_TYPE_IRCD, "init_netio: couldn't open kqueue fd: %s", strerror(errno));
+    exit(EXIT_FAILURE); /* Whee! */
   }
 
   fd_open(&kqfd, fd, 0, "kqueue() file descriptor");
@@ -157,9 +157,8 @@ comm_select(void)
 
   if (num < 0)
   {
-#ifdef HAVE_USLEEP
-    usleep(50000);  /* avoid 99% CPU in comm_select */
-#endif
+    const struct timespec req = { .tv_sec = 0, .tv_nsec = 50000000 };
+    nanosleep(&req, NULL);  /* Avoid 99% CPU in comm_select */
     return;
   }
 

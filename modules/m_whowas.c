@@ -41,7 +41,7 @@
 #include "modules.h"
 
 
-#define WHOWAS_MAX_REPLIES 20  /* Only applies to remote clients */
+enum { WHOWAS_MAX_REPLIES = 20 };  /* Only applies to remote clients */
 
 static void
 do_whowas(struct Client *source_p, const int parc, char *parv[])
@@ -77,10 +77,10 @@ do_whowas(struct Client *source_p, const int parc, char *parv[])
 
       if ((temp->shide || ConfigServerHide.hide_servers) && !HasUMode(source_p, UMODE_OPER))
         sendto_one_numeric(source_p, &me, RPL_WHOISSERVER, temp->name,
-                           ConfigServerInfo.network_name, myctime(temp->logoff));
+                           ConfigServerInfo.network_name, date_ctime(temp->logoff));
       else
         sendto_one_numeric(source_p, &me, RPL_WHOISSERVER, temp->name,
-                           temp->servername, myctime(temp->logoff));
+                           temp->servername, date_ctime(temp->logoff));
       ++cur;
     }
 
@@ -165,8 +165,13 @@ ms_whowas(struct Client *source_p, int parc, char *parv[])
 
 static struct Message whowas_msgtab =
 {
-  "WHOWAS", NULL, 0, 0, 0, MAXPARA, MFLG_SLOW, 0,
-  { m_unregistered, m_whowas, ms_whowas, m_ignore, ms_whowas, m_ignore }
+  .cmd = "WHOWAS",
+  .args_max = MAXPARA,
+  .handlers[UNREGISTERED_HANDLER] = m_unregistered,
+  .handlers[CLIENT_HANDLER] = m_whowas,
+  .handlers[SERVER_HANDLER] = ms_whowas,
+  .handlers[ENCAP_HANDLER] = m_ignore,
+  .handlers[OPER_HANDLER] = ms_whowas
 };
 
 static void
@@ -183,11 +188,7 @@ module_exit(void)
 
 struct module module_entry =
 {
-  .node    = { NULL, NULL, NULL },
-  .name    = NULL,
   .version = "$Revision$",
-  .handle  = NULL,
   .modinit = module_init,
   .modexit = module_exit,
-  .flags   = 0
 };

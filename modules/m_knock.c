@@ -39,6 +39,7 @@
 #include "modules.h"
 #include "server.h"
 #include "user.h"
+#include "isupport.h"
 
 
 /*! \brief KNOCK command handler
@@ -125,23 +126,29 @@ m_knock(struct Client *source_p, int parc, char *parv[])
                        source_p->username,
                        source_p->host);
 
-  sendto_server(source_p, CAP_KNOCK, 0, ":%s KNOCK %s",
+  sendto_server(source_p, CAPAB_KNOCK, 0, ":%s KNOCK %s",
                 source_p->id, chptr->name);
   return 0;
 }
 
 static struct Message knock_msgtab =
 {
-  "KNOCK", NULL, 0, 0, 2, MAXPARA, MFLG_SLOW, 0,
-  { m_unregistered, m_knock, m_knock, m_ignore, m_knock, m_ignore }
+  .cmd = "KNOCK",
+  .args_min = 2,
+  .args_max = MAXPARA,
+  .handlers[UNREGISTERED_HANDLER] = m_unregistered,
+  .handlers[CLIENT_HANDLER] = m_knock,
+  .handlers[SERVER_HANDLER] = m_knock,
+  .handlers[ENCAP_HANDLER] = m_ignore,
+  .handlers[OPER_HANDLER] = m_knock
 };
 
 static void
 module_init(void)
 {
   mod_add_cmd(&knock_msgtab);
-  add_capability("KNOCK", CAP_KNOCK, 1);
-  add_isupport("KNOCK", NULL, -1);
+  add_capability("KNOCK", CAPAB_KNOCK);
+  isupport_add("KNOCK", NULL, -1);
 }
 
 static void
@@ -149,16 +156,12 @@ module_exit(void)
 {
   mod_del_cmd(&knock_msgtab);
   delete_capability("KNOCK");
-  delete_isupport("KNOCK");
+  isupport_delete("KNOCK");
 }
 
 struct module module_entry =
 {
-  .node    = { NULL, NULL, NULL },
-  .name    = NULL,
   .version = "$Revision$",
-  .handle  = NULL,
   .modinit = module_init,
   .modexit = module_exit,
-  .flags   = 0
 };

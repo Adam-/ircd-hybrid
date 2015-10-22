@@ -2,9 +2,11 @@ AUTOMAKE_OPTIONS = foreign
 
 bin_PROGRAMS = ircd
 
+BUILD_DATE ?= $(shell LANG=C date '+%B %-e %Y at %T%z')
+
 AM_YFLAGS = -d
 
-AM_CPPFLAGS = $(LTDLINCL) -I$(top_srcdir)/include
+AM_CPPFLAGS = $(LTDLINCL) -I$(top_srcdir)/include -DBUILD_DATE="\"$(BUILD_DATE)\""
 ircd_LDFLAGS = -export-dynamic
 ircd_LDADD = $(LIBLTDL)
 ircd_DEPENDENCIES = $(LTDLDEPS)
@@ -23,13 +25,14 @@ ircd_SOURCES = auth.c            \
                event.c           \
                fdlist.c          \
                getopt.c          \
-               gline.c           \
                hash.c            \
                hostmask.c        \
+               id.c              \
                ipcache.c         \
                irc_string.c      \
                ircd.c            \
                ircd_signal.c     \
+               isupport.c        \
                list.c            \
                listener.c        \
                log.c             \
@@ -42,7 +45,6 @@ ircd_SOURCES = auth.c            \
                numeric.c         \
                packet.c          \
                parse.c           \
-               patricia.c        \
                s_bsd_epoll.c     \
                s_bsd_poll.c      \
                s_bsd_devpoll.c   \
@@ -60,6 +62,7 @@ ircd_SOURCES = auth.c            \
                tls_none.c        \
                tls_openssl.c     \
                user.c            \
+               userhost.c        \
                version.c         \
                watch.c           \
                whowas.c

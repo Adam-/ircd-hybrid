@@ -56,10 +56,6 @@ dlink_list atable[ATABLE_SIZE];
  * Side effects: None
  * Comments: Called from parse_netmask
  */
-/* Fixed so ::/0 (any IPv6 address) is valid
-   Also a bug in DigitParse above.
-   -Gozem 2002-07-19 gozem@linux.nu
-*/
 static int
 try_parse_v6_netmask(const char *text, struct irc_ssaddr *addr, int *b)
 {
@@ -92,10 +88,13 @@ try_parse_v6_netmask(const char *text, struct irc_ssaddr *addr, int *b)
       }
       else
       {
-        /* If there were less than 4 hex digits, e.g. :ABC: shift right
-         * so we don't interpret it as ABC0 -A1kmm */
+        /*
+         * If there were less than 4 hex digits, e.g. :ABC: shift right
+         * so we don't interpret it as ABC0 -A1kmm
+         */
         d[dp] = d[dp] >> 4 * nyble;
         nyble = 4;
+
         if (++dp >= 8)
           return HM_HOST;
       }
@@ -195,7 +194,7 @@ try_parse_v4_netmask(const char *text, struct irc_ssaddr *addr, int *b)
     }
     else if (c == '*')
     {
-      if (*(p + 1) || n == 0 || *(p - 1) != '.')
+      if (*(p + 1) || n == 1 || *(p - 1) != '.')
         return HM_HOST;
 
       bits = (n - 1) * 8;
@@ -436,7 +435,7 @@ get_mask_hash(const char *text)
  * should always be true (i.e. conf->flags & CONF_FLAGS_NEED_PASSWORD == 0)
  */
 struct MaskItem *
-find_conf_by_address(const char *name, struct irc_ssaddr *addr, unsigned int type,
+find_conf_by_address(const char *name, const struct irc_ssaddr *addr, unsigned int type,
                      int fam, const char *username, const char *password, int do_match)
 {
   unsigned int hprecv = 0;
@@ -552,7 +551,7 @@ find_conf_by_address(const char *name, struct irc_ssaddr *addr, unsigned int typ
  * Side-effects: None
  */
 struct MaskItem *
-find_address_conf(const char *host, const char *user, struct irc_ssaddr *ip,
+find_address_conf(const char *host, const char *user, const struct irc_ssaddr *ip,
                   int aftype, const char *password)
 {
   struct MaskItem *authcnf = NULL, *killcnf = NULL;
@@ -571,15 +570,8 @@ find_address_conf(const char *host, const char *user, struct irc_ssaddr *ip,
 
   /*
    * If they are K-lined, return the K-line. Otherwise, return the
-   * auth{} block. -A1kmm
+   * auth {} block. -A1kmm
    */
-  if (killcnf)
-    return killcnf;
-
-  if (IsConfExemptGline(authcnf))
-    return authcnf;
-
-  killcnf = find_conf_by_address(host, ip, CONF_GLINE, aftype, user, NULL, 1);
   if (killcnf)
     return killcnf;
 
@@ -593,7 +585,7 @@ find_address_conf(const char *host, const char *user, struct irc_ssaddr *ip,
  * Side effects: None.
  */
 struct MaskItem *
-find_dline_conf(struct irc_ssaddr *addr, int aftype)
+find_dline_conf(const struct irc_ssaddr *addr, int aftype)
 {
   struct MaskItem *eline;
 
@@ -716,10 +708,9 @@ clear_out_address_conf(void)
       struct AddressRec *arec = node->data;
 
       /*
-       * We keep the temporary K-lines and destroy the permanent ones,
-       * just to be confusing :) -A1kmm
+       * Destroy the ircd.conf items and keep those that are in the databases
        */
-      if (arec->conf->until || IsConfDatabase(arec->conf))
+      if (IsConfDatabase(arec->conf))
         continue;
 
       dlinkDelete(&arec->node, &atable[i]);
@@ -748,13 +739,10 @@ hostmask_send_expiration(const struct AddressRec *const arec)
     case CONF_DLINE:
       ban_type = 'D';
       break;
-    case CONF_GLINE:
-      ban_type = 'G';
-      break;
     default: break;
   }
 
-  sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
+  sendto_realops_flags(UMODE_SERVNOTICE, L_ALL, SEND_NOTICE,
                        "Temporary %c-line for [%s@%s] expired", ban_type,
                        (arec->conf->user) ? arec->conf->user : "*",
                        (arec->conf->host) ? arec->conf->host : "*");
@@ -778,7 +766,6 @@ hostmask_expire_temporary(void)
       {
         case CONF_KLINE:
         case CONF_DLINE:
-        case CONF_GLINE:
           hostmask_send_expiration(arec);
 
           dlinkDelete(&arec->node, &atable[i]);

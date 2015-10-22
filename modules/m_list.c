@@ -36,6 +36,7 @@
 #include "modules.h"
 #include "user.h"
 #include "memory.h"
+#include "isupport.h"
 
 
 static void
@@ -63,8 +64,8 @@ do_list(struct Client *source_p, char *arg)
     dlink_list *list = NULL;
     int i = 0, errors = 0;
 
-    for (opt = strtoken(&save,  arg, ","); opt;
-         opt = strtoken(&save, NULL, ","))
+    for (opt = strtok_r(arg,  ",", &save); opt;
+         opt = strtok_r(NULL, ",", &save))
     {
       switch (*opt)
       {
@@ -158,7 +159,7 @@ do_list(struct Client *source_p, char *arg)
     }
   }
 
-  dlinkAdd(source_p, make_dlink_node(), &listing_client_list);
+  dlinkAdd(source_p, &lt->node, &listing_client_list);
 
   sendto_one_numeric(source_p, &me, RPL_LISTSTART);
   safe_list_channels(source_p, no_masked_channels && lt->show_mask.head != NULL);
@@ -184,33 +185,34 @@ m_list(struct Client *source_p, int parc, char *parv[])
 
 static struct Message list_msgtab =
 {
-  "LIST", NULL, 0, 0, 0, MAXPARA, MFLG_SLOW, 0,
-  { m_unregistered, m_list, m_ignore, m_ignore, m_list, m_ignore }
+  .cmd = "LIST",
+  .args_max = MAXPARA,
+  .handlers[UNREGISTERED_HANDLER] = m_unregistered,
+  .handlers[CLIENT_HANDLER] = m_list,
+  .handlers[SERVER_HANDLER] = m_ignore,
+  .handlers[ENCAP_HANDLER] = m_ignore,
+  .handlers[OPER_HANDLER] = m_list
 };
 
 static void
 module_init(void)
 {
   mod_add_cmd(&list_msgtab);
-  add_isupport("ELIST", "CMNTU", -1);
-  add_isupport("SAFELIST", NULL, -1);
+  isupport_add("ELIST", "CMNTU", -1);
+  isupport_add("SAFELIST", NULL, -1);
 }
 
 static void
 module_exit(void)
 {
   mod_del_cmd(&list_msgtab);
-  delete_isupport("ELIST");
-  delete_isupport("SAFELIST");
+  isupport_delete("ELIST");
+  isupport_delete("SAFELIST");
 }
 
 struct module module_entry =
 {
-  .node    = { NULL, NULL, NULL },
-  .name    = NULL,
   .version = "$Revision$",
-  .handle  = NULL,
   .modinit = module_init,
   .modexit = module_exit,
-  .flags   = 0
 };

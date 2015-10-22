@@ -36,22 +36,23 @@
 #include "memory.h"
 #include "conf_db.h"
 
+
 void
-server_die(const char *message, int rboot)
+server_die(const char *message, int action)
 {
   char buffer[IRCD_BUFSIZE] = "";
   dlink_node *node = NULL;
   static int was_here = 0;
 
-  if (rboot && was_here++)
+  if (action == SERVER_RESTART && was_here++)
     abort();
 
   if (EmptyString(message))
     snprintf(buffer, sizeof(buffer), "Server %s",
-             rboot ? "Restarting" : "Terminating");
+             action == SERVER_RESTART ? "Restarting" : "Terminating");
   else
     snprintf(buffer, sizeof(buffer), "Server %s: %s",
-             rboot ? "Restarting" : "Terminating", message);
+             action == SERVER_RESTART ? "Restarting" : "Terminating", message);
 
   DLINK_FOREACH(node, local_client_list.head)
     sendto_one_notice(node->data, &me, ":%s", buffer);
@@ -67,11 +68,11 @@ server_die(const char *message, int rboot)
 
   unlink(pidFileName);
 
-  if (rboot)
+  if (action == SERVER_RESTART)
   {
     execv(SPATH, myargv);
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   else
-    exit(0);
+    exit(EXIT_SUCCESS);
 }

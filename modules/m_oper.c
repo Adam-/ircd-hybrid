@@ -39,7 +39,6 @@
 #include "packet.h"
 
 
-
 /*! \brief Notices all opers of the failed oper attempt if enabled
  *
  * \param source_p Client doing /oper ...
@@ -51,7 +50,7 @@ failed_oper_notice(struct Client *source_p, const char *name,
                    const char *reason)
 {
   if (ConfigGeneral.failed_oper_notice)
-    sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
+    sendto_realops_flags(UMODE_SERVNOTICE, L_ALL, SEND_NOTICE,
                          "Failed OPER attempt as %s by %s (%s@%s) - %s",
                          name, source_p->name, source_p->username,
                          source_p->host, reason);
@@ -125,7 +124,7 @@ m_oper(struct Client *source_p, int parc, char *parv[])
       return 0;
     }
 
-    oper_up(source_p);
+    user_oper_up(source_p);
 
     ilog(LOG_TYPE_OPER, "OPER %s by %s!%s@%s", opername, source_p->name,
          source_p->username, source_p->host);
@@ -160,8 +159,14 @@ mo_oper(struct Client *source_p, int parc, char *parv[])
 
 static struct Message oper_msgtab =
 {
-  "OPER", NULL, 0, 0, 3, MAXPARA, MFLG_SLOW, 0,
-  { m_unregistered, m_oper, m_ignore, m_ignore, mo_oper, m_ignore }
+  .cmd = "OPER",
+  .args_min = 3,
+  .args_max = MAXPARA,
+  .handlers[UNREGISTERED_HANDLER] = m_unregistered,
+  .handlers[CLIENT_HANDLER] = m_oper,
+  .handlers[SERVER_HANDLER] = m_ignore,
+  .handlers[ENCAP_HANDLER] = m_ignore,
+  .handlers[OPER_HANDLER] = mo_oper
 };
 
 static void
@@ -178,11 +183,7 @@ module_exit(void)
 
 struct module module_entry =
 {
-  .node    = { NULL, NULL, NULL },
-  .name    = NULL,
   .version = "$Revision$",
-  .handle  = NULL,
   .modinit = module_init,
   .modexit = module_exit,
-  .flags   = 0
 };

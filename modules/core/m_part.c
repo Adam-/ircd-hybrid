@@ -70,8 +70,14 @@ m_part(struct Client *source_p, int parc, char *parv[])
 
 static struct Message part_msgtab =
 {
-  "PART", NULL, 0, 0, 2, MAXPARA, MFLG_SLOW, 0,
-  { m_unregistered, m_part, m_part, m_ignore, m_part, m_ignore }
+  .cmd = "PART",
+  .args_min = 2,
+  .args_max = MAXPARA,
+  .handlers[UNREGISTERED_HANDLER] = m_unregistered,
+  .handlers[CLIENT_HANDLER] = m_part,
+  .handlers[SERVER_HANDLER] = m_part,
+  .handlers[ENCAP_HANDLER] = m_ignore,
+  .handlers[OPER_HANDLER] = m_part
 };
 
 static void
@@ -88,10 +94,7 @@ module_exit(void)
 
 struct module module_entry =
 {
-  .node    = { NULL, NULL, NULL },
-  .name    = NULL,
   .version = "$Revision$",
-  .handle  = NULL,
   .modinit = module_init,
   .modexit = module_exit,
   .flags   = MODULE_FLAG_CORE

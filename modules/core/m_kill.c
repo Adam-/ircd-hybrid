@@ -122,7 +122,7 @@ mo_kill(struct Client *source_p, int parc, char *parv[])
    * Do not change the format of this message. There's no point in changing messages
    * that have been around for ever, for no reason..
    */
-  sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
+  sendto_realops_flags(UMODE_SERVNOTICE, L_ALL, SEND_NOTICE,
                        "Received KILL message for %s!%s@%s[%s/%s]. From %s Path: %s (%s)",
                        target_p->name, target_p->username, target_p->host,
                        target_p->servptr->name,
@@ -224,7 +224,7 @@ ms_kill(struct Client *source_p, int parc, char *parv[])
    * local --fl
    */
   if (IsClient(source_p))  /* Send it normally */
-    sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
+    sendto_realops_flags(UMODE_SERVNOTICE, L_ALL, SEND_NOTICE,
                          "Received KILL message for %s!%s@%s[%s/%s]. From %s Path: %s!%s!%s!%s %s",
                          target_p->name, target_p->username, target_p->host,
                          target_p->servptr->name,
@@ -259,8 +259,14 @@ ms_kill(struct Client *source_p, int parc, char *parv[])
 
 static struct Message kill_msgtab =
 {
-  "KILL", NULL, 0, 0, 2, MAXPARA, MFLG_SLOW, 0,
-  { m_unregistered, m_not_oper, ms_kill, m_ignore, mo_kill, m_ignore }
+  .cmd = "KILL",
+  .args_min = 2,
+  .args_max = MAXPARA,
+  .handlers[UNREGISTERED_HANDLER] = m_unregistered,
+  .handlers[CLIENT_HANDLER] = m_not_oper,
+  .handlers[SERVER_HANDLER] = ms_kill,
+  .handlers[ENCAP_HANDLER] = m_ignore,
+  .handlers[OPER_HANDLER] = mo_kill
 };
 
 static void
@@ -277,10 +283,7 @@ module_exit(void)
 
 struct module module_entry =
 {
-  .node    = { NULL, NULL, NULL },
-  .name    = NULL,
   .version = "$Revision$",
-  .handle  = NULL,
   .modinit = module_init,
   .modexit = module_exit,
   .flags   = MODULE_FLAG_CORE

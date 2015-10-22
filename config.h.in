@@ -163,9 +163,6 @@
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
 
-/* Define to 1 if you have the `usleep' function. */
-#undef HAVE_USLEEP
-
 /* Define to 1 if you have the <wait.h> header file. */
 #undef HAVE_WAIT_H
 
@@ -248,9 +245,6 @@
 
 /* Define if dlsym() requires a leading underscore in symbol names. */
 #undef NEED_USCORE
-
-/* Size of the WHOWAS array. */
-#undef NICKNAMEHISTORYLENGTH
 
 /* Name of package */
 #undef PACKAGE

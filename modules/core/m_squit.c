@@ -105,11 +105,11 @@ mo_squit(struct Client *source_p, int parc, char *parv[])
 
   if (MyConnect(target_p))
   {
-    sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
+    sendto_realops_flags(UMODE_SERVNOTICE, L_ALL, SEND_NOTICE,
                          "Received SQUIT %s from %s (%s)",
-                         target_p->name, get_client_name(source_p, HIDE_IP), comment);
+                         target_p->name, get_oper_name(source_p), comment);
     ilog(LOG_TYPE_IRCD, "Received SQUIT %s from %s (%s)",
-         target_p->name, get_client_name(source_p, HIDE_IP), comment);
+         target_p->name, get_oper_name(source_p), comment);
 
     /* To them, we are exiting */
     sendto_one(target_p, ":%s SQUIT %s :%s", source_p->id, me.id, comment);
@@ -164,7 +164,7 @@ ms_squit(struct Client *source_p, int parc, char *parv[])
 
   if (MyConnect(target_p))
   {
-    sendto_realops_flags(UMODE_ALL, L_ALL, SEND_GLOBAL, "from %s: Remote SQUIT %s from %s (%s)",
+    sendto_realops_flags(UMODE_SERVNOTICE, L_ALL, SEND_GLOBAL, "from %s: Remote SQUIT %s from %s (%s)",
                          me.name, target_p->name, source_p->name, comment);
     sendto_server(source_p, 0, 0, ":%s GLOBOPS :Remote SQUIT %s from %s (%s)",
                   me.id, target_p->name, source_p->name, comment);
@@ -199,8 +199,13 @@ ms_squit(struct Client *source_p, int parc, char *parv[])
 
 static struct Message squit_msgtab =
 {
-  "SQUIT", NULL, 0, 0, 1, MAXPARA, MFLG_SLOW, 0,
-  { m_unregistered, m_not_oper, ms_squit, m_ignore, mo_squit, m_ignore }
+  .cmd = "SQUIT",
+  .args_max = MAXPARA,
+  .handlers[UNREGISTERED_HANDLER] = m_unregistered,
+  .handlers[CLIENT_HANDLER] = m_not_oper,
+  .handlers[SERVER_HANDLER] = ms_squit,
+  .handlers[ENCAP_HANDLER] = m_ignore,
+  .handlers[OPER_HANDLER] = mo_squit
 };
 
 static void
@@ -217,10 +222,7 @@ module_exit(void)
 
 struct module module_entry =
 {
-  .node    = { NULL, NULL, NULL },
-  .name    = NULL,
   .version = "$Revision$",
-  .handle  = NULL,
   .modinit = module_init,
   .modexit = module_exit,
   .flags   = MODULE_FLAG_CORE

@@ -99,7 +99,7 @@ ms_tburst(struct Client *source_p, int parc, char *parv[])
 
     channel_set_topic(chptr, topic, setby, remote_topic_ts, 0);
 
-    sendto_server(source_p, CAP_TBURST, 0, ":%s TBURST %s %s %s %s :%s",
+    sendto_server(source_p, CAPAB_TBURST, 0, ":%s TBURST %s %s %s %s :%s",
                   source_p->id, parv[1], parv[2], parv[3], setby, topic);
 
     if (topic_differs)
@@ -120,15 +120,21 @@ ms_tburst(struct Client *source_p, int parc, char *parv[])
 
 static struct Message tburst_msgtab =
 {
-  "TBURST", NULL, 0, 0, 6, MAXPARA, MFLG_SLOW, 0,
-  { m_ignore, m_ignore, ms_tburst, m_ignore, m_ignore, m_ignore }
+  .cmd = "TBURST",
+  .args_min = 6,
+  .args_max = MAXPARA,
+  .handlers[UNREGISTERED_HANDLER] = m_ignore,
+  .handlers[CLIENT_HANDLER] = m_ignore,
+  .handlers[SERVER_HANDLER] = ms_tburst,
+  .handlers[ENCAP_HANDLER] = m_ignore,
+  .handlers[OPER_HANDLER] = m_ignore
 };
 
 static void
 module_init(void)
 {
   mod_add_cmd(&tburst_msgtab);
-  add_capability("TBURST", CAP_TBURST, 1);
+  add_capability("TBURST", CAPAB_TBURST);
 }
 
 static void
@@ -140,11 +146,7 @@ module_exit(void)
 
 struct module module_entry =
 {
-  .node    = { NULL, NULL, NULL },
-  .name    = NULL,
   .version = "$Revision$",
-  .handle  = NULL,
   .modinit = module_init,
   .modexit = module_exit,
-  .flags   = 0
 };

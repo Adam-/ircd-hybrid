@@ -24,11 +24,10 @@
  * \version $Id$
  */
 
-#ifndef INCLUDE_hostmask_h
-#define INCLUDE_hostmask_h
+#ifndef INCLUDED_hostmask_h
+#define INCLUDED_hostmask_h
 
-#define ATABLE_SIZE 0x1000
-
+enum { ATABLE_SIZE = 0x1000 };
 
 enum hostmask_type
 {
@@ -78,9 +77,9 @@ extern void delete_one_address_conf(const char *, struct MaskItem *);
 extern void clear_out_address_conf(void);
 extern void hostmask_expire_temporary(void);
 
-extern struct MaskItem *find_address_conf(const char *, const char *,
-                                          struct irc_ssaddr *, int, const char *);
-extern struct MaskItem *find_dline_conf(struct irc_ssaddr *, int);
-extern struct MaskItem *find_conf_by_address(const char *, struct irc_ssaddr *,
+extern struct MaskItem *find_address_conf(const char *, const char *, const struct irc_ssaddr *,
+                                          int, const char *);
+extern struct MaskItem *find_dline_conf(const struct irc_ssaddr *, int);
+extern struct MaskItem *find_conf_by_address(const char *, const struct irc_ssaddr *,
                                              unsigned int, int, const char *, const char *, int);
-#endif /* INCLUDE_hostmask_h */
+#endif /* INCLUDED_hostmask_h */

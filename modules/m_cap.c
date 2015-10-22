@@ -55,7 +55,8 @@ static struct capabilities
   _CAP(CAP_UHNAMES, 0, "userhost-in-names"),
   _CAP(CAP_MULTI_PREFIX, 0, "multi-prefix"),
   _CAP(CAP_AWAY_NOTIFY, 0, "away-notify"),
-  _CAP(CAP_EXTENDED_JOIN, 0, "extended-join")
+  _CAP(CAP_EXTENDED_JOIN, 0, "extended-join"),
+  _CAP(CAP_ACCOUNT_NOTIFY, 0, "account-notify")
 #undef _CAP
 };
 
@@ -284,10 +285,21 @@ cap_ack(struct Client *source_p, const char *caplist)
               !(source_p->connection->cap_client & cap->cap)))  /* uh... */
       continue;
 
-    if (neg)  /* Set or clear the active capability... */
+    /* Set or clear the active capability... */
+    if (neg)
+    {
+      if (cap->flags & CAPFL_STICKY)
+        continue;  /* but don't clear sticky capabilities */
+
       source_p->connection->cap_active &= ~cap->cap;
+    }
     else
+    {
+      if (cap->flags & CAPFL_PROHIBIT)
+        continue;  /* and don't set prohibited ones */
+
       source_p->connection->cap_active |=  cap->cap;
+    }
   }
 
   return 0;
@@ -406,8 +418,14 @@ m_cap(struct Client *source_p, int parc, char *parv[])
 
 static struct Message cap_msgtab =
 {
-  "CAP", NULL, 0, 0, 2, MAXPARA, MFLG_SLOW, 0,
-  { m_cap, m_cap, m_ignore, m_ignore, m_cap, m_ignore }
+  .cmd = "CAP",
+  .args_min = 2,
+  .args_max = MAXPARA,
+  .handlers[UNREGISTERED_HANDLER] = m_cap,
+  .handlers[CLIENT_HANDLER] = m_cap,
+  .handlers[SERVER_HANDLER] = m_ignore,
+  .handlers[ENCAP_HANDLER] = m_ignore,
+  .handlers[OPER_HANDLER] = m_cap
 };
 
 static void
@@ -426,11 +444,7 @@ module_exit(void)
 
 struct module module_entry =
 {
-  .node    = { NULL, NULL, NULL },
-  .name    = NULL,
   .version = "$Revision$",
-  .handle  = NULL,
   .modinit = module_init,
   .modexit = module_exit,
-  .flags   = 0
 };

@@ -65,11 +65,11 @@ ms_svskill(struct Client *source_p, int parc, char *parv[])
 
   if (parc > 3)
   {
-    comment = parv[3] ? parv[3] : source_p->name;
+    comment = parv[3] ? parv[3] : CONF_NOREASON;
     ts = atol(parv[2]);
   }
   else
-    comment = (parc > 2 && parv[2]) ? parv[2] : source_p->name;
+    comment = (parc > 2 && parv[2]) ? parv[2] : CONF_NOREASON;
 
   if ((target_p = find_person(source_p, parv[1])) == NULL)
     return 0;
@@ -105,8 +105,14 @@ ms_svskill(struct Client *source_p, int parc, char *parv[])
 
 static struct Message svskill_msgtab =
 {
-  "SVSKILL", NULL, 0, 0, 2, MAXPARA, MFLG_SLOW, 0,
-  { m_ignore, m_ignore, ms_svskill, m_ignore, m_ignore, m_ignore }
+  .cmd = "SVSKILL",
+  .args_min = 2,
+  .args_max = MAXPARA,
+  .handlers[UNREGISTERED_HANDLER] = m_ignore,
+  .handlers[CLIENT_HANDLER] = m_ignore,
+  .handlers[SERVER_HANDLER] = ms_svskill,
+  .handlers[ENCAP_HANDLER] = m_ignore,
+  .handlers[OPER_HANDLER] = m_ignore
 };
 
 static void
@@ -123,11 +129,7 @@ module_exit(void)
 
 struct module module_entry =
 {
-  .node    = { NULL, NULL, NULL },
-  .name    = NULL,
   .version = "$Revision$",
-  .handle  = NULL,
   .modinit = module_init,
   .modexit = module_exit,
-  .flags   = 0
 };

@@ -116,22 +116,22 @@ add_accept(const struct split_nuh_item *nuh, struct Client *source_p)
 static int
 m_accept(struct Client *source_p, int parc, char *parv[])
 {
-  char *mask = NULL;
-  char *p = NULL;
+  struct split_nuh_item nuh;
+  struct split_nuh_item *accept_p = NULL;
   char nick[NICKLEN + 1] = "";
   char user[USERLEN + 1] = "";
   char host[HOSTLEN + 1] = "";
-  struct split_nuh_item nuh;
-  struct split_nuh_item *accept_p = NULL;
+  char *p = NULL;
+  char *mask = collapse(parv[1]);
 
-  if (EmptyString(parv[1]) || !strcmp(parv[1], "*"))
+  if (EmptyString(mask) || !strcmp(mask, "*"))
   {
     list_accepts(source_p);
     return 0;
   }
 
-  for (mask = strtoken(&p, parv[1], ","); mask;
-       mask = strtoken(&p,    NULL, ","))
+  for (mask = strtok_r(mask, ",", &p); mask;
+       mask = strtok_r(NULL, ",", &p))
   {
     if (*mask == '-' && *++mask)
     {
@@ -189,8 +189,13 @@ m_accept(struct Client *source_p, int parc, char *parv[])
 
 static struct Message accept_msgtab =
 {
-  "ACCEPT", NULL, 0, 0, 0, MAXPARA, MFLG_SLOW, 0,
-  { m_unregistered, m_accept, m_ignore, m_ignore, m_accept, m_ignore }
+  .cmd = "ACCEPT",
+  .args_max = MAXPARA,
+  .handlers[UNREGISTERED_HANDLER] = m_unregistered,
+  .handlers[CLIENT_HANDLER] = m_accept,
+  .handlers[SERVER_HANDLER] = m_ignore,
+  .handlers[ENCAP_HANDLER] = m_ignore,
+  .handlers[OPER_HANDLER] = m_accept
 };
 
 static void
@@ -207,11 +212,7 @@ module_exit(void)
 
 struct module module_entry =
 {
-  .node    = { NULL, NULL, NULL },
-  .name    = NULL,
   .version = "$Revision$",
-  .handle  = NULL,
   .modinit = module_init,
   .modexit = module_exit,
-  .flags   = 0
 };

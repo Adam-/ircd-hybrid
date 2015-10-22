@@ -72,14 +72,19 @@ mo_restart(struct Client *source_p, int parc, char *parv[])
 
   snprintf(buf, sizeof(buf), "received RESTART command from %s",
            get_client_name(source_p, HIDE_IP));
-  server_die(buf, 1);
+  server_die(buf, SERVER_RESTART);
   return 0;
 }
 
 static struct Message restart_msgtab =
 {
-  "RESTART", NULL, 0, 0, 0, MAXPARA, MFLG_SLOW, 0,
-  { m_unregistered, m_not_oper, m_ignore, m_ignore, mo_restart, m_ignore }
+  .cmd = "RESTART",
+  .args_max = MAXPARA,
+  .handlers[UNREGISTERED_HANDLER] = m_unregistered,
+  .handlers[CLIENT_HANDLER] = m_not_oper,
+  .handlers[SERVER_HANDLER] = m_ignore,
+  .handlers[ENCAP_HANDLER] = m_ignore,
+  .handlers[OPER_HANDLER] = mo_restart
 };
 
 static void
@@ -96,11 +101,7 @@ module_exit(void)
 
 struct module module_entry =
 {
-  .node    = { NULL, NULL, NULL },
-  .name    = NULL,
   .version = "$Revision$",
-  .handle  = NULL,
   .modinit = module_init,
   .modexit = module_exit,
-  .flags   = 0
 };

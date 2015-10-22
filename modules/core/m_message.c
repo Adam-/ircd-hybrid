@@ -49,9 +49,9 @@ enum
 
 enum
 {
-  ENTITY_NONE               = 0,
-  ENTITY_CHANNEL            = 1,
-  ENTITY_CLIENT             = 2
+  ENTITY_NONE    = 0,
+  ENTITY_CHANNEL = 1,
+  ENTITY_CLIENT  = 2
 };
 
 static struct
@@ -61,7 +61,7 @@ static struct
   unsigned int flags;
 } targets[IRCD_BUFSIZE];
 
-static int unsigned ntargets = 0;
+static unsigned int ntargets;
 
 
 /*
@@ -120,7 +120,7 @@ flood_attack_client(int p_or_n, struct Client *source_p, struct Client *target_p
   if (HasUMode(source_p, UMODE_OPER) || HasFlag(source_p, FLAGS_SERVICE))
     return 0;
 
-  if (GlobalSetOptions.floodcount && !IsCanFlood(source_p))
+  if (GlobalSetOptions.floodcount && !HasFlag(source_p, FLAGS_CANFLOOD))
   {
     if ((target_p->connection->first_received_message_time + 1)
         < CurrentTime)
@@ -175,7 +175,7 @@ flood_attack_client(int p_or_n, struct Client *source_p, struct Client *target_p
 static int
 flood_attack_channel(int p_or_n, struct Client *source_p, struct Channel *chptr)
 {
-  if (GlobalSetOptions.floodcount && !IsCanFlood(source_p))
+  if (GlobalSetOptions.floodcount && !HasFlag(source_p, FLAGS_CANFLOOD))
   {
     if ((chptr->first_received_message_time + 1) < CurrentTime)
     {
@@ -333,7 +333,7 @@ msg_client(int p_or_n, const char *command, struct Client *source_p,
           sendto_one_numeric(source_p, &me, RPL_TARGNOTIFY, target_p->name);
 
         sendto_one_numeric(target_p, &me, RPL_UMODEGMSG,
-                           get_client_name(source_p, HIDE_IP),
+                           source_p->name, source_p->username, source_p->host,
                            callerid ? "+g" : "+G");
         target_p->connection->last_caller_id_time = CurrentTime;
       }
@@ -474,8 +474,8 @@ build_target_list(int p_or_n, const char *command, struct Client *source_p,
 
   ntargets = 0;
 
-  for (const char *name = strtoken(&p, list, ","); name;
-                   name = strtoken(&p, NULL, ","))
+  for (const char *name = strtok_r(list, ",", &p); name;
+                   name = strtok_r(NULL, ",", &p))
   {
     const char *with_prefix = NULL;
 
@@ -676,14 +676,24 @@ m_notice(struct Client *source_p, int parc, char *parv[])
 
 static struct Message privmsg_msgtab =
 {
-  "PRIVMSG", NULL, 0, 0, 0, MAXPARA, MFLG_SLOW, 0,
-  { m_unregistered, m_privmsg, m_privmsg, m_ignore, m_privmsg, m_ignore }
+  .cmd = "PRIVMSG",
+  .args_max = MAXPARA,
+  .handlers[UNREGISTERED_HANDLER] = m_unregistered,
+  .handlers[CLIENT_HANDLER] = m_privmsg,
+  .handlers[SERVER_HANDLER] = m_privmsg,
+  .handlers[ENCAP_HANDLER] = m_ignore,
+  .handlers[OPER_HANDLER] = m_privmsg
 };
 
 static struct Message notice_msgtab =
 {
-  "NOTICE", NULL, 0, 0, 0, MAXPARA, MFLG_SLOW, 0,
-  { m_unregistered, m_notice, m_notice, m_ignore, m_notice, m_ignore }
+  .cmd = "NOTICE",
+  .args_max = MAXPARA,
+  .handlers[UNREGISTERED_HANDLER] = m_unregistered,
+  .handlers[CLIENT_HANDLER] = m_notice,
+  .handlers[SERVER_HANDLER] = m_notice,
+  .handlers[ENCAP_HANDLER] = m_ignore,
+  .handlers[OPER_HANDLER] = m_notice
 };
 
 static void
@@ -702,10 +712,7 @@ module_exit(void)
 
 struct module module_entry =
 {
-  .node    = { NULL, NULL, NULL },
-  .name    = NULL,
   .version = "$Revision$",
-  .handle  = NULL,
   .modinit = module_init,
   .modexit = module_exit,
   .flags   = MODULE_FLAG_CORE

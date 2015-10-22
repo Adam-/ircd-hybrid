@@ -109,7 +109,7 @@ mr_pong(struct Client *source_p, int parc, char *parv[])
 
       if (source_p->connection->random_ping == incoming_ping)
       {
-        SetPingCookie(source_p);
+        AddFlag(source_p, FLAGS_PING_COOKIE);
 
         if (!source_p->connection->registration)
           register_local_user(source_p);
@@ -127,8 +127,13 @@ mr_pong(struct Client *source_p, int parc, char *parv[])
 
 static struct Message pong_msgtab =
 {
-  "PONG", NULL, 0, 0, 1, MAXPARA, MFLG_SLOW, 0,
-  { mr_pong, m_ignore, ms_pong, m_ignore, m_ignore, m_ignore }
+  .cmd = "PONG",
+  .args_max = MAXPARA,
+  .handlers[UNREGISTERED_HANDLER] = mr_pong,
+  .handlers[CLIENT_HANDLER] = m_ignore,
+  .handlers[SERVER_HANDLER] = ms_pong,
+  .handlers[ENCAP_HANDLER] = m_ignore,
+  .handlers[OPER_HANDLER] = m_ignore
 };
 
 static void
@@ -145,11 +150,7 @@ module_exit(void)
 
 struct module module_entry =
 {
-  .node    = { NULL, NULL, NULL },
-  .name    = NULL,
   .version = "$Revision$",
-  .handle  = NULL,
   .modinit = module_init,
   .modexit = module_exit,
-  .flags   = 0
 };

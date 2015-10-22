@@ -135,12 +135,7 @@ free_client(struct Client *client_p)
     assert(client_p->connection->invited.head == NULL);
     assert(dlink_list_length(&client_p->connection->invited) == 0);
     assert(dlink_list_length(&client_p->connection->watches) == 0);
-    assert(IsClosing(client_p) && IsDead(client_p));
-
-    MyFree(client_p->connection->challenge_response);
-    client_p->connection->challenge_response = NULL;
-    MyFree(client_p->connection->challenge_operator);
-    client_p->connection->challenge_operator = NULL;
+    assert(HasFlag(client_p, FLAGS_CLOSING) && IsDead(client_p));
 
     /*
      * Clean up extra sockets from listen {} blocks which have been discarded.
@@ -219,21 +214,21 @@ check_pings_list(dlink_list *list)
     if (IsDead(client_p))
       continue;  /* Ignore it, its been exited already */
 
-    if (!IsRegistered(client_p))
-      ping = CONNECTTIMEOUT;
-    else
+    if (IsClient(client_p) || IsServer(client_p))
       ping = get_client_ping(&client_p->connection->confs);
+    else
+      ping = CONNECTTIMEOUT;
 
     if (ping < CurrentTime - client_p->connection->lasttime)
     {
-      if (!IsPingSent(client_p))
+      if (!HasFlag(client_p, FLAGS_PINGSENT))
       {
         /*
          * If we haven't PINGed the connection and we haven't
          * heard from it in a while, PING it to make sure
          * it is still alive.
          */
-        SetPingSent(client_p);
+        AddFlag(client_p, FLAGS_PINGSENT);
         client_p->connection->lasttime = CurrentTime - ping;
         sendto_one(client_p, "PING :%s", ID_or_name(&me, client_p));
       }
@@ -247,14 +242,14 @@ check_pings_list(dlink_list *list)
            */
           if (IsServer(client_p) || IsHandshake(client_p))
           {
-            sendto_realops_flags(UMODE_ALL, L_ADMIN, SEND_NOTICE,
+            sendto_realops_flags(UMODE_SERVNOTICE, L_ADMIN, SEND_NOTICE,
                                  "No response from %s, closing link",
-                                 get_client_name(client_p, HIDE_IP));
-            sendto_realops_flags(UMODE_ALL, L_OPER, SEND_NOTICE,
+                                 get_client_name(client_p, SHOW_IP));
+            sendto_realops_flags(UMODE_SERVNOTICE, L_OPER, SEND_NOTICE,
                                  "No response from %s, closing link",
                                  get_client_name(client_p, MASK_IP));
             ilog(LOG_TYPE_IRCD, "No response from %s, closing link",
-                 get_client_name(client_p, HIDE_IP));
+                 get_client_name(client_p, SHOW_IP));
           }
 
           snprintf(buf, sizeof(buf), "Ping timeout: %d seconds",
@@ -285,7 +280,7 @@ check_unknowns_list(void)
      * Check UNKNOWN connections - if they have been in this state
      * for > 30s, close them.
      */
-    if (IsAuthFinished(client_p) && (CurrentTime - client_p->connection->firsttime) > 30)
+    if (HasFlag(client_p, FLAGS_FINISHED_AUTH) && (CurrentTime - client_p->connection->firsttime) > 30)
       exit_client(client_p, "Registration timed out");
   }
 }
@@ -352,17 +347,6 @@ check_conf_klines(void)
       continue;  /* and go examine next Client */
     }
 
-    if (ConfigGeneral.glines)
-    {
-      if ((conf = find_conf_by_address(client_p->host, &client_p->connection->ip,
-                                       CONF_GLINE, client_p->connection->aftype,
-                                       client_p->username, NULL, 1)))
-      {
-        conf_try_ban(client_p, conf);
-        continue;  /* and go examine next Client */
-      }
-    }
-
     if ((conf = find_conf_by_address(client_p->host, &client_p->connection->ip,
                                      CONF_KLINE, client_p->connection->aftype,
                                      client_p->username, NULL, 1)))
@@ -404,46 +388,37 @@ check_conf_klines(void)
 void
 conf_try_ban(struct Client *client_p, struct MaskItem *conf)
 {
-  const char *user_reason = NULL;  /* What is sent to user */
-  const char *type_string = NULL;
-  const char dline_string[] = "D-line";
-  const char kline_string[] = "K-line";
-  const char gline_string[] = "G-line";
-  const char xline_string[] = "X-line";
+  char ban_type = '\0';
 
   switch (conf->type)
   {
     case CONF_KLINE:
-      if (IsExemptKline(client_p))
+      if (HasFlag(client_p, FLAGS_EXEMPTKLINE))
       {
-        sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
+        sendto_realops_flags(UMODE_SERVNOTICE, L_ALL, SEND_NOTICE,
                              "KLINE over-ruled for %s, client is kline_exempt",
                              get_client_name(client_p, HIDE_IP));
         return;
       }
 
-      type_string = kline_string;
+      ban_type = 'K';
       break;
     case CONF_DLINE:
       if (find_conf_by_address(NULL, &client_p->connection->ip, CONF_EXEMPT,
                                client_p->connection->aftype, NULL, NULL, 1))
         return;
-      type_string = dline_string;
+      ban_type = 'D';
       break;
-    case CONF_GLINE:
-      if (IsExemptKline(client_p) ||
-          IsExemptGline(client_p))
+    case CONF_XLINE:
+      if (HasFlag(client_p, FLAGS_EXEMPTXLINE))
       {
-        sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
-                             "GLINE over-ruled for %s, client is %sline_exempt",
-                             get_client_name(client_p, HIDE_IP), IsExemptKline(client_p) ? "k" : "g");
+        sendto_realops_flags(UMODE_SERVNOTICE, L_ALL, SEND_NOTICE,
+                             "XLINE over-ruled for %s, client is xline_exempt",
+                             get_client_name(client_p, HIDE_IP));
         return;
       }
 
-      type_string = gline_string;
-      break;
-    case CONF_XLINE:
-      type_string = xline_string;
+      ban_type = 'X';
       ++conf->count;
       break;
     default:
@@ -451,15 +426,13 @@ conf_try_ban(struct Client *client_p, struct MaskItem *conf)
       break;
   }
 
-  user_reason = conf->reason ? conf->reason : type_string;
-
-  sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE, "%s active for %s",
-                       type_string, get_client_name(client_p, HIDE_IP));
+  sendto_realops_flags(UMODE_SERVNOTICE, L_ALL, SEND_NOTICE, "%c-line active for %s",
+                       ban_type, get_client_name(client_p, HIDE_IP));
 
   if (IsClient(client_p))
-    sendto_one_numeric(client_p, &me, ERR_YOUREBANNEDCREEP, user_reason);
+    sendto_one_numeric(client_p, &me, ERR_YOUREBANNEDCREEP, conf->reason);
 
-  exit_client(client_p, user_reason);
+  exit_client(client_p, conf->reason);
 }
 
 /* update_client_exit_stats()
@@ -485,9 +458,6 @@ update_client_exit_stats(struct Client *client_p)
     sendto_realops_flags(UMODE_EXTERNAL, L_ALL, SEND_NOTICE,
                          "Server %s split from %s",
                          client_p->name, client_p->servptr->name);
-
-  if (splitchecking && !splitmode)
-    check_splitmode(NULL);
 }
 
 /* find_person()
@@ -589,7 +559,7 @@ get_client_name(const struct Client *client_p, enum addr_mask_type type)
         snprintf(buf, sizeof(buf), "%s[%s@ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff]",
                  client_p->name, client_p->username);
       break;
-    default:
+    default:  /* HIDE_IP */
       snprintf(buf, sizeof(buf), "%s[%s@%s]",
                client_p->name,
                client_p->username, client_p->host);
@@ -650,10 +620,7 @@ exit_one_client(struct Client *source_p, const char *comment)
 
     if (MyConnect(source_p))
     {
-      /* Clean up invitefield */
-      DLINK_FOREACH_SAFE(node, node_next, source_p->connection->invited.head)
-        del_invite(node->data, source_p);
-
+      clear_invites_client(source_p);
       del_all_accepts(source_p);
     }
   }
@@ -673,8 +640,8 @@ exit_one_client(struct Client *source_p, const char *comment)
   if (source_p->name[0])
     hash_del_client(source_p);
 
-  if (IsUserHostIp(source_p))
-    delete_user_host(source_p->username, source_p->host, !MyConnect(source_p));
+  if (HasFlag(source_p, FLAGS_USERHOST))
+    userhost_del(source_p->username, source_p->host, !MyConnect(source_p));
 
   update_client_exit_stats(source_p);
 
@@ -737,10 +704,10 @@ exit_client(struct Client *source_p, const char *comment)
     /* DO NOT REMOVE. exit_client can be called twice after a failed
      * read/write.
      */
-    if (IsClosing(source_p))
+    if (HasFlag(source_p, FLAGS_CLOSING))
       return;
 
-    SetClosing(source_p);
+    AddFlag(source_p, FLAGS_CLOSING);
 
     if (HasFlag(source_p, FLAGS_IPHASH))
     {
@@ -750,20 +717,7 @@ exit_client(struct Client *source_p, const char *comment)
 
     delete_auth(&source_p->connection->auth);
 
-    /*
-     * This source_p could have status of one of STAT_UNKNOWN, STAT_CONNECTING
-     * STAT_HANDSHAKE or STAT_UNKNOWN
-     * all of which are lumped together into unknown_list
-     *
-     * In all above cases IsRegistered() will not be true.
-     */
-    if (!IsRegistered(source_p))
-    {
-      assert(dlinkFind(&unknown_list, source_p));
-
-      dlinkDelete(&source_p->connection->lclient_node, &unknown_list);
-    }
-    else if (IsClient(source_p))
+    if (IsClient(source_p))
     {
       time_t on_for = CurrentTime - source_p->connection->firsttime;
 
@@ -790,7 +744,7 @@ exit_client(struct Client *source_p, const char *comment)
                            source_p->sockhost);
 
       ilog(LOG_TYPE_USER, "%s (%3u:%02u:%02u): %s!%s@%s %llu/%llu",
-           myctime(source_p->connection->firsttime), (unsigned int)(on_for / 3600),
+           date_ctime(source_p->connection->firsttime), (unsigned int)(on_for / 3600),
            (unsigned int)((on_for % 3600)/60), (unsigned int)(on_for % 60),
            source_p->name, source_p->username, source_p->host,
            source_p->connection->send.bytes>>10,
@@ -804,6 +758,11 @@ exit_client(struct Client *source_p, const char *comment)
 
       assert(dlinkFind(&local_server_list, source_p));
       dlinkDelete(&source_p->connection->lclient_node, &local_server_list);
+    }
+    else
+    {
+      assert(dlinkFind(&unknown_list, source_p));
+      dlinkDelete(&source_p->connection->lclient_node, &unknown_list);
     }
 
     if (!IsDead(source_p))
@@ -856,16 +815,13 @@ exit_client(struct Client *source_p, const char *comment)
 
     if (MyConnect(source_p))
     {
-      int connected = CurrentTime - source_p->connection->firsttime;
-      sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
-                           "%s was connected for %d day%s, %2d:%02d:%02d. %llu/%llu sendK/recvK.",
-                           source_p->name, connected/86400, (connected/86400 == 1) ? "" : "s",
-                           (connected % 86400) / 3600, (connected % 3600) / 60, connected % 60,
+      sendto_realops_flags(UMODE_SERVNOTICE, L_ALL, SEND_NOTICE,
+                           "%s was connected for %s. %llu/%llu sendK/recvK.",
+                           source_p->name, time_dissect(CurrentTime - source_p->connection->firsttime),
                            source_p->connection->send.bytes >> 10,
                            source_p->connection->recv.bytes >> 10);
-      ilog(LOG_TYPE_IRCD, "%s was connected for %d day%s, %2d:%02d:%02d. %llu/%llu sendK/recvK.",
-           source_p->name, connected/86400, (connected/86400 == 1) ? "" : "s",
-           (connected % 86400) / 3600, (connected % 3600) / 60, connected % 60,
+      ilog(LOG_TYPE_IRCD, "%s was connected for %s. %llu/%llu sendK/recvK.",
+           source_p->name, time_dissect(CurrentTime - source_p->connection->firsttime),
            source_p->connection->send.bytes >> 10,
            source_p->connection->recv.bytes >> 10);
     }
@@ -929,17 +885,15 @@ dead_link_on_read(struct Client *client_p, int error)
 
   if (IsServer(client_p) || IsHandshake(client_p))
   {
-    int connected = CurrentTime - client_p->connection->firsttime;
-
     if (error == 0)
     {
       /* Admins get the real IP */
-      sendto_realops_flags(UMODE_ALL, L_ADMIN, SEND_NOTICE,
+      sendto_realops_flags(UMODE_SERVNOTICE, L_ADMIN, SEND_NOTICE,
                            "Server %s closed the connection",
                            get_client_name(client_p, SHOW_IP));
 
       /* Opers get a masked IP */
-      sendto_realops_flags(UMODE_ALL, L_OPER, SEND_NOTICE,
+      sendto_realops_flags(UMODE_SERVNOTICE, L_OPER, SEND_NOTICE,
                            "Server %s closed the connection",
                            get_client_name(client_p, MASK_IP));
 
@@ -954,12 +908,9 @@ dead_link_on_read(struct Client *client_p, int error)
                    get_client_name(client_p, MASK_IP), current_error);
     }
 
-    sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
-                         "%s was connected for %d day%s, %2d:%02d:%02d",
-                         client_p->name, connected/86400,
-                         (connected/86400 == 1) ? "" : "s",
-                         (connected % 86400) / 3600, (connected % 3600) / 60,
-                         connected % 60);
+    sendto_realops_flags(UMODE_SERVNOTICE, L_ALL, SEND_NOTICE,
+                         "%s was connected for %s",
+                         client_p->name, time_dissect(CurrentTime - client_p->connection->firsttime));
   }
 
   if (error == 0)
@@ -986,7 +937,7 @@ exit_aborted_clients(void)
 
     if (target_p == NULL)
     {
-      sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
+      sendto_realops_flags(UMODE_SERVNOTICE, L_ALL, SEND_NOTICE,
                            "Warning: null client on abort_list!");
       dlinkDelete(ptr, &abort_list);
       free_dlink_node(ptr);
@@ -995,7 +946,7 @@ exit_aborted_clients(void)
 
     dlinkDelete(ptr, &abort_list);
 
-    if (IsSendQExceeded(target_p))
+    if (HasFlag(target_p, FLAGS_SENDQEX))
       notice = "Max SendQ exceeded";
     else
       notice = "Write error: connection closed";

@@ -29,6 +29,7 @@
 #include "parse.h"
 #include "channel.h"
 #include "hash.h"
+#include "id.h"
 #include "irc_string.h"
 #include "ircd.h"
 #include "numeric.h"
@@ -82,7 +83,7 @@
  * For a small parser like this, this is a good compromise and does
  * make it somewhat faster. - Dianora
  */
-#define MAXPTRLEN 32
+enum { MAXPTRLEN = 32 };
 
 
 static struct MessageTree
@@ -121,7 +122,7 @@ parse_remove_unknown(struct Client *client_p, const char *lsender, char *lbuffer
                          lbuffer, get_client_name(client_p, SHOW_IP), lsender);
     sendto_realops_flags(UMODE_DEBUG, L_OPER, SEND_NOTICE,
                          "Unknown prefix (%s) from %s, Squitting %s",
-                         lbuffer, client_p->name, lsender);
+                         lbuffer, get_client_name(client_p, MASK_IP), lsender);
     sendto_one(client_p, ":%s SQUIT %s :(Unknown prefix (%s) from %s)",
                me.id, lsender, lbuffer, client_p->name);
   }
@@ -539,7 +540,7 @@ msg_tree_parse(const char *cmd)
 {
   struct MessageTree *mtree = &msg_tree;
 
-  assert(cmd && *cmd);
+  assert(!EmptyString(cmd));
 
   while (IsAlpha(*cmd) && (mtree = mtree->pointers[*cmd & (MAXPTRLEN - 1)]))
     if (*++cmd == '\0')

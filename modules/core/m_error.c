@@ -54,10 +54,10 @@ mr_error(struct Client *source_p, int parc, char *parv[])
   ilog(LOG_TYPE_IRCD, "Received ERROR message from %s: %s",
        source_p->name, para);
 
-  sendto_realops_flags(UMODE_ALL, L_ADMIN, SEND_NOTICE,
+  sendto_realops_flags(UMODE_SERVNOTICE, L_ADMIN, SEND_NOTICE,
                        "ERROR :from %s -- %s",
                        get_client_name(source_p, HIDE_IP), para);
-  sendto_realops_flags(UMODE_ALL, L_OPER, SEND_NOTICE,
+  sendto_realops_flags(UMODE_SERVNOTICE, L_OPER, SEND_NOTICE,
                        "ERROR :from %s -- %s",
                        get_client_name(source_p, MASK_IP), para);
   return 0;
@@ -72,11 +72,11 @@ ms_error(struct Client *source_p, int parc, char *parv[])
        source_p->name, para);
 
   if (MyConnect(source_p))
-    sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
+    sendto_realops_flags(UMODE_SERVNOTICE, L_ALL, SEND_NOTICE,
                          "ERROR :from %s -- %s",
                          get_client_name(source_p->from, MASK_IP), para);
   else
-    sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
+    sendto_realops_flags(UMODE_SERVNOTICE, L_ALL, SEND_NOTICE,
                          "ERROR :from %s via %s -- %s",
                          source_p->name,
                          get_client_name(source_p->from, MASK_IP), para);
@@ -85,8 +85,13 @@ ms_error(struct Client *source_p, int parc, char *parv[])
 
 static struct Message error_msgtab =
 {
-  "ERROR", NULL, 0, 0, 1, MAXPARA, MFLG_SLOW, 0,
-  { mr_error, m_ignore, ms_error, m_ignore, m_ignore, m_ignore }
+  .cmd = "ERROR",
+  .args_max = MAXPARA,
+  .handlers[UNREGISTERED_HANDLER] = mr_error,
+  .handlers[CLIENT_HANDLER] = m_ignore,
+  .handlers[SERVER_HANDLER] = ms_error,
+  .handlers[ENCAP_HANDLER] = m_ignore,
+  .handlers[OPER_HANDLER] = m_ignore
 };
 
 static void
@@ -103,10 +108,7 @@ module_exit(void)
 
 struct module module_entry =
 {
-  .node    = { NULL, NULL, NULL },
-  .name    = NULL,
   .version = "$Revision$",
-  .handle  = NULL,
   .modinit = module_init,
   .modexit = module_exit,
   .flags   = MODULE_FLAG_CORE

@@ -67,7 +67,7 @@ mo_rehash(struct Client *source_p, int parc, char *parv[])
     if (!irccmp(option, "DNS"))
     {
       sendto_one_numeric(source_p, &me, RPL_REHASHING, "DNS");
-      sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
+      sendto_realops_flags(UMODE_SERVNOTICE, L_ALL, SEND_NOTICE,
                            "%s is rehashing DNS",
                            get_oper_name(source_p));
       restart_resolver();
@@ -75,7 +75,7 @@ mo_rehash(struct Client *source_p, int parc, char *parv[])
     }
     else if (!irccmp(option, "MOTD"))
     {
-      sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
+      sendto_realops_flags(UMODE_SERVNOTICE, L_ALL, SEND_NOTICE,
                            "%s is forcing re-reading of MOTD files",
                            get_oper_name(source_p));
       motd_recache();
@@ -92,7 +92,7 @@ mo_rehash(struct Client *source_p, int parc, char *parv[])
   else
   {
     sendto_one_numeric(source_p, &me, RPL_REHASHING, ConfigGeneral.configfile);
-    sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
+    sendto_realops_flags(UMODE_SERVNOTICE, L_ALL, SEND_NOTICE,
                          "%s is rehashing configuration file(s)",
                          get_oper_name(source_p));
     ilog(LOG_TYPE_IRCD, "REHASH From %s",
@@ -105,8 +105,13 @@ mo_rehash(struct Client *source_p, int parc, char *parv[])
 
 static struct Message rehash_msgtab =
 {
-  "REHASH", NULL, 0, 0, 0, MAXPARA, MFLG_SLOW, 0,
-  { m_unregistered, m_not_oper, m_ignore, m_ignore, mo_rehash, m_ignore }
+  .cmd = "REHASH",
+  .args_max = MAXPARA,
+  .handlers[UNREGISTERED_HANDLER] = m_unregistered,
+  .handlers[CLIENT_HANDLER] = m_not_oper,
+  .handlers[SERVER_HANDLER] = m_ignore,
+  .handlers[ENCAP_HANDLER] = m_ignore,
+  .handlers[OPER_HANDLER] = mo_rehash
 };
 
 static void
@@ -123,11 +128,7 @@ module_exit(void)
 
 struct module module_entry =
 {
-  .node    = { NULL, NULL, NULL },
-  .name    = NULL,
   .version = "$Revision$",
-  .handle  = NULL,
   .modinit = module_init,
   .modexit = module_exit,
-  .flags   = 0
 };

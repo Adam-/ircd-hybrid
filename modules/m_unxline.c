@@ -36,7 +36,6 @@
 #include "server.h"
 #include "parse.h"
 #include "modules.h"
-#include "conf_db.h"
 #include "memory.h"
 
 
@@ -47,7 +46,7 @@
  * Side effects: Any matching tklines are removed.
  */
 static int
-remove_xline_exact(const char *gecos)
+xline_remove(const char *gecos)
 {
   dlink_node *node = NULL;
 
@@ -69,14 +68,14 @@ remove_xline_exact(const char *gecos)
 }
 
 static void
-remove_xline(struct Client *source_p, const char *gecos)
+xline_remove_and_notify(struct Client *source_p, const char *gecos)
 {
-  if (remove_xline_exact(gecos))
+  if (xline_remove(gecos))
   {
     if (IsClient(source_p))
       sendto_one_notice(source_p, &me, ":X-Line for [%s] is removed", gecos);
 
-    sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
+    sendto_realops_flags(UMODE_SERVNOTICE, L_ALL, SEND_NOTICE,
                          "%s has removed the X-Line for: [%s]",
                          get_oper_name(source_p), gecos);
     ilog(LOG_TYPE_XLINE, "%s removed X-Line for [%s]",
@@ -111,14 +110,13 @@ mo_unxline(struct Client *source_p, int parc, char *parv[])
     return 0;
   }
 
-  /* UNXLINE bill ON irc.server.com */
-  if (parse_aline("UNXLINE", source_p, parc, parv, 0, &gecos,
-                  NULL, NULL, &target_server, NULL) < 0)
+  if (!parse_aline("UNXLINE", source_p, parc, parv, 0, &gecos,
+                   NULL, NULL, &target_server, NULL))
     return 0;
 
   if (target_server)
   {
-    sendto_match_servs(source_p, target_server, CAP_CLUSTER,
+    sendto_match_servs(source_p, target_server, CAPAB_CLUSTER,
                        "UNXLINE %s %s", target_server, gecos);
 
     /* Allow ON to apply local unxline as well if it matches */
@@ -126,9 +124,9 @@ mo_unxline(struct Client *source_p, int parc, char *parv[])
       return 0;
   }
   else
-    cluster_a_line(source_p, "UNXLINE", CAP_CLUSTER, SHARED_UNXLINE, "%s", gecos);
+    cluster_a_line(source_p, "UNXLINE", CAPAB_CLUSTER, SHARED_UNXLINE, "%s", gecos);
 
-  remove_xline(source_p, gecos);
+  xline_remove_and_notify(source_p, gecos);
   return 0;
 }
 
@@ -150,7 +148,7 @@ ms_unxline(struct Client *source_p, int parc, char *parv[])
   if (parc != 3 || EmptyString(parv[2]))
     return 0;
 
-  sendto_match_servs(source_p, parv[1], CAP_CLUSTER, "UNXLINE %s %s",
+  sendto_match_servs(source_p, parv[1], CAPAB_CLUSTER, "UNXLINE %s %s",
                      parv[1], parv[2]);
 
   if (match(parv[1], me.name))
@@ -160,14 +158,20 @@ ms_unxline(struct Client *source_p, int parc, char *parv[])
       find_matching_name_conf(CONF_ULINE, source_p->servptr->name,
                               source_p->username, source_p->host,
                               SHARED_UNXLINE))
-    remove_xline(source_p, parv[2]);
+    xline_remove_and_notify(source_p, parv[2]);
   return 0;
 }
 
 static struct Message unxline_msgtab =
 {
-  "UNXLINE", NULL, 0, 0, 2, MAXPARA, MFLG_SLOW, 0,
-  { m_unregistered, m_not_oper, ms_unxline, m_ignore, mo_unxline, m_ignore }
+  .cmd = "UNXLINE",
+  .args_min = 2,
+  .args_max = MAXPARA,
+  .handlers[UNREGISTERED_HANDLER] = m_unregistered,
+  .handlers[CLIENT_HANDLER] = m_not_oper,
+  .handlers[SERVER_HANDLER] = ms_unxline,
+  .handlers[ENCAP_HANDLER] = m_ignore,
+  .handlers[OPER_HANDLER] = mo_unxline
 };
 
 static void
@@ -184,11 +188,7 @@ module_exit(void)
 
 struct module module_entry =
 {
-  .node    = { NULL, NULL, NULL },
-  .name    = NULL,
   .version = "$Revision$",
-  .handle  = NULL,
   .modinit = module_init,
   .modexit = module_exit,
-  .flags   = 0
 };

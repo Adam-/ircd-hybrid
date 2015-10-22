@@ -11,14 +11,12 @@ modules_LTLIBRARIES = m_accept.la    \
                       m_capab.la     \
                       m_cap.la       \
                       m_certfp.la    \
-                      m_challenge.la \
                       m_close.la     \
                       m_connect.la   \
                       m_dline.la     \
                       m_encap.la     \
                       m_eob.la       \
                       m_etrace.la    \
-                      m_gline.la     \
                       m_globops.la   \
                       m_hash.la      \
                       m_help.la      \
@@ -78,14 +76,12 @@ m_away_la_LDFLAGS = $(MODULE_FLAGS)
 m_capab_la_LDFLAGS = $(MODULE_FLAGS)
 m_cap_la_LDFLAGS = $(MODULE_FLAGS)
 m_certfp_la_LDFLAGS = $(MODULE_FLAGS)
-m_challenge_la_LDFLAGS = $(MODULE_FLAGS)
 m_close_la_LDFLAGS = $(MODULE_FLAGS)
 m_connect_la_LDFLAGS = $(MODULE_FLAGS)
 m_dline_la_LDFLAGS = $(MODULE_FLAGS)
 m_encap_la_LDFLAGS = $(MODULE_FLAGS)
 m_eob_la_LDFLAGS = $(MODULE_FLAGS)
 m_etrace_la_LDFLAGS = $(MODULE_FLAGS)
-m_gline_la_LDFLAGS = $(MODULE_FLAGS)
 m_globops_la_LDFLAGS = $(MODULE_FLAGS)
 m_hash_la_LDFLAGS = $(MODULE_FLAGS)
 m_help_la_LDFLAGS = $(MODULE_FLAGS)
@@ -144,14 +140,12 @@ m_away_la_SOURCES = m_away.c
 m_capab_la_SOURCES = m_capab.c
 m_cap_la_SOURCES = m_cap.c
 m_certfp_la_SOURCES = m_certfp.c
-m_challenge_la_SOURCES = m_challenge.c
 m_close_la_SOURCES = m_close.c
 m_connect_la_SOURCES = m_connect.c
 m_dline_la_SOURCES = m_dline.c
 m_encap_la_SOURCES = m_encap.c
 m_eob_la_SOURCES = m_eob.c
 m_etrace_la_SOURCES = m_etrace.c
-m_gline_la_SOURCES = m_gline.c
 m_globops_la_SOURCES = m_globops.c
 m_hash_la_SOURCES = m_hash.c
 m_help_la_SOURCES = m_help.c

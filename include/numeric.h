@@ -47,7 +47,6 @@ enum irc_numerics
   RPL_MAP                  = 15,
   RPL_MAPMORE              = 16,
   RPL_MAPEND               = 17,
-  RPL_YOURID               = 42,
 
   /*
    * Numeric replies from server commands.
@@ -158,7 +157,6 @@ enum irc_numerics
   RPL_WHOISMODES           = 379,
   RPL_YOUREOPER            = 381,
   RPL_REHASHING            = 382,
-  RPL_RSACHALLENGE         = 386,
   RPL_TIME                 = 391,
   RPL_VISIBLEHOST          = 396,
 
@@ -188,7 +186,6 @@ enum irc_numerics
   ERR_ERRONEUSNICKNAME     = 432,
   ERR_NICKNAMEINUSE        = 433,
   ERR_NICKCOLLISION        = 436,
-  ERR_UNAVAILRESOURCE      = 437,
   ERR_NICKTOOFAST          = 438,
   ERR_SERVICESDOWN         = 440,
   ERR_USERNOTINCHANNEL     = 441,

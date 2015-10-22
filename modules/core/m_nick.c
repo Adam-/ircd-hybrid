@@ -344,7 +344,7 @@ uid_from_server(struct Client *source_p, int parc, char *parv[])
   client_p->hopcount = atoi(parv[2]);
   client_p->tsinfo = atol(parv[3]);
 
-  strlcpy(client_p->account, (parc == 11 ? parv[9] : "0"), sizeof(client_p->account));
+  strlcpy(client_p->account, (parc == 11 ? parv[9] : "*"), sizeof(client_p->account));
   strlcpy(client_p->name, parv[1], sizeof(client_p->name));
   strlcpy(client_p->id, parv[8], sizeof(client_p->id));
   strlcpy(client_p->sockhost, parv[7], sizeof(client_p->sockhost));
@@ -355,7 +355,7 @@ uid_from_server(struct Client *source_p, int parc, char *parv[])
   hash_add_client(client_p);
   hash_add_id(client_p);
 
-  /* Parse usermodes */
+  /* Parse user modes */
   for (const char *m = &parv[4][1]; *m; ++m)
   {
     const struct user_modes *tab = umode_map[(unsigned char)*m];
@@ -423,7 +423,7 @@ perform_uid_introduction_collides(struct Client *source_p, struct Client *target
   /* If we don't have a TS, or their TS's are the same, kill both */
   if (!newts || !target_p->tsinfo || (newts == target_p->tsinfo))
   {
-    sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
+    sendto_realops_flags(UMODE_SERVNOTICE, L_ALL, SEND_NOTICE,
                          "Nick collision on %s(%s <- %s)(both killed)",
                          target_p->name, target_p->from->name,
                          source_p->from->name);
@@ -461,12 +461,12 @@ perform_uid_introduction_collides(struct Client *source_p, struct Client *target
   }
 
   if (sameuser)
-    sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
+    sendto_realops_flags(UMODE_SERVNOTICE, L_ALL, SEND_NOTICE,
                          "Nick collision on %s(%s <- %s)(older killed)",
                          target_p->name, target_p->from->name,
                          source_p->from->name);
   else
-    sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
+    sendto_realops_flags(UMODE_SERVNOTICE, L_ALL, SEND_NOTICE,
                          "Nick collision on %s(%s <- %s)(newer killed)",
                          target_p->name, target_p->from->name,
                          source_p->from->name);
@@ -510,7 +510,7 @@ perform_nick_change_collides(struct Client *source_p, struct Client *target_p,
   /* It's a client changing nick and causing a collide */
   if (!newts || !target_p->tsinfo || (newts == target_p->tsinfo))
   {
-    sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
+    sendto_realops_flags(UMODE_SERVNOTICE, L_ALL, SEND_NOTICE,
                "Nick change collision from %s to %s(%s <- %s)(both killed)",
                source_p->name, target_p->name, target_p->from->name,
                source_p->from->name);
@@ -542,12 +542,12 @@ perform_nick_change_collides(struct Client *source_p, struct Client *target_p,
       (!sameuser && newts > target_p->tsinfo))
   {
     if (sameuser)
-      sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
+      sendto_realops_flags(UMODE_SERVNOTICE, L_ALL, SEND_NOTICE,
            "Nick change collision from %s to %s(%s <- %s)(older killed)",
            source_p->name, target_p->name, target_p->from->name,
            source_p->from->name);
     else
-      sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
+      sendto_realops_flags(UMODE_SERVNOTICE, L_ALL, SEND_NOTICE,
            "Nick change collision from %s to %s(%s <- %s)(newer killed)",
              source_p->name, target_p->name, target_p->from->name,
              source_p->from->name);
@@ -566,12 +566,12 @@ perform_nick_change_collides(struct Client *source_p, struct Client *target_p,
   }
 
   if (sameuser)
-    sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
+    sendto_realops_flags(UMODE_SERVNOTICE, L_ALL, SEND_NOTICE,
                          "Nick collision on %s(%s <- %s)(older killed)",
                          target_p->name, target_p->from->name,
                          source_p->from->name);
   else
-    sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
+    sendto_realops_flags(UMODE_SERVNOTICE, L_ALL, SEND_NOTICE,
                          "Nick collision on %s(%s <- %s)(newer killed)",
                          target_p->name, target_p->from->name,
                          source_p->from->name);
@@ -681,8 +681,8 @@ m_nick(struct Client *source_p, int parc, char *parv[])
     return 0;
   }
 
-  if (!IsExemptResv(source_p) &&
-      !(HasUMode(source_p, UMODE_OPER) && ConfigGeneral.oper_pass_resv) &&
+  if (!HasFlag(source_p, FLAGS_EXEMPTRESV) &&
+      !(HasUMode(source_p, UMODE_OPER) && HasOFlag(source_p, OPER_FLAG_NICK_RESV)) &&
       (conf = find_matching_name_conf(CONF_NRESV, nick, NULL, NULL, 0)))
   {
     ++conf->count;
@@ -807,9 +807,6 @@ ms_uid(struct Client *source_p, int parc, char *parv[])
 {
   struct Client *target_p = NULL;
 
-  if (parc < 10)
-    return 0;
-
   if (check_clean_nick(source_p, parv[1], source_p) ||
       check_clean_user(source_p, parv[1], parv[5], source_p) ||
       check_clean_host(source_p, parv[1], parv[6], source_p))
@@ -822,7 +819,7 @@ ms_uid(struct Client *source_p, int parc, char *parv[])
    */
   if ((target_p = hash_find_id(parv[8])))
   {
-    sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
+    sendto_realops_flags(UMODE_SERVNOTICE, L_ALL, SEND_NOTICE,
                          "ID collision on %s(%s <- %s)(both killed)",
                          target_p->name, target_p->from->name,
                          source_p->from->name);
@@ -850,14 +847,25 @@ ms_uid(struct Client *source_p, int parc, char *parv[])
 
 static struct Message nick_msgtab =
 {
-  "NICK", NULL, 0, 0, 0, MAXPARA, MFLG_SLOW, 0,
-  { mr_nick, m_nick, ms_nick, m_ignore, m_nick, m_ignore }
+  .cmd = "NICK",
+  .args_max = MAXPARA,
+  .handlers[UNREGISTERED_HANDLER] = mr_nick,
+  .handlers[CLIENT_HANDLER] = m_nick,
+  .handlers[SERVER_HANDLER] = ms_nick,
+  .handlers[ENCAP_HANDLER] = m_ignore,
+  .handlers[OPER_HANDLER] = m_nick
 };
 
 static struct Message uid_msgtab =
 {
-  "UID", NULL, 0, 0, 10, MAXPARA, MFLG_SLOW, 0,
-  { m_ignore, m_ignore, ms_uid, m_ignore, m_ignore, m_ignore }
+  .cmd = "UID",
+  .args_min = 10,
+  .args_max = MAXPARA,
+  .handlers[UNREGISTERED_HANDLER] = m_ignore,
+  .handlers[CLIENT_HANDLER] = m_ignore,
+  .handlers[SERVER_HANDLER] = ms_uid,
+  .handlers[ENCAP_HANDLER] = m_ignore,
+  .handlers[OPER_HANDLER] = m_ignore
 };
 
 static void
@@ -876,10 +884,7 @@ module_exit(void)
 
 struct module module_entry =
 {
-  .node    = { NULL, NULL, NULL },
-  .name    = NULL,
   .version = "$Revision$",
-  .handle  = NULL,
   .modinit = module_init,
   .modexit = module_exit,
   .flags   = MODULE_FLAG_CORE

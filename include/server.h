@@ -24,46 +24,56 @@
  * \version $Id$
  */
 
-#ifndef INCLUDED_serv_h
-#define INCLUDED_serv_h
-
-
-/*
- * number of seconds to wait after server starts up, before
- * starting try_connections()
- * TOO SOON and you can nick collide like crazy.
- */
-#define STARTUP_CONNECTIONS_TIME 60
+#ifndef INCLUDED_server_h
+#define INCLUDED_server_h
 
 struct Client;
 struct MaskItem;
-struct Channel;
+
+/*
+ * Number of seconds to wait after server starts up, before
+ * starting try_connections()
+ * TOO SOON and you can nick collide like crazy.
+ */
+enum { STARTUP_CONNECTIONS_TIME = 60 };
+
+/*
+ * Return values for hunt_server()
+ */
+enum
+{
+  HUNTED_NOSUCH  = -1,  /**< If the hunted server is not found */
+  HUNTED_ISME    =  0,  /**< If this server should execute the command */
+  HUNTED_PASS    =  1   /**< If message passed onwards successfully */
+};
+
 
 /* Capabilities */
 struct Capability
 {
   dlink_node node;
-  char *name;       /* name of capability */
-  unsigned int cap; /* mask value         */
+  char *name;  /**< Name of capability */
+  unsigned int cap;  /**< Mask value */
 };
 
-#define CAP_QS          0x00000001 /* Can handle quit storm removal       */
-#define CAP_EX          0x00000002 /* Can do channel +e exemptions        */
-#define CAP_IE          0x00000004 /* Can do invite exceptions            */
-#define CAP_EOB         0x00000008 /* Can do EOB message                  */
-#define CAP_KLN         0x00000010 /* Can do KLINE message                */
-#define CAP_GLN         0x00000020 /* Can do GLINE message                */
-#define CAP_TS6         0x00000040 /* Can do TS6                          */
-#define CAP_KNOCK       0x00000080 /* supports KNOCK                      */
-#define CAP_UNKLN       0x00000100 /* Can do UNKLINE message              */
-#define CAP_CLUSTER     0x00000200 /* supports server clustering          */
-#define CAP_ENCAP       0x00000400 /* supports ENCAP message              */
-#define CAP_HOPS        0x00000800 /* supports HALFOPS                    */
-#define CAP_TBURST      0x00001000 /* supports TBURST                     */
-#define CAP_SVS         0x00002000 /* supports services                   */
-#define CAP_DLN         0x00004000 /* Can do DLINE message                */
-#define CAP_UNDLN       0x00008000 /* Can do UNDLINE message              */
-#define CAP_CHW         0x00010000 /* Can do channel wall @#              */
+enum
+{
+  CAPAB_QS      = 0x00000001U,  /* Can handle quit storm removal */
+  CAPAB_EX      = 0x00000002U,  /* Can do channel +e exemptions */
+  CAPAB_IE      = 0x00000004U,  /* Can do invite exceptions */
+  CAPAB_EOB     = 0x00000008U,  /* Can do EOB message */
+  CAPAB_KLN     = 0x00000010U,  /* Can do KLINE message */
+  CAPAB_KNOCK   = 0x00000020U,  /* Supports KNOCK */
+  CAPAB_UNKLN   = 0x00000040U,  /* Can do UNKLINE message */
+  CAPAB_CLUSTER = 0x00000080U,  /* Supports server clustering */
+  CAPAB_ENCAP   = 0x00000100U,  /* Supports ENCAP message */
+  CAPAB_HOPS    = 0x00000200U,  /* Supports HALFOPS */
+  CAPAB_TBURST  = 0x00000400U,  /* Supports TBURST */
+  CAPAB_SVS     = 0x00000800U,  /* Supports services */
+  CAPAB_DLN     = 0x00001000U,  /* Can do DLINE message */
+  CAPAB_UNDLN   = 0x00002000U,  /* Can do UNDLINE message */
+  CAPAB_CHW     = 0x00004000U   /* Can do channel wall @# */
+};
 
 /*
  * Capability macros.
@@ -72,24 +82,13 @@ struct Capability
 #define SetCapable(x, cap)      ((x)->connection->caps |=  (cap))
 #define ClearCap(x, cap)        ((x)->connection->caps &= ~(cap))
 
-
-/*
- * return values for hunt_server()
- */
-enum
-{
-  HUNTED_NOSUCH  = -1,  /* If the hunted server is not found */
-  HUNTED_ISME    =  0,  /* If this server should execute the command */
-  HUNTED_PASS    =  1   /* If message passed onwards successfully */
-};
-
 extern int valid_servname(const char *);
 extern int check_server(const char *, struct Client *);
 extern int hunt_server(struct Client *, const char *, const int, const int, char *[]);
-extern void add_capability(const char *, int, int);
-extern int delete_capability(const char *);
-extern int unsigned find_capability(const char *);
-extern void send_capabilities(struct Client *, int);
+extern void add_capability(const char *, unsigned int);
+extern void delete_capability(const char *);
+extern unsigned int find_capability(const char *);
+extern void send_capabilities(struct Client *);
 extern void write_links_file(void *);
 extern void read_links_file(void);
 extern const char *show_capabilities(const struct Client *);
@@ -97,4 +96,4 @@ extern void try_connections(void *);
 extern int serv_connect(struct MaskItem *, struct Client *);
 extern struct Client *find_servconn_in_progress(const char *);
 extern struct Server *make_server(struct Client *);
-#endif /* INCLUDED_server.h */
+#endif  /* INCLUDED_server_h */

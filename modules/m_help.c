@@ -34,8 +34,8 @@
 #include "modules.h"
 #include "irc_string.h"
 
-#define HELPLEN 400
 
+enum { HELPLEN = 400 };
 
 static void
 sendhelpfile(struct Client *source_p, const char *path, const char *topic)
@@ -164,8 +164,13 @@ mo_help(struct Client *source_p, int parc, char *parv[])
 
 static struct Message help_msgtab =
 {
-  "HELP", NULL, 0, 0, 0, MAXPARA, MFLG_SLOW, 0,
-  { m_unregistered, m_help, m_ignore, m_ignore, mo_help, m_ignore }
+  .cmd = "HELP",
+  .args_max = MAXPARA,
+  .handlers[UNREGISTERED_HANDLER] = m_unregistered,
+  .handlers[CLIENT_HANDLER] = m_help,
+  .handlers[SERVER_HANDLER] = m_ignore,
+  .handlers[ENCAP_HANDLER] = m_ignore,
+  .handlers[OPER_HANDLER] = mo_help
 };
 
 static void
@@ -182,11 +187,7 @@ module_exit(void)
 
 struct module module_entry =
 {
-  .node    = { NULL, NULL, NULL },
-  .name    = NULL,
   .version = "$Revision$",
-  .handle  = NULL,
   .modinit = module_init,
   .modexit = module_exit,
-  .flags   = 0
 };

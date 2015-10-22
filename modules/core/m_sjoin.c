@@ -98,7 +98,7 @@ ms_sjoin(struct Client *source_p, int parc, char *parv[])
   if (!IsServer(source_p))
     return 0;
 
-  if (!check_channel_name(parv[2], 0))
+  if (!channel_check_name(parv[2], 0))
   {
     sendto_realops_flags(UMODE_DEBUG, L_ALL, SEND_NOTICE,
                          "*** Too long or invalid channel name from %s(via %s): %s",
@@ -144,7 +144,7 @@ ms_sjoin(struct Client *source_p, int parc, char *parv[])
   if ((chptr = hash_find_channel(parv[2])) == NULL)
   {
     isnew = 1;
-    chptr = make_channel(parv[2]);
+    chptr = channel_make(parv[2]);
   }
 
   parabuf[0] = '\0';
@@ -170,7 +170,7 @@ ms_sjoin(struct Client *source_p, int parc, char *parv[])
       sendto_channel_local(0, chptr,
                            ":%s NOTICE %s :*** Notice -- TS for %s changed from %lu to 0",
                            me.name, chptr->name, chptr->name, (unsigned long)oldts);
-      sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
+      sendto_realops_flags(UMODE_SERVNOTICE, L_ALL, SEND_NOTICE,
                            "Server %s changing TS on %s from %lu to 0",
                            source_p->name, chptr->name, (unsigned long)oldts);
     }
@@ -227,7 +227,7 @@ ms_sjoin(struct Client *source_p, int parc, char *parv[])
       remove_ban_list(chptr, source_p, &chptr->invexlist, 'I');
 
     clear_ban_cache_channel(chptr);
-    clear_invites(chptr);
+    clear_invites_channel(chptr);
 
     if (chptr->topic[0])
     {
@@ -271,7 +271,7 @@ ms_sjoin(struct Client *source_p, int parc, char *parv[])
    */
   if (buflen >= (IRCD_BUFSIZE - IRCD_MAX(NICKLEN, IDLEN) - 2 - 3 - 1))
   {
-    sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
+    sendto_realops_flags(UMODE_SERVNOTICE, L_ALL, SEND_NOTICE,
                          "Long SJOIN from server: %s(via %s) (ignored)",
                          source_p->name, source_p->from->name);
     return 0;
@@ -531,7 +531,7 @@ ms_sjoin(struct Client *source_p, int parc, char *parv[])
    */
   if (!dlink_list_length(&chptr->members) && isnew)
   {
-    destroy_channel(chptr);
+    channel_free(chptr);
     return 0;
   }
 
@@ -751,8 +751,14 @@ remove_ban_list(struct Channel *chptr, struct Client *source_p,
 
 static struct Message sjoin_msgtab =
 {
-  "SJOIN", NULL, 0, 0, 5, MAXPARA, MFLG_SLOW, 0,
-  { m_unregistered, m_ignore, ms_sjoin, m_ignore, m_ignore, m_ignore }
+  .cmd = "SJOIN",
+  .args_min = 5,
+  .args_max = MAXPARA,
+  .handlers[UNREGISTERED_HANDLER] = m_unregistered,
+  .handlers[CLIENT_HANDLER] = m_ignore,
+  .handlers[SERVER_HANDLER] = ms_sjoin,
+  .handlers[ENCAP_HANDLER] = m_ignore,
+  .handlers[OPER_HANDLER] = m_ignore
 };
 
 static void
@@ -769,10 +775,7 @@ module_exit(void)
 
 struct module module_entry =
 {
-  .node    = { NULL, NULL, NULL },
-  .name    = NULL,
   .version = "$Revision$",
-  .handle  = NULL,
   .modinit = module_init,
   .modexit = module_exit,
   .flags   = MODULE_FLAG_CORE

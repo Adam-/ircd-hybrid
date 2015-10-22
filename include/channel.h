@@ -36,12 +36,15 @@
 #define AddMemberFlag(x, y) ((x)->flags |=  (y))
 #define DelMemberFlag(x, y) ((x)->flags &= ~(y))
 
-#define FLOOD_NOTICED           1
-#define JOIN_FLOOD_NOTICED      2
+enum
+{
+  MSG_FLOOD_NOTICED  = 0x00000001U,
+  JOIN_FLOOD_NOTICED = 0x00000002U
+};
 
-#define SetFloodNoticed(x)   ((x)->flags |= FLOOD_NOTICED)
-#define IsSetFloodNoticed(x) ((x)->flags & FLOOD_NOTICED)
-#define ClearFloodNoticed(x) ((x)->flags &= ~FLOOD_NOTICED)
+#define SetFloodNoticed(x)   ((x)->flags |= MSG_FLOOD_NOTICED)
+#define IsSetFloodNoticed(x) ((x)->flags & MSG_FLOOD_NOTICED)
+#define ClearFloodNoticed(x) ((x)->flags &= ~MSG_FLOOD_NOTICED)
 
 #define SetJoinFloodNoticed(x)   ((x)->flags |= JOIN_FLOOD_NOTICED)
 #define IsSetJoinFloodNoticed(x) ((x)->flags & JOIN_FLOOD_NOTICED)
@@ -115,9 +118,8 @@ struct Ban
 };
 
 extern dlink_list channel_list;
-extern struct event splitmode_event;
 
-extern int check_channel_name(const char *, const int);
+extern int channel_check_name(const char *, const int);
 extern int can_send(struct Channel *, struct Client *, struct Membership *, const char *);
 extern int is_banned(const struct Channel *, const struct Client *);
 extern int can_join(struct Client *, const struct Channel *, const char *);
@@ -133,17 +135,16 @@ extern void remove_user_from_channel(struct Membership *);
 extern void channel_member_names(struct Client *, struct Channel *, int);
 extern void add_invite(struct Channel *, struct Client *);
 extern void del_invite(struct Channel *, struct Client *);
-extern void clear_invites(struct Channel *);
-extern void send_channel_modes(struct Client *, struct Channel *);
+extern void clear_invites_channel(struct Channel *);
+extern void clear_invites_client(struct Client *);
+extern void channel_send_modes(struct Client *, struct Channel *);
 extern void channel_modes(struct Channel *, struct Client *, char *, char *);
 extern void check_spambot_warning(struct Client *, const char *);
-extern void check_splitmode(void *);
-extern void free_channel_list(dlink_list *);
-extern void destroy_channel(struct Channel *);
+extern void channel_free(struct Channel *);
 extern void channel_set_topic(struct Channel *, const char *, const char *, time_t, int);
 
 extern const char *get_member_status(const struct Membership *, const int);
 
-extern struct Channel *make_channel(const char *);
+extern struct Channel *channel_make(const char *);
 extern struct Membership *find_channel_link(struct Client *, struct Channel *);
 #endif

@@ -40,7 +40,7 @@
 #include "modules.h"
 
 
-#define WHO_MAX_REPLIES 500
+enum { WHO_MAX_REPLIES = 500 };
 
 
 /* do_who()
@@ -53,7 +53,7 @@
  * side effects - do a who on given person
  */
 static void
-do_who(struct Client *source_p, struct Client *target_p,
+do_who(struct Client *source_p, const struct Client *target_p,
        const char *name, const char *op_flags)
 {
   char status[IRCD_BUFSIZE] = "";
@@ -258,12 +258,12 @@ m_who(struct Client *source_p, int parc, char *parv[])
   struct Channel *chptr = NULL;
   char *mask = parv[1];
   dlink_node *node = NULL;
-  const int server_oper = parc > 2 ? (*parv[2] == 'o') : 0; /* Show OPERS only */
+  const int server_oper = parc > 2 && *parv[2] == 'o';  /* Show OPERS only */
 
   /* See if mask is there, collapse it or return if not there */
   if (EmptyString(mask))
   {
-    who_global(source_p, mask, server_oper);
+    who_global(source_p, NULL, server_oper);
     sendto_one_numeric(source_p, &me, RPL_ENDOFWHO, "*");
     return 0;
   }
@@ -334,8 +334,13 @@ m_who(struct Client *source_p, int parc, char *parv[])
 
 static struct Message who_msgtab =
 {
-  "WHO", NULL, 0, 0, 2, MAXPARA, MFLG_SLOW, 0,
-  { m_unregistered, m_who, m_ignore, m_ignore, m_who, m_ignore }
+  .cmd = "WHO",
+  .args_max = MAXPARA,
+  .handlers[UNREGISTERED_HANDLER] = m_unregistered,
+  .handlers[CLIENT_HANDLER] = m_who,
+  .handlers[SERVER_HANDLER] = m_ignore,
+  .handlers[ENCAP_HANDLER] = m_ignore,
+  .handlers[OPER_HANDLER] = m_who
 };
 
 static void
@@ -352,11 +357,7 @@ module_exit(void)
 
 struct module module_entry =
 {
-  .node    = { NULL, NULL, NULL },
-  .name    = NULL,
   .version = "$Revision$",
-  .handle  = NULL,
   .modinit = module_init,
   .modexit = module_exit,
-  .flags   = 0
 };

@@ -34,6 +34,7 @@
 #include "send.h"
 #include "parse.h"
 #include "modules.h"
+#include "isupport.h"
 
 
 /* Option string. */
@@ -81,7 +82,7 @@ m_version(struct Client *source_p, int parc, char *parv[])
 
   sendto_one_numeric(source_p, &me, RPL_VERSION, ircd_version, serno,
                      me.name, serveropts);
-  show_isupport(source_p);
+  isupport_show(source_p);
   return 0;
 }
 
@@ -104,14 +105,19 @@ ms_version(struct Client *source_p, int parc, char *parv[])
 
   sendto_one_numeric(source_p, &me, RPL_VERSION, ircd_version, serno,
                      me.name, serveropts);
-  show_isupport(source_p);
+  isupport_show(source_p);
   return 0;
 }
 
 static struct Message version_msgtab =
 {
-  "VERSION", NULL, 0, 0, 0, MAXPARA, MFLG_SLOW, 0,
-  { m_unregistered, m_version, ms_version, m_ignore, ms_version, m_ignore }
+  .cmd = "VERSION",
+  .args_max = MAXPARA,
+  .handlers[UNREGISTERED_HANDLER] = m_unregistered,
+  .handlers[CLIENT_HANDLER] = m_version,
+  .handlers[SERVER_HANDLER] = ms_version,
+  .handlers[ENCAP_HANDLER] = m_ignore,
+  .handlers[OPER_HANDLER] = ms_version
 };
 
 static void
@@ -128,11 +134,7 @@ module_exit(void)
 
 struct module module_entry =
 {
-  .node    = { NULL, NULL, NULL },
-  .name    = NULL,
   .version = "$Revision$",
-  .handle  = NULL,
   .modinit = module_init,
   .modexit = module_exit,
-  .flags   = 0
 };

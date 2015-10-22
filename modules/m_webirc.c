@@ -66,7 +66,7 @@ mr_webirc(struct Client *source_p, int parc, char *parv[])
   }
 
   conf = find_address_conf(source_p->host,
-                           IsGotId(source_p) ? source_p->username : "webirc",
+                           HasFlag(source_p, FLAGS_GOTID) ? source_p->username : "webirc",
                            &source_p->connection->ip,
                            source_p->connection->aftype, parv[1]);
   if (conf == NULL || !IsConfClient(conf))
@@ -113,7 +113,7 @@ mr_webirc(struct Client *source_p, int parc, char *parv[])
   strlcpy(source_p->sockhost, parv[4], sizeof(source_p->sockhost));
   strlcpy(source_p->host, parv[3], sizeof(source_p->host));
 
-  /* Check dlines now, k/glines will be checked on registration */
+  /* Check dlines now, k-lines will be checked on registration */
   if ((conf = find_dline_conf(&source_p->connection->ip,
                                source_p->connection->aftype)))
   {
@@ -132,8 +132,14 @@ mr_webirc(struct Client *source_p, int parc, char *parv[])
 
 static struct Message webirc_msgtab =
 {
-  "WEBIRC", NULL, 0, 0, 5, MAXPARA, MFLG_SLOW, 0,
-  { mr_webirc, m_registered, m_ignore, m_ignore, m_registered, m_ignore }
+  .cmd = "WEBIRC",
+  .args_min = 5,
+  .args_max = MAXPARA,
+  .handlers[UNREGISTERED_HANDLER] = mr_webirc,
+  .handlers[CLIENT_HANDLER] = m_registered,
+  .handlers[SERVER_HANDLER] = m_ignore,
+  .handlers[ENCAP_HANDLER] = m_ignore,
+  .handlers[OPER_HANDLER] = m_registered
 };
 
 static void
@@ -150,11 +156,7 @@ module_exit(void)
 
 struct module module_entry =
 {
-  .node    = { NULL, NULL, NULL },
-  .name    = NULL,
   .version = "$Revision$",
-  .handle  = NULL,
   .modinit = module_init,
   .modexit = module_exit,
-  .flags   = 0
 };

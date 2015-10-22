@@ -126,7 +126,7 @@ module_reload(struct Client *source_p, const char *arg)
     load_conf_modules();
     load_core_modules(0);
 
-    sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
+    sendto_realops_flags(UMODE_SERVNOTICE, L_ALL, SEND_NOTICE,
                          "Module Restart: %u modules unloaded, %u modules loaded",
                          modnum, dlink_list_length(modules_get_list()));
     ilog(LOG_TYPE_IRCD, "Module Restart: %u modules unloaded, %u modules loaded",
@@ -157,7 +157,7 @@ module_reload(struct Client *source_p, const char *arg)
 
   if ((load_one_module(arg) == -1) && check_core)
   {
-    sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
+    sendto_realops_flags(UMODE_SERVNOTICE, L_ALL, SEND_NOTICE,
                          "Error reloading core "
                          "module: %s: terminating ircd", arg);
     ilog(LOG_TYPE_IRCD, "Error loading core module %s: terminating ircd", arg);
@@ -259,8 +259,14 @@ mo_module(struct Client *source_p, int parc, char *parv[])
 
 static struct Message module_msgtab =
 {
-  "MODULE", NULL, 0, 0, 2, MAXPARA, MFLG_SLOW, 0,
-  { m_unregistered, m_not_oper, m_ignore, m_ignore, mo_module, m_ignore }
+  .cmd = "MODULE",
+  .args_min = 2,
+  .args_max = MAXPARA,
+  .handlers[UNREGISTERED_HANDLER] = m_unregistered,
+  .handlers[CLIENT_HANDLER] = m_not_oper,
+  .handlers[SERVER_HANDLER] = m_ignore,
+  .handlers[ENCAP_HANDLER] = m_ignore,
+  .handlers[OPER_HANDLER] = mo_module
 };
 
 static void
@@ -277,10 +283,7 @@ module_exit(void)
 
 struct module module_entry =
 {
-  .node    = { NULL, NULL, NULL },
-  .name    = NULL,
   .version = "$Revision$",
-  .handle  = NULL,
   .modinit = module_init,
   .modexit = module_exit,
   .flags   = MODULE_FLAG_NOUNLOAD

@@ -5,7 +5,6 @@ helpfdir = $(pkgdatadir)/help
 dist_helpf_DATA = accept    \
                   admin     \
                   away      \
-                  challenge \
                   close     \
                   cmode     \
                   connect   \
@@ -13,8 +12,6 @@ dist_helpf_DATA = accept    \
                   dline     \
                   error     \
                   etrace    \
-                  gline     \
-                  gungline  \
                   hash      \
                   help      \
                   index     \

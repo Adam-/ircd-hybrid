@@ -33,9 +33,9 @@
 #include "event.h"
 #include "fdlist.h"
 #include "hash.h"
+#include "id.h"
 #include "irc_string.h"
 #include "ircd_signal.h"
-#include "gline.h"
 #include "motd.h"
 #include "conf.h"
 #include "hostmask.h"
@@ -46,7 +46,7 @@
 #include "auth.h"
 #include "s_bsd.h"
 #include "log.h"
-#include "server.h"      /* try_connections */
+#include "server.h"
 #include "send.h"
 #include "whowas.h"
 #include "modules.h"
@@ -57,6 +57,8 @@
 #include "conf_db.h"
 #include "conf_class.h"
 #include "ipcache.h"
+#include "isupport.h"
+#include "userhost.h"
 
 
 #ifdef HAVE_LIBGEOIP
@@ -77,18 +79,6 @@ const char *pidFileName = PPATH;
 
 unsigned int dorehash;
 unsigned int doremotd;
-unsigned int default_server_capabs;
-unsigned int splitmode;
-unsigned int splitchecking;
-unsigned int split_users;
-unsigned int split_servers;
-
-static struct event event_cleanup_glines =
-{
-  .name = "cleanup_glines",
-  .handler = cleanup_glines,
-  .when = CLEANUP_GLINES_TIME
-};
 
 static struct event event_cleanup_tklines =
 {
@@ -156,32 +146,30 @@ make_daemon(void)
   setsid();
 }
 
-static int printVersion = 0;
+static int printVersion;
 
 static struct lgetopt myopts[] =
 {
-  {"configfile", &ConfigGeneral.configfile,
-   STRING, "File to use for ircd.conf"},
-  {"glinefile",  &ConfigGeneral.glinefile,
-   STRING, "File to use for gline database"},
-  {"klinefile",  &ConfigGeneral.klinefile,
-   STRING, "File to use for kline database"},
-  {"dlinefile",  &ConfigGeneral.dlinefile,
-   STRING, "File to use for dline database"},
-  {"xlinefile",  &ConfigGeneral.xlinefile,
-   STRING, "File to use for xline database"},
-  {"resvfile",  &ConfigGeneral.resvfile,
-   STRING, "File to use for resv database"},
-  {"logfile",    &logFileName,
-   STRING, "File to use for ircd.log"},
-  {"pidfile",    &pidFileName,
-   STRING, "File to use for process ID"},
-  {"foreground", &server_state.foreground,
-   YESNO, "Run in foreground (don't detach)"},
-  {"version",    &printVersion,
-   YESNO, "Print version and exit"},
-  {"help", NULL, USAGE, "Print this text"},
-  {NULL, NULL, STRING, NULL},
+  { "configfile", &ConfigGeneral.configfile,
+   STRING, "File to use for ircd.conf" },
+  { "klinefile",  &ConfigGeneral.klinefile,
+   STRING, "File to use for kline database" },
+  { "dlinefile",  &ConfigGeneral.dlinefile,
+   STRING, "File to use for dline database" },
+  { "xlinefile",  &ConfigGeneral.xlinefile,
+   STRING, "File to use for xline database" },
+  { "resvfile",   &ConfigGeneral.resvfile,
+   STRING, "File to use for resv database" },
+  { "logfile",    &logFileName,
+   STRING, "File to use for ircd.log" },
+  { "pidfile",    &pidFileName,
+   STRING, "File to use for process ID" },
+  { "foreground", &server_state.foreground,
+   YESNO, "Run in foreground (don't detach)" },
+  { "version",    &printVersion,
+   YESNO, "Print version and exit" },
+  { "help", NULL, USAGE, "Print this text" },
+  { NULL, NULL, STRING, NULL },
 };
 
 void
@@ -191,12 +179,11 @@ set_time(void)
 
   if (gettimeofday(&newtime, NULL) == -1)
   {
-    ilog(LOG_TYPE_IRCD, "Clock Failure (%s), TS can be corrupted",
-         strerror(errno));
-    sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
-                         "Clock Failure (%s), TS can be corrupted",
-                         strerror(errno));
-    server_die("Clock Failure", 1);
+    char buf[IRCD_BUFSIZE];
+
+    snprintf(buf, sizeof(buf), "Clock failure, TS can be corrupted: %s",
+             strerror(errno));
+    server_die(buf, SERVER_SHUTDOWN);
   }
 
   if (newtime.tv_sec < CurrentTime)
@@ -207,10 +194,10 @@ set_time(void)
                          "System clock is running backwards - (%lu < %lu)",
                          (unsigned long)newtime.tv_sec,
                          (unsigned long)CurrentTime);
-    set_back_events(CurrentTime - newtime.tv_sec);
+    event_set_back_events(CurrentTime - newtime.tv_sec);
   }
 
-  SystemTime.tv_sec  = newtime.tv_sec;
+  SystemTime.tv_sec = newtime.tv_sec;
   SystemTime.tv_usec = newtime.tv_usec;
 }
 
@@ -243,7 +230,7 @@ io_loop(void)
     if (doremotd)
     {
       motd_recache();
-      sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
+      sendto_realops_flags(UMODE_SERVNOTICE, L_ALL, SEND_NOTICE,
                            "Got signal SIGUSR1, reloading motd file(s)");
       doremotd = 0;
     }
@@ -266,17 +253,6 @@ initialize_global_set_options(void)
   GlobalSetOptions.floodcount = ConfigGeneral.default_floodcount;
   GlobalSetOptions.joinfloodcount = ConfigChannel.default_join_flood_count;
   GlobalSetOptions.joinfloodtime = ConfigChannel.default_join_flood_time;
-
-  split_servers = ConfigChannel.default_split_server_count;
-  split_users   = ConfigChannel.default_split_user_count;
-
-  if (split_users && split_servers && (ConfigChannel.no_create_on_split ||
-                                       ConfigChannel.no_join_on_split))
-  {
-    splitmode     = 1;
-    splitchecking = 1;
-  }
-
   GlobalSetOptions.ident_timeout = IDENT_TIMEOUT;
 }
 
@@ -288,13 +264,12 @@ initialize_global_set_options(void)
 static void
 initialize_server_capabs(void)
 {
-  add_capability("QS", CAP_QS, 1);
-  add_capability("EOB", CAP_EOB, 1);
-  add_capability("TS6", CAP_TS6, 0);
-  add_capability("CLUSTER", CAP_CLUSTER, 1);
-  add_capability("SVS", CAP_SVS, 1);
-  add_capability("CHW", CAP_CHW, 1);
-  add_capability("HOPS", CAP_HOPS, 1);
+  add_capability("QS", CAPAB_QS);
+  add_capability("EOB", CAPAB_EOB);
+  add_capability("CLUSTER", CAPAB_CLUSTER);
+  add_capability("SVS", CAPAB_SVS);
+  add_capability("CHW", CAPAB_CHW);
+  add_capability("HOPS", CAPAB_HOPS);
 }
 
 /* write_pidfile()
@@ -310,12 +285,12 @@ write_pidfile(const char *filename)
 
   if ((fb = fopen(filename, "w")))
   {
-    char buff[IRCD_BUFSIZE];
+    char buf[IRCD_BUFSIZE];
     unsigned int pid = (unsigned int)getpid();
 
-    snprintf(buff, sizeof(buff), "%u\n", pid);
+    snprintf(buf, sizeof(buf), "%u\n", pid);
 
-    if (fputs(buff, fb) == -1)
+    if (fputs(buf, fb) == -1)
       ilog(LOG_TYPE_IRCD, "Error writing to pid file %s: %s",
            filename, strerror(errno));
 
@@ -338,23 +313,18 @@ static void
 check_pidfile(const char *filename)
 {
   FILE *fb;
-  char buff[IRCD_BUFSIZE];
-  pid_t pidfromfile;
+  char buf[IRCD_BUFSIZE];
 
-  /* Don't do logging here, since we don't have log() initialised */
   if ((fb = fopen(filename, "r")))
   {
-    if (!fgets(buff, 20, fb))
-    {
-      /* log(L_ERROR, "Error reading from pid file %s (%s)", filename,
-       * strerror(errno));
-       */
-    }
+    if (!fgets(buf, 20, fb))
+      ilog(LOG_TYPE_IRCD, "Error reading from pid file %s: %s",
+           filename, strerror(errno));
     else
     {
-      pidfromfile = atoi(buff);
+      pid_t pid = atoi(buf);
 
-      if (!kill(pidfromfile, 0))
+      if (!kill(pid, 0))
       {
         /* log(L_ERROR, "Server is already running"); */
         printf("ircd: daemon is already running\n");
@@ -365,9 +335,8 @@ check_pidfile(const char *filename)
     fclose(fb);
   }
   else if (errno != ENOENT)
-  {
-    /* log(L_ERROR, "Error opening pid file %s", filename); */
-  }
+    ilog(LOG_TYPE_IRCD, "Error opening pid file %s: %s",
+         filename, strerror(errno));
 }
 
 /* setup_corefile()
@@ -411,14 +380,11 @@ main(int argc, char *argv[])
   /* It's not random, but it ought to be a little harder to guess */
   init_genrand(SystemTime.tv_sec ^ (SystemTime.tv_usec | (getpid() << 20)));
 
-  dlinkAdd(&me, &me.node, &global_client_list);
-
   ConfigGeneral.dpath      = DPATH;
   ConfigGeneral.spath      = SPATH;
   ConfigGeneral.mpath      = MPATH;
   ConfigGeneral.configfile = CPATH;    /* Server configuration file */
   ConfigGeneral.klinefile  = KPATH;    /* Server kline file         */
-  ConfigGeneral.glinefile  = GPATH;    /* Server gline file         */
   ConfigGeneral.xlinefile  = XPATH;    /* Server xline file         */
   ConfigGeneral.dlinefile  = DLPATH;   /* dline file                */
   ConfigGeneral.resvfile   = RESVPATH; /* resv file                 */
@@ -465,9 +431,10 @@ main(int argc, char *argv[])
 
   mp_pool_init();
   init_dlink_nodes();
-  init_isupport();
+  isupport_init();
   dbuf_init();
   hash_init();
+  userhost_init();
   ipcache_init();
   client_init();
   class_init();
@@ -477,24 +444,15 @@ main(int argc, char *argv[])
   init_resolver();      /* Needs to be setup before the io loop */
   modules_init();
   read_conf_files(1);   /* cold start init conf files */
-  init_uid();
   initialize_server_capabs();   /* Set up default_server_capabs */
   initialize_global_set_options();  /* Has to be called after read_conf_files() */
   channel_init();
   read_links_file();
   motd_init();
-  user_usermodes_init();
+  user_modes_init();
 #ifdef HAVE_LIBGEOIP
   geoip_ctx = GeoIP_new(GEOIP_MEMORY_CACHE);
 #endif
-
-  if (EmptyString(ConfigServerInfo.sid))
-  {
-    ilog(LOG_TYPE_IRCD, "ERROR: No server id specified in serverinfo block.");
-    exit(EXIT_FAILURE);
-  }
-
-  strlcpy(me.id, ConfigServerInfo.sid, sizeof(me.id));
 
   if (EmptyString(ConfigServerInfo.name))
   {
@@ -504,7 +462,7 @@ main(int argc, char *argv[])
 
   strlcpy(me.name, ConfigServerInfo.name, sizeof(me.name));
 
-  /* serverinfo{} description must exist.  If not, error out.*/
+  /* serverinfo {} description must exist.  If not, error out.*/
   if (EmptyString(ConfigServerInfo.description))
   {
     ilog(LOG_TYPE_IRCD, "ERROR: No server description specified in serverinfo block.");
@@ -512,6 +470,16 @@ main(int argc, char *argv[])
   }
 
   strlcpy(me.info, ConfigServerInfo.description, sizeof(me.info));
+
+  if (EmptyString(ConfigServerInfo.sid))
+  {
+    ilog(LOG_TYPE_IRCD, "Generating server ID");
+    generate_sid();
+  }
+  else
+    strlcpy(me.id, ConfigServerInfo.sid, sizeof(me.id));
+
+  init_uid();
 
   me.from = &me;
   me.servptr = &me;
@@ -526,10 +494,10 @@ main(int argc, char *argv[])
   hash_add_client(&me);
 
   dlinkAdd(&me, make_dlink_node(), &global_server_list);
+  dlinkAdd(&me, &me.node, &global_client_list);
 
   load_kline_database();
   load_dline_database();
-  load_gline_database();
   load_xline_database();
   load_resv_database();
 
@@ -539,9 +507,6 @@ main(int argc, char *argv[])
 
   write_pidfile(pidFileName);
 
-  ilog(LOG_TYPE_IRCD, "Server Ready");
-
-  event_addish(&event_cleanup_glines, NULL);
   event_addish(&event_cleanup_tklines, NULL);
 
   /* We want try_connections to be called as soon as possible now! -- adrian */
@@ -553,7 +518,7 @@ main(int argc, char *argv[])
 
   event_addish(&event_save_all_databases, NULL);
 
-  if (ConfigServerHide.links_delay > 0)
+  if (ConfigServerHide.links_delay)
   {
     event_write_links_file.when = ConfigServerHide.links_delay;
     event_addish(&event_write_links_file, NULL);
@@ -561,9 +526,8 @@ main(int argc, char *argv[])
   else
     ConfigServerHide.links_disabled = 1;
 
-  if (splitmode)
-    event_addish(&splitmode_event, NULL);
-
+  ilog(LOG_TYPE_IRCD, "Server Ready");
   io_loop();
+
   return 0;
 }

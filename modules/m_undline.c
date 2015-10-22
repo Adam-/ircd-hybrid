@@ -38,7 +38,6 @@
 #include "server.h"
 #include "parse.h"
 #include "modules.h"
-#include "conf_db.h"
 #include "memory.h"
 
 
@@ -48,7 +47,7 @@
  * Side effects: Any matching tdlines are removed.
  */
 static int
-remove_dline_match(const char *host)
+dline_remove(const char *host)
 {
   struct irc_ssaddr iphost, *piphost;
   struct MaskItem *conf;
@@ -77,6 +76,24 @@ remove_dline_match(const char *host)
   }
 
   return 0;
+}
+
+static void
+dline_remove_and_notify(struct Client *source_p, const char *host)
+{
+  if (dline_remove(host))
+  {
+    if (IsClient(source_p))
+      sendto_one_notice(source_p, &me, ":D-Line for [%s] is removed", host);
+
+    sendto_realops_flags(UMODE_SERVNOTICE, L_ALL, SEND_NOTICE,
+                         "%s has removed the D-Line for: [%s]",
+                         get_oper_name(source_p), host);
+    ilog(LOG_TYPE_DLINE, "%s removed D-Line for [%s]",
+         get_oper_name(source_p), host);
+  }
+  else if (IsClient(source_p))
+    sendto_one_notice(source_p, &me, ":No D-Line for [%s] found", host);
 }
 
 /*! \brief UNDLINE command handler
@@ -110,13 +127,13 @@ mo_undline(struct Client *source_p, int parc, char *parv[])
     return 0;
   }
 
-  if (parse_aline("UNDLINE", source_p, parc, parv, 0, &addr,
-                  NULL, NULL, &target_server, NULL) < 0)
+  if (!parse_aline("UNDLINE", source_p, parc, parv, 0, &addr,
+                   NULL, NULL, &target_server, NULL))
     return 0;
 
   if (target_server)
   {
-    sendto_match_servs(source_p, target_server, CAP_UNDLN,
+    sendto_match_servs(source_p, target_server, CAPAB_UNDLN,
                        "UNDLINE %s %s", target_server, addr);
 
     /* Allow ON to apply local undline as well if it matches */
@@ -124,20 +141,9 @@ mo_undline(struct Client *source_p, int parc, char *parv[])
       return 0;
   }
   else
-    cluster_a_line(source_p, "UNDLINE", CAP_UNDLN, SHARED_UNDLINE, "%s", addr);
+    cluster_a_line(source_p, "UNDLINE", CAPAB_UNDLN, SHARED_UNDLINE, "%s", addr);
 
-  if (remove_dline_match(addr))
-  {
-    sendto_one_notice(source_p, &me, ":D-Line for [%s] is removed", addr);
-    sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
-                         "%s has removed the D-Line for: [%s]",
-                         get_oper_name(source_p), addr);
-    ilog(LOG_TYPE_DLINE, "%s removed D-Line for [%s]",
-         get_oper_name(source_p), addr);
-  }
-  else
-    sendto_one_notice(source_p, &me, ":No D-Line for [%s] found", addr);
-
+  dline_remove_and_notify(source_p, addr);
   return 0;
 }
 
@@ -161,7 +167,7 @@ ms_undline(struct Client *source_p, int parc, char *parv[])
   if (parc != 3 || EmptyString(parv[2]))
     return 0;
 
-  sendto_match_servs(source_p, parv[1], CAP_UNDLN, "UNDLINE %s %s",
+  sendto_match_servs(source_p, parv[1], CAPAB_UNDLN, "UNDLINE %s %s",
                      parv[1], parv[2]);
 
   if (match(parv[1], me.name))
@@ -171,36 +177,28 @@ ms_undline(struct Client *source_p, int parc, char *parv[])
       find_matching_name_conf(CONF_ULINE, source_p->servptr->name,
                               source_p->username, source_p->host,
                               SHARED_UNDLINE))
-  {
-    if (remove_dline_match(addr))
-    {
-      if (IsClient(source_p))
-        sendto_one_notice(source_p, &me, ":D-Line for [%s] is removed", addr);
-
-      sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
-                           "%s has removed the D-Line for: [%s]",
-                           get_oper_name(source_p), addr);
-      ilog(LOG_TYPE_DLINE, "%s removed D-Line for [%s]",
-           get_oper_name(source_p), addr);
-    }
-    else if (IsClient(source_p))
-      sendto_one_notice(source_p, &me, ":No D-Line for [%s] found", addr);
-  }
+    dline_remove_and_notify(source_p, addr);
 
   return 0;
 }
 
 static struct Message undline_msgtab =
 {
-  "UNDLINE", NULL, 0, 0, 2, MAXPARA, MFLG_SLOW, 0,
-  { m_unregistered, m_not_oper, ms_undline, m_ignore, mo_undline, m_ignore }
+  .cmd = "UNDLINE",
+  .args_min = 2,
+  .args_max = MAXPARA,
+  .handlers[UNREGISTERED_HANDLER] = m_unregistered,
+  .handlers[CLIENT_HANDLER] = m_not_oper,
+  .handlers[SERVER_HANDLER] = ms_undline,
+  .handlers[ENCAP_HANDLER] = m_ignore,
+  .handlers[OPER_HANDLER] = mo_undline
 };
 
 static void
 module_init(void)
 {
   mod_add_cmd(&undline_msgtab);
-  add_capability("UNDLN", CAP_UNDLN, 1);
+  add_capability("UNDLN", CAPAB_UNDLN);
 }
 
 static void
@@ -212,11 +210,7 @@ module_exit(void)
 
 struct module module_entry =
 {
-  .node    = { NULL, NULL, NULL },
-  .name    = NULL,
   .version = "$Revision$",
-  .handle  = NULL,
   .modinit = module_init,
   .modexit = module_exit,
-  .flags   = 0
 };

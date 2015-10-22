@@ -41,11 +41,18 @@
 #include "server.h"
 
 
-/* m_kick()
- *  parv[0] = command
- *  parv[1] = channel
- *  parv[2] = client to kick
- *  parv[3] = kick comment
+/*! \brief KICK command handler
+ *
+ * \param source_p Pointer to allocated Client struct from which the message
+ *                 originally comes from.  This can be a local or remote client.
+ * \param parc     Integer holding the number of supplied arguments.
+ * \param parv     Argument vector where parv[0] .. parv[parc-1] are non-NULL
+ *                 pointers.
+ * \note Valid arguments for this command are:
+ *      - parv[0] = command
+ *      - parv[1] = channel name
+ *      - parv[2] = client to kick
+ *      - parv[3] = reason
  */
 static int
 m_kick(struct Client *source_p, int parc, char *parv[])
@@ -117,11 +124,18 @@ m_kick(struct Client *source_p, int parc, char *parv[])
   return 0;
 }
 
-/* ms_kick()
- *  parv[0] = command
- *  parv[1] = channel
- *  parv[2] = client to kick
- *  parv[3] = kick comment
+/*! \brief KICK command handler
+ *
+ * \param source_p Pointer to allocated Client struct from which the message
+ *                 originally comes from.  This can be a local or remote client.
+ * \param parc     Integer holding the number of supplied arguments.
+ * \param parv     Argument vector where parv[0] .. parv[parc-1] are non-NULL
+ *                 pointers.
+ * \note Valid arguments for this command are:
+ *      - parv[0] = command
+ *      - parv[1] = channel name
+ *      - parv[2] = client to kick
+ *      - parv[3] = reason
  */
 static int
 ms_kick(struct Client *source_p, int parc, char *parv[])
@@ -167,8 +181,14 @@ ms_kick(struct Client *source_p, int parc, char *parv[])
 
 static struct Message kick_msgtab =
 {
-  "KICK", NULL, 0, 0, 3, MAXPARA, MFLG_SLOW, 0,
-  { m_unregistered, m_kick, ms_kick, m_ignore, m_kick, m_ignore }
+  .cmd = "KICK",
+  .args_min = 3,
+  .args_max = MAXPARA,
+  .handlers[UNREGISTERED_HANDLER] = m_unregistered,
+  .handlers[CLIENT_HANDLER] = m_kick,
+  .handlers[SERVER_HANDLER] = ms_kick,
+  .handlers[ENCAP_HANDLER] = m_ignore,
+  .handlers[OPER_HANDLER] = m_kick
 };
 
 static void
@@ -185,10 +205,7 @@ module_exit(void)
 
 struct module module_entry =
 {
-  .node    = { NULL, NULL, NULL },
-  .name    = NULL,
   .version = "$Revision$",
-  .handle  = NULL,
   .modinit = module_init,
   .modexit = module_exit,
   .flags   = MODULE_FLAG_CORE

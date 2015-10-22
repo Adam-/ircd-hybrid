@@ -1,5 +1,5 @@
 /*
- * $Id: patricia.h,v 1.6 2005/12/07 20:53:01 dplonka Exp $
+ * $Id$
  * Dave Plonka <plonka@doit.wisc.edu>
  *
  * This file had been called "radix.h" in the MRT sources.
@@ -49,13 +49,7 @@ typedef void (*void_fn_t)();
 #include <sys/types.h> /* for u_* definitions (on FreeBSD 5) */
 
 #include <errno.h> /* for EAFNOSUPPORT */
-#ifndef EAFNOSUPPORT
-#  defined EAFNOSUPPORT WSAEAFNOSUPPORT
-#  include <winsock.h>
-#else
-#  include <netinet/in.h> /* for struct in_addr */
-#endif
-
+#include <netinet/in.h> /* for struct in_addr */
 #include <sys/socket.h> /* for AF_INET */
 
 /* { from mrt.h */

@@ -64,10 +64,10 @@ ms_svinfo(struct Client *source_p, int parc, char *parv[])
      * TS_ONLY we can't fall back to the non-TS protocol so
      * we drop the link  -orabidoo
      */
-    sendto_realops_flags(UMODE_ALL, L_ADMIN, SEND_NOTICE,
+    sendto_realops_flags(UMODE_SERVNOTICE, L_ADMIN, SEND_NOTICE,
             "Link %s dropped, wrong TS protocol version (%s,%s)",
             get_client_name(source_p, SHOW_IP), parv[1], parv[2]);
-    sendto_realops_flags(UMODE_ALL, L_OPER, SEND_NOTICE,
+    sendto_realops_flags(UMODE_SERVNOTICE, L_OPER, SEND_NOTICE,
                  "Link %s dropped, wrong TS protocol version (%s,%s)",
                  get_client_name(source_p, MASK_IP), parv[1], parv[2]);
     exit_client(source_p, "Incompatible TS version");
@@ -80,17 +80,17 @@ ms_svinfo(struct Client *source_p, int parc, char *parv[])
   set_time();
 
   theirtime = atol(parv[4]);
-  deltat = abs(theirtime - CurrentTime);
+  deltat = labs(theirtime - CurrentTime);
 
   if (deltat > ConfigGeneral.ts_max_delta)
   {
-    sendto_realops_flags(UMODE_ALL, L_ADMIN, SEND_NOTICE,
+    sendto_realops_flags(UMODE_SERVNOTICE, L_ADMIN, SEND_NOTICE,
           "Link %s dropped, excessive TS delta (my TS=%lu, their TS=%lu, delta=%d)",
           get_client_name(source_p, SHOW_IP),
           (unsigned long) CurrentTime,
           (unsigned long) theirtime,
           (int) deltat);
-    sendto_realops_flags(UMODE_ALL, L_OPER, SEND_NOTICE,
+    sendto_realops_flags(UMODE_SERVNOTICE, L_OPER, SEND_NOTICE,
           "Link %s dropped, excessive TS delta (my TS=%lu, their TS=%lu, delta=%d)",
            get_client_name(source_p, MASK_IP),
            (unsigned long) CurrentTime,
@@ -107,7 +107,7 @@ ms_svinfo(struct Client *source_p, int parc, char *parv[])
   }
 
   if (deltat > ConfigGeneral.ts_warn_delta)
-    sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
+    sendto_realops_flags(UMODE_SERVNOTICE, L_ALL, SEND_NOTICE,
                 "Link %s notable TS delta (my TS=%lu, their TS=%lu, delta=%d)",
                 source_p->name,
                 (unsigned long) CurrentTime,
@@ -118,8 +118,14 @@ ms_svinfo(struct Client *source_p, int parc, char *parv[])
 
 static struct Message svinfo_msgtab =
 {
-  "SVINFO", NULL, 0, 0, 5, MAXPARA, MFLG_SLOW, 0,
-  { m_unregistered, m_ignore, ms_svinfo, m_ignore, m_ignore, m_ignore }
+  .cmd = "SVINFO",
+  .args_min = 5,
+  .args_max = MAXPARA,
+  .handlers[UNREGISTERED_HANDLER] = m_unregistered,
+  .handlers[CLIENT_HANDLER] = m_ignore,
+  .handlers[SERVER_HANDLER] = ms_svinfo,
+  .handlers[ENCAP_HANDLER] = m_ignore,
+  .handlers[OPER_HANDLER] = m_ignore
 };
 
 static void
@@ -136,11 +142,7 @@ module_exit(void)
 
 struct module module_entry =
 {
-  .node    = { NULL, NULL, NULL },
-  .name    = NULL,
   .version = "$Revision$",
-  .handle  = NULL,
   .modinit = module_init,
   .modexit = module_exit,
-  .flags   = 0
 };

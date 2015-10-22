@@ -35,8 +35,5 @@ extern void binary_to_hex(const unsigned char *, char *, unsigned int);
 #include "tls.h"
 
 extern void report_crypto_errors(void);
-extern int generate_challenge(char **, char **, RSA *);
-extern int get_randomness(unsigned char *, int);
 #endif
 #endif /* INCLUDED_rsa_h */
-

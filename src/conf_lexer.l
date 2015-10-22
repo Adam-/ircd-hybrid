@@ -145,6 +145,7 @@ channel                     { return CHANNEL; }
 cidr_bitlen_ipv4            { return CIDR_BITLEN_IPV4; }
 cidr_bitlen_ipv6            { return CIDR_BITLEN_IPV6; }
 class                       { return CLASS; }
+close                       { return CLOSE; }
 cluster                     { return T_CLUSTER; }
 command                     { return T_COMMAND; }
 connect                     { return CONNECT; }
@@ -156,8 +157,6 @@ default_floodcount          { return DEFAULT_FLOODCOUNT; }
 default_join_flood_count    { return DEFAULT_JOIN_FLOOD_COUNT; }
 default_join_flood_time     { return DEFAULT_JOIN_FLOOD_TIME; }
 default_max_clients         { return DEFAULT_MAX_CLIENTS; }
-default_split_server_count  { return DEFAULT_SPLIT_SERVER_COUNT; }
-default_split_user_count    { return DEFAULT_SPLIT_USER_COUNT; }
 deny                        { return DENY; }
 description                 { return DESCRIPTION; }
 die                         { return DIE; }
@@ -165,6 +164,8 @@ disable_auth                { return DISABLE_AUTH; }
 disable_fake_channels       { return DISABLE_FAKE_CHANNELS; }
 disable_remote_commands     { return DISABLE_REMOTE_COMMANDS; }
 dline                       { return T_DLINE; }
+dline_min_cidr              { return DLINE_MIN_CIDR; }
+dline_min_cidr6             { return DLINE_MIN_CIDR6; }
 dots_in_ident               { return DOTS_IN_IDENT; }
 email                       { return EMAIL; }
 encrypted                   { return ENCRYPTED; }
@@ -179,16 +180,10 @@ flatten_links               { return FLATTEN_LINKS; }
 full                        { return T_FULL; }
 gecos                       { return GECOS; }
 general                     { return GENERAL; }
-gline                       { return GLINE; }
-gline_duration              { return GLINE_DURATION; }
-gline_enable                { return GLINE_ENABLE; }
-gline_exempt                { return GLINE_EXEMPT; }
-gline_min_cidr              { return GLINE_MIN_CIDR; }
-gline_min_cidr6             { return GLINE_MIN_CIDR6; }
-gline_request_duration      { return GLINE_REQUEST_DURATION; }
+kline_min_cidr              { return KLINE_MIN_CIDR; }
+kline_min_cidr6             { return KLINE_MIN_CIDR6; }
 globops                     { return T_GLOBOPS; }
 have_ident                  { return NEED_IDENT; }
-havent_read_conf            { return HAVENT_READ_CONF; }
 hidden                      { return HIDDEN; }
 hidden_name                 { return HIDDEN_NAME; }
 hidechans                   { return HIDE_CHANS; }
@@ -208,6 +203,7 @@ invite_client_time          { return INVITE_CLIENT_TIME; }
 ip                          { return IP; }
 ipv4                        { return T_IPV4; }
 ipv6                        { return T_IPV6; }
+join                        { return JOIN; }
 kill                        { return KILL; }
 kill_chase_time_limit       { return KILL_CHASE_TIME_LIMIT; }
 kline                       { return KLINE; }
@@ -249,8 +245,6 @@ need_password               { return NEED_PASSWORD; }
 network_desc                { return NETWORK_DESC; }
 network_name                { return NETWORK_NAME; }
 nick                        { return NICK; }
-no_create_on_split          { return NO_CREATE_ON_SPLIT; }
-no_join_on_split            { return NO_JOIN_ON_SPLIT; }
 no_oper_flood               { return NO_OPER_FLOOD; }
 no_tilde                    { return NO_TILDE; }
 nononreg                    { return T_NONONREG; }
@@ -258,7 +252,6 @@ number_per_cidr             { return NUMBER_PER_CIDR; }
 number_per_ip               { return NUMBER_PER_IP; }
 oper                        { return OPERATOR; }
 oper_only_umodes            { return OPER_ONLY_UMODES; }
-oper_pass_resv              { return OPER_PASS_RESV; }
 oper_umodes                 { return OPER_UMODES; }
 operator                    { return OPERATOR; }
 opers_bypass_callerid       { return OPERS_BYPASS_CALLERID; }
@@ -287,7 +280,6 @@ restart                     { return T_RESTART; }
 resv                        { return RESV; }
 resv_exempt                 { return RESV_EXEMPT; }
 rsa_private_key_file        { return RSA_PRIVATE_KEY_FILE; }
-rsa_public_key_file         { return RSA_PUBLIC_KEY_FILE; }
 send_password               { return SEND_PASSWORD; }
 sendq                       { return SENDQ; }
 server                      { return T_SERVER; }
@@ -345,6 +337,7 @@ warn_no_connect_block       { return WARN_NO_CONNECT_BLOCK; }
 webirc                      { return T_WEBIRC; }
 whois                       { return WHOIS; }
 xline                       { return XLINE; }
+xline_exempt                { return XLINE_EXEMPT; }
 
 yes                         { yylval.number = 1; return TBOOL; }
 no                          { yylval.number = 0; return TBOOL; }

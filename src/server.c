@@ -48,10 +48,9 @@
 #include "channel.h"
 #include "parse.h"
 
-#define MIN_CONN_FREQ 300
 
 dlink_list flatten_links;
-static dlink_list cap_list;
+static dlink_list server_capabilities_list;
 static void serv_connect_callback(fde_t *, int, void *);
 
 
@@ -177,11 +176,11 @@ hunt_server(struct Client *source_p, const char *command,
 
   if (!target_p && has_wildcards(parv[server]))
   {
-    DLINK_FOREACH(node, global_client_list.head)
+    DLINK_FOREACH(node, global_server_list.head)
     {
       struct Client *tmp = node->data;
 
-      assert(IsMe(tmp) || IsServer(tmp) || IsClient(tmp));
+      assert(IsMe(tmp) || IsServer(tmp));
       if (!match(parv[server], tmp->name))
       {
         if (tmp->from == source_p->from && !MyConnect(tmp))
@@ -189,6 +188,24 @@ hunt_server(struct Client *source_p, const char *command,
 
         target_p = node->data;
         break;
+      }
+    }
+
+    if (!target_p)
+    {
+      DLINK_FOREACH(node, global_client_list.head)
+      {
+        struct Client *tmp = node->data;
+
+        assert(IsMe(tmp) || IsServer(tmp) || IsClient(tmp));
+        if (!match(parv[server], tmp->name))
+        {
+          if (tmp->from == source_p->from && !MyConnect(tmp))
+            continue;
+
+          target_p = node->data;
+          break;
+        }
       }
     }
   }
@@ -224,7 +241,6 @@ void
 try_connections(void *unused)
 {
   dlink_node *node = NULL;
-  int confrq = 0;
 
   /* TODO: change this to set active flag to 0 when added to event! --Habeeb */
   if (GlobalSetOptions.autoconn == 0)
@@ -253,11 +269,7 @@ try_connections(void *unused)
 
     assert(conf->class);
 
-    confrq = conf->class->con_freq;
-    if (confrq < MIN_CONN_FREQ)
-      confrq = MIN_CONN_FREQ;
-
-    conf->until = CurrentTime + confrq;
+    conf->until = CurrentTime + conf->class->con_freq;
 
     /*
      * Found a CONNECT config with port specified, scan clients
@@ -268,7 +280,7 @@ try_connections(void *unused)
 
     if (conf->class->ref_count < conf->class->max_total)
     {
-      /* Go to the end of the list, if not already last */
+      /* Move this entry to the end of the list, if not already last */
       if (node->next)
       {
         dlinkDelete(node, &server_items);
@@ -288,11 +300,11 @@ try_connections(void *unused)
        *   -- adrian
        */
       if (ConfigServerHide.hide_server_ips)
-        sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
+        sendto_realops_flags(UMODE_SERVNOTICE, L_ALL, SEND_NOTICE,
                              "Connection to %s activated.",
                              conf->name);
       else
-        sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
+        sendto_realops_flags(UMODE_SERVNOTICE, L_ALL, SEND_NOTICE,
                              "Connection to %s[%s] activated.",
                              conf->name, conf->host);
 
@@ -331,7 +343,7 @@ check_server(const char *name, struct Client *client_p)
 
   assert(client_p);
 
-  /* loop through looking for all possible connect items that might work */
+  /* Loop through looking for all possible connect items that might work */
   DLINK_FOREACH(node, server_items.head)
   {
     conf = node->data;
@@ -364,26 +376,23 @@ check_server(const char *name, struct Client *client_p)
 
   attach_conf(client_p, server_conf);
 
-
-  if (server_conf)
+  switch (server_conf->aftype)
   {
-    struct sockaddr_in *v4;
-    struct sockaddr_in6 *v6;
-
-    switch (server_conf->aftype)
+    case AF_INET6:
     {
-      case AF_INET6:
-        v6 = (struct sockaddr_in6 *)&server_conf->addr;
+      const struct sockaddr_in6 *v6 = (struct sockaddr_in6 *)&server_conf->addr;
 
-        if (IN6_IS_ADDR_UNSPECIFIED(&v6->sin6_addr))
-          memcpy(&server_conf->addr, &client_p->connection->ip, sizeof(struct irc_ssaddr));
-        break;
-      case AF_INET:
-        v4 = (struct sockaddr_in *)&server_conf->addr;
+      if (IN6_IS_ADDR_UNSPECIFIED(&v6->sin6_addr))
+        memcpy(&server_conf->addr, &client_p->connection->ip, sizeof(struct irc_ssaddr));
+      break;
+    }
+    case AF_INET:
+    {
+      const struct sockaddr_in *v4 = (struct sockaddr_in *)&server_conf->addr;
 
-        if (v4->sin_addr.s_addr == INADDR_NONE)
-          memcpy(&server_conf->addr, &client_p->connection->ip, sizeof(struct irc_ssaddr));
-        break;
+      if (v4->sin_addr.s_addr == INADDR_NONE)
+        memcpy(&server_conf->addr, &client_p->connection->ip, sizeof(struct irc_ssaddr));
+      break;
     }
   }
 
@@ -400,16 +409,13 @@ check_server(const char *name, struct Client *client_p)
  *		  modules to dynamically add or subtract their capability.
  */
 void
-add_capability(const char *capab_name, int cap_flag, int add_to_default)
+add_capability(const char *name, unsigned int flag)
 {
   struct Capability *cap = MyCalloc(sizeof(*cap));
 
-  cap->name = xstrdup(capab_name);
-  cap->cap = cap_flag;
-  dlinkAdd(cap, &cap->node, &cap_list);
-
-  if (add_to_default)
-    default_server_capabs |= cap_flag;
+  cap->name = xstrdup(name);
+  cap->cap = flag;
+  dlinkAdd(cap, &cap->node, &server_capabilities_list);
 }
 
 /* delete_capability()
@@ -418,28 +424,22 @@ add_capability(const char *capab_name, int cap_flag, int add_to_default)
  * output	- NONE
  * side effects	- delete given capability from ones known.
  */
-int
-delete_capability(const char *capab_name)
+void
+delete_capability(const char *name)
 {
   dlink_node *node = NULL, *node_next = NULL;
 
-  DLINK_FOREACH_SAFE(node, node_next, cap_list.head)
+  DLINK_FOREACH_SAFE(node, node_next, server_capabilities_list.head)
   {
     struct Capability *cap = node->data;
 
-    if (cap->cap)
+    if (!irccmp(cap->name, name))
     {
-      if (!irccmp(cap->name, capab_name))
-      {
-        default_server_capabs &= ~(cap->cap);
-        dlinkDelete(node, &cap_list);
-        MyFree(cap->name);
-        MyFree(cap);
-      }
+      dlinkDelete(node, &server_capabilities_list);
+      MyFree(cap->name);
+      MyFree(cap);
     }
   }
-
-  return 0;
 }
 
 /*
@@ -450,15 +450,15 @@ delete_capability(const char *capab_name)
  * side effects	- none
  */
 unsigned int
-find_capability(const char *capab)
+find_capability(const char *name)
 {
   const dlink_node *node = NULL;
 
-  DLINK_FOREACH(node, cap_list.head)
+  DLINK_FOREACH(node, server_capabilities_list.head)
   {
     const struct Capability *cap = node->data;
 
-    if (cap->cap && !irccmp(cap->name, capab))
+    if (!irccmp(cap->name, name))
       return cap->cap;
   }
 
@@ -474,21 +474,19 @@ find_capability(const char *capab)
  *
  */
 void
-send_capabilities(struct Client *client_p, int cap_can_send)
+send_capabilities(struct Client *client_p)
 {
   char buf[IRCD_BUFSIZE] = "";
   const dlink_node *node = NULL;
 
-  DLINK_FOREACH(node, cap_list.head)
+  DLINK_FOREACH(node, server_capabilities_list.head)
   {
     const struct Capability *cap = node->data;
 
-    if (cap->cap & (cap_can_send|default_server_capabs))
-    {
-      strlcat(buf, cap->name, sizeof(buf));
-      if (node->next)
-        strlcat(buf, " ", sizeof(buf));
-    }
+    strlcat(buf, cap->name, sizeof(buf));
+
+    if (node->next)
+      strlcat(buf, " ", sizeof(buf));
   }
 
   sendto_one(client_p, "CAPAB :%s", buf);
@@ -509,7 +507,7 @@ show_capabilities(const struct Client *target_p)
 
   strlcpy(msgbuf, "TS", sizeof(msgbuf));
 
-  DLINK_FOREACH(node, cap_list.head)
+  DLINK_FOREACH(node, server_capabilities_list.head)
   {
     const struct Capability *cap = node->data;
 
@@ -580,7 +578,7 @@ serv_connect(struct MaskItem *conf, struct Client *by)
   /* Still processing a DNS lookup? -> exit */
   if (conf->dns_pending)
   {
-    sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
+    sendto_realops_flags(UMODE_SERVNOTICE, L_ALL, SEND_NOTICE,
                          "Error connecting to %s: DNS lookup for connect{} in progress.",
                          conf->name);
     return 0;
@@ -588,7 +586,7 @@ serv_connect(struct MaskItem *conf, struct Client *by)
 
   if (conf->dns_failed)
   {
-    sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
+    sendto_realops_flags(UMODE_SERVNOTICE, L_ALL, SEND_NOTICE,
                          "Error connecting to %s: DNS lookup for connect{} failed.",
                          conf->name);
     return 0;
@@ -599,10 +597,10 @@ serv_connect(struct MaskItem *conf, struct Client *by)
    */
   if ((client_p = hash_find_server(conf->name)))
   {
-    sendto_realops_flags(UMODE_ALL, L_ADMIN, SEND_NOTICE,
+    sendto_realops_flags(UMODE_SERVNOTICE, L_ADMIN, SEND_NOTICE,
                          "Server %s already present from %s",
                          conf->name, get_client_name(client_p, SHOW_IP));
-    sendto_realops_flags(UMODE_ALL, L_OPER, SEND_NOTICE,
+    sendto_realops_flags(UMODE_SERVNOTICE, L_OPER, SEND_NOTICE,
                          "Server %s already present from %s",
                          conf->name, get_client_name(client_p, MASK_IP));
     if (by && IsClient(by) && !MyClient(by))
@@ -640,7 +638,7 @@ serv_connect(struct MaskItem *conf, struct Client *by)
    */
   if (!attach_connect_block(client_p, conf->name, conf->host))
   {
-    sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
+    sendto_realops_flags(UMODE_SERVNOTICE, L_ALL, SEND_NOTICE,
                          "Host %s is not enabled for connecting: no connect {} block",
                          conf->name);
     if (by && IsClient(by) && !MyClient(by))
@@ -757,9 +755,9 @@ finish_ssl_server_handshake(struct Client *client_p)
                         client_p->name, CONF_SERVER);
   if (conf == NULL)
   {
-    sendto_realops_flags(UMODE_ALL, L_ADMIN, SEND_NOTICE,
-                         "Lost connect{} block for %s", get_client_name(client_p, HIDE_IP));
-    sendto_realops_flags(UMODE_ALL, L_OPER, SEND_NOTICE,
+    sendto_realops_flags(UMODE_SERVNOTICE, L_ADMIN, SEND_NOTICE,
+                         "Lost connect{} block for %s", get_client_name(client_p, SHOW_IP));
+    sendto_realops_flags(UMODE_SERVNOTICE, L_OPER, SEND_NOTICE,
                          "Lost connect{} block for %s", get_client_name(client_p, MASK_IP));
 
     exit_client(client_p, "Lost connect{} block");
@@ -768,24 +766,23 @@ finish_ssl_server_handshake(struct Client *client_p)
 
   sendto_one(client_p, "PASS %s TS %d %s", conf->spasswd, TS_CURRENT, me.id);
 
-  send_capabilities(client_p, 0);
+  send_capabilities(client_p);
 
   sendto_one(client_p, "SERVER %s 1 :%s%s",
              me.name, ConfigServerHide.hidden ? "(H) " : "",
              me.info);
 
-  /* If we've been marked dead because a send failed, just exit
+  /*
+   * If we've been marked dead because a send failed, just exit
    * here now and save everyone the trouble of us ever existing.
    */
   if (IsDead(client_p))
   {
-      sendto_realops_flags(UMODE_ALL, L_ADMIN, SEND_NOTICE,
-                           "%s[%s] went dead during handshake",
-                           client_p->name,
-                           client_p->host);
-      sendto_realops_flags(UMODE_ALL, L_OPER, SEND_NOTICE,
-                           "%s went dead during handshake", client_p->name);
-      return;
+    sendto_realops_flags(UMODE_SERVNOTICE, L_ADMIN, SEND_NOTICE,
+                         "%s went dead during handshake", get_client_name(client_p, SHOW_IP));
+    sendto_realops_flags(UMODE_SERVNOTICE, L_OPER, SEND_NOTICE,
+                         "%s went dead during handshake", get_client_name(client_p, MASK_IP));
+    return;
   }
 
   /* don't move to serv_list yet -- we haven't sent a burst! */
@@ -821,7 +818,7 @@ ssl_server_handshake(fde_t *fd, void *data)
         return;
       default:
       {
-        sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
+        sendto_realops_flags(UMODE_SERVNOTICE, L_ALL, SEND_NOTICE,
                              "Error connecting to %s: %s", client_p->name,
                              sslerr ? sslerr : "unknown SSL error");
         exit_client(client_p, "Error during SSL handshake");
@@ -840,7 +837,7 @@ ssl_server_handshake(fde_t *fd, void *data)
 }
 
 static void
-ssl_connect_init(struct Client *client_p, struct MaskItem *conf, fde_t *fd)
+ssl_connect_init(struct Client *client_p, const struct MaskItem *conf, fde_t *fd)
 {
   if (!tls_new(&client_p->connection->fd.ssl, fd->fd, TLS_ROLE_CLIENT))
   {
@@ -867,8 +864,8 @@ ssl_connect_init(struct Client *client_p, struct MaskItem *conf, fde_t *fd)
 static void
 serv_connect_callback(fde_t *fd, int status, void *data)
 {
-  struct Client *client_p = data;
-  struct MaskItem *conf = NULL;
+  struct Client *const client_p = data;
+  const struct MaskItem *conf = NULL;
 
   /* First, make sure it's a real client! */
   assert(client_p);
@@ -881,27 +878,20 @@ serv_connect_callback(fde_t *fd, int status, void *data)
   /* Check the status */
   if (status != COMM_OK)
   {
-    /* We have an error, so report it and quit
-     * Admins get to see any IP, mere opers don't *sigh*
+    /* We have an error, so report it and quit */
+    sendto_realops_flags(UMODE_SERVNOTICE, L_ADMIN, SEND_NOTICE,
+                         "Error connecting to %s: %s",
+                         get_client_name(client_p, SHOW_IP), comm_errstr(status));
+    sendto_realops_flags(UMODE_SERVNOTICE, L_OPER, SEND_NOTICE,
+                         "Error connecting to %s: %s",
+                         get_client_name(client_p, MASK_IP), comm_errstr(status));
+
+    /*
+     * If a fd goes bad, call dead_link() the socket is no
+     * longer valid for reading or writing.
      */
-     if (ConfigServerHide.hide_server_ips)
-       sendto_realops_flags(UMODE_ALL, L_ADMIN, SEND_NOTICE,
-                            "Error connecting to %s: %s",
-                            client_p->name, comm_errstr(status));
-     else
-       sendto_realops_flags(UMODE_ALL, L_ADMIN, SEND_NOTICE,
-                            "Error connecting to %s[%s]: %s", client_p->name,
-                            client_p->host, comm_errstr(status));
-
-     sendto_realops_flags(UMODE_ALL, L_OPER, SEND_NOTICE,
-                          "Error connecting to %s: %s",
-                          client_p->name, comm_errstr(status));
-
-     /* If a fd goes bad, call dead_link() the socket is no
-      * longer valid for reading or writing.
-      */
-     dead_link_on_write(client_p, 0);
-     return;
+    dead_link_on_write(client_p, 0);
+    return;
   }
 
   /* COMM_OK, so continue the connection procedure */
@@ -910,9 +900,9 @@ serv_connect_callback(fde_t *fd, int status, void *data)
                         client_p->name, CONF_SERVER);
   if (conf == NULL)
   {
-    sendto_realops_flags(UMODE_ALL, L_ADMIN, SEND_NOTICE,
-                         "Lost connect{} block for %s", get_client_name(client_p, HIDE_IP));
-    sendto_realops_flags(UMODE_ALL, L_OPER, SEND_NOTICE,
+    sendto_realops_flags(UMODE_SERVNOTICE, L_ADMIN, SEND_NOTICE,
+                         "Lost connect{} block for %s", get_client_name(client_p, SHOW_IP));
+    sendto_realops_flags(UMODE_SERVNOTICE, L_OPER, SEND_NOTICE,
                          "Lost connect{} block for %s", get_client_name(client_p, MASK_IP));
 
     exit_client(client_p, "Lost connect{} block");
@@ -932,23 +922,22 @@ serv_connect_callback(fde_t *fd, int status, void *data)
 
   sendto_one(client_p, "PASS %s TS %d %s", conf->spasswd, TS_CURRENT, me.id);
 
-  send_capabilities(client_p, 0);
+  send_capabilities(client_p);
 
   sendto_one(client_p, "SERVER %s 1 :%s%s", me.name,
              ConfigServerHide.hidden ? "(H) " : "", me.info);
 
-  /* If we've been marked dead because a send failed, just exit
+  /*
+   * If we've been marked dead because a send failed, just exit
    * here now and save everyone the trouble of us ever existing.
    */
   if (IsDead(client_p))
   {
-      sendto_realops_flags(UMODE_ALL, L_ADMIN, SEND_NOTICE,
-                           "%s[%s] went dead during handshake",
-                           client_p->name,
-                           client_p->host);
-      sendto_realops_flags(UMODE_ALL, L_OPER, SEND_NOTICE,
-                           "%s went dead during handshake", client_p->name);
-      return;
+    sendto_realops_flags(UMODE_SERVNOTICE, L_ADMIN, SEND_NOTICE,
+                         "%s went dead during handshake", get_client_name(client_p, SHOW_IP));
+    sendto_realops_flags(UMODE_SERVNOTICE, L_OPER, SEND_NOTICE,
+                         "%s went dead during handshake", get_client_name(client_p, MASK_IP));
+    return;
   }
 
   /* don't move to serv_list yet -- we haven't sent a burst! */

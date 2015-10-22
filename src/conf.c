@@ -55,6 +55,7 @@
 #include "conf_class.h"
 #include "motd.h"
 #include "ipcache.h"
+#include "isupport.h"
 
 
 struct config_channel_entry ConfigChannel;
@@ -259,8 +260,8 @@ attach_iline(struct Client *client_p, struct MaskItem *conf)
   ip_found->count++;
   AddFlag(client_p, FLAGS_IPHASH);
 
-  count_user_host(client_p->username, client_p->host,
-                  &global, &local, &ident);
+  userhost_count(client_p->username, client_p->host,
+                 &global, &local, &ident);
 
   /* XXX blah. go down checking the various silly limits
    * setting a_limit_reached if any limit is reached.
@@ -301,7 +302,7 @@ verify_access(struct Client *client_p)
 {
   struct MaskItem *conf = NULL;
 
-  if (IsGotId(client_p))
+  if (HasFlag(client_p, FLAGS_GOTID))
   {
     conf = find_address_conf(client_p->host, client_p->username,
                              &client_p->connection->ip,
@@ -319,41 +320,35 @@ verify_access(struct Client *client_p)
                              client_p->connection->password);
   }
 
-  if (conf)
+  if (!conf)
+    return NOT_AUTHORIZED;
+
+  assert(IsConfClient(conf) || IsConfKill(conf));
+
+  if (IsConfClient(conf))
   {
-    if (IsConfClient(conf))
+    if (IsConfRedir(conf))
     {
-      if (IsConfRedir(conf))
-      {
-        sendto_one_numeric(client_p, &me, RPL_REDIR,
-                           conf->name ? conf->name : "",
-                           conf->port);
-        return NOT_AUTHORIZED;
-      }
-
-      /* Thanks for spoof idea amm */
-      if (IsConfDoSpoofIp(conf))
-      {
-        if (IsConfSpoofNotice(conf))
-          sendto_realops_flags(UMODE_ALL, L_ADMIN, SEND_NOTICE, "%s spoofing: %s as %s",
-                               client_p->name, client_p->host, conf->name);
-
-        strlcpy(client_p->host, conf->name, sizeof(client_p->host));
-      }
-
-      return attach_iline(client_p, conf);
+      sendto_one_numeric(client_p, &me, RPL_REDIR,
+                         conf->name ? conf->name : "",
+                         conf->port);
+      return NOT_AUTHORIZED;
     }
-    else if (IsConfKill(conf) || (ConfigGeneral.glines && IsConfGline(conf)))
+
+    if (IsConfDoSpoofIp(conf))
     {
-      if (IsConfGline(conf))
-        sendto_one_notice(client_p, &me, ":*** G-lined");
+      if (IsConfSpoofNotice(conf))
+        sendto_realops_flags(UMODE_SERVNOTICE, L_ADMIN, SEND_NOTICE, "%s spoofing: %s as %s",
+                             client_p->name, client_p->host, conf->name);
 
-      sendto_one_notice(client_p, &me, ":*** Banned: %s", conf->reason);
-      return BANNED_CLIENT;
+      strlcpy(client_p->host, conf->name, sizeof(client_p->host));
     }
+
+    return attach_iline(client_p, conf);
   }
 
-  return NOT_AUTHORIZED;
+  sendto_one_notice(client_p, &me, ":*** Banned: %s", conf->reason);
+  return BANNED_CLIENT;
 }
 
 /* check_client()
@@ -527,7 +522,7 @@ attach_connect_block(struct Client *client_p, const char *name,
       continue;
 
     attach_conf(client_p, conf);
-    return -1;
+    return 1;
   }
 
   return 0;
@@ -801,10 +796,6 @@ set_default_conf(void)
   ConfigChannel.max_bans = 25;
   ConfigChannel.default_join_flood_count = 18;
   ConfigChannel.default_join_flood_time = 6;
-  ConfigChannel.default_split_user_count = 0;
-  ConfigChannel.default_split_server_count = 0;
-  ConfigChannel.no_join_on_split = 0;
-  ConfigChannel.no_create_on_split = 0;
 
   ConfigServerHide.flatten_links = 0;
   ConfigServerHide.links_delay = 300;
@@ -819,11 +810,10 @@ set_default_conf(void)
   ConfigGeneral.away_time = 10;
   ConfigGeneral.max_watch = WATCHSIZE_DEFAULT;
   ConfigGeneral.cycle_on_host_change = 1;
-  ConfigGeneral.glines = 0;
-  ConfigGeneral.gline_time = 12 * 3600;
-  ConfigGeneral.gline_request_time = GLINE_REQUEST_EXPIRE_DEFAULT;
-  ConfigGeneral.gline_min_cidr = 16;
-  ConfigGeneral.gline_min_cidr6 = 48;
+  ConfigGeneral.dline_min_cidr = 16;
+  ConfigGeneral.dline_min_cidr6 = 48;
+  ConfigGeneral.kline_min_cidr = 16;
+  ConfigGeneral.kline_min_cidr6 = 48;
   ConfigGeneral.invisible_on_connect = 1;
   ConfigGeneral.tkline_expire_notices = 1;
   ConfigGeneral.ignore_bogus_ts = 0;
@@ -856,7 +846,6 @@ set_default_conf(void)
   ConfigGeneral.short_motd = 0;
   ConfigGeneral.ping_cookie = 0;
   ConfigGeneral.no_oper_flood = 0;
-  ConfigGeneral.oper_pass_resv = 1;
   ConfigGeneral.max_targets = MAX_TARGETS_DEFAULT;
   ConfigGeneral.oper_only_umodes = UMODE_DEBUG | UMODE_LOCOPS | UMODE_HIDDEN | UMODE_FARCONNECT |
                                    UMODE_UNAUTH | UMODE_EXTERNAL | UMODE_BOTS | UMODE_NCHANGE |
@@ -914,11 +903,11 @@ read_conf(FILE *file)
  * as a result of an operator issuing this command, else assume it has been
  * called as a result of the server receiving a HUP signal.
  */
-int
+void
 conf_rehash(int sig)
 {
   if (sig)
-    sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
+    sendto_realops_flags(UMODE_SERVNOTICE, L_ALL, SEND_NOTICE,
                          "Got signal SIGHUP, reloading configuration file(s)");
 
   restart_resolver();
@@ -929,8 +918,6 @@ conf_rehash(int sig)
 
   load_conf_modules();
   check_conf_klines();
-
-  return 0;
 }
 
 /* lookup_confhost()
@@ -981,14 +968,15 @@ int
 conf_connect_allowed(struct irc_ssaddr *addr, int aftype)
 {
   struct ip_entry *ip_found = NULL;
-  struct MaskItem *const conf = find_dline_conf(addr, aftype);
-
-  /* DLINE exempt also gets you out of static limits/pacing... */
-  if (conf && (conf->type == CONF_EXEMPT))
-    return 0;
+  const struct MaskItem *conf = find_dline_conf(addr, aftype);
 
   if (conf)
+  {
+    /* DLINE exempt also gets you out of static limits/pacing... */
+    if (conf->type == CONF_EXEMPT)
+      return 0;
     return BANNED_CLIENT;
+  }
 
   ip_found = ipcache_find_or_add_address(addr);
 
@@ -1024,20 +1012,10 @@ expire_tklines(dlink_list *list)
     if (!conf->until || conf->until > CurrentTime)
       continue;
 
-    if (conf->type == CONF_XLINE)
-    {
-      if (ConfigGeneral.tkline_expire_notices)
-        sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
-                             "Temporary X-line for [%s] expired", conf->name);
-      conf_free(conf);
-    }
-    else if (conf->type == CONF_NRESV || conf->type == CONF_CRESV)
-    {
-      if (ConfigGeneral.tkline_expire_notices)
-        sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
-                             "Temporary RESV for [%s] expired", conf->name);
-      conf_free(conf);
-    }
+    if (ConfigGeneral.tkline_expire_notices)
+      sendto_realops_flags(UMODE_SERVNOTICE, L_ALL, SEND_NOTICE, "Temporary %s for [%s] expired",
+                           (conf->type == CONF_XLINE) ? "X-line" : "RESV", conf->name);
+    conf_free(conf);
   }
 }
 
@@ -1071,7 +1049,6 @@ static const struct oper_privs
   { OPER_FLAG_ADMIN,          'A' },
   { OPER_FLAG_REMOTEBAN,      'B' },
   { OPER_FLAG_DIE,            'D' },
-  { OPER_FLAG_GLINE,          'G' },
   { OPER_FLAG_REHASH,         'H' },
   { OPER_FLAG_KLINE,          'K' },
   { OPER_FLAG_KILL,           'N' },
@@ -1175,21 +1152,14 @@ clear_out_old_conf(void)
       struct MaskItem *conf = node->data;
 
       conf->active = 0;
-      dlinkDelete(&conf->node, *iterator);
 
-      /* XXX This is less than pretty */
-      if (conf->type == CONF_SERVER || conf->type == CONF_OPER)
+      if (!IsConfDatabase(conf))
       {
+        dlinkDelete(&conf->node, *iterator);
+
         if (!conf->ref_count)
           conf_free(conf);
       }
-      else if (conf->type == CONF_XLINE)
-      {
-        if (!conf->until)
-          conf_free(conf);
-      }
-      else
-        conf_free(conf);
     }
   }
 
@@ -1245,7 +1215,7 @@ clear_out_old_conf(void)
   ConfigAdminInfo.description = NULL;
 
   /* Clean out listeners */
-  close_listeners();
+  listener_close_marked();
 }
 
 static void
@@ -1301,7 +1271,7 @@ read_conf_files(int cold)
     }
     else
     {
-      sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
+      sendto_realops_flags(UMODE_SERVNOTICE, L_ADMIN, SEND_NOTICE,
                            "Unable to read configuration file '%s': %s",
                            filename, strerror(errno));
       return;
@@ -1317,27 +1287,27 @@ read_conf_files(int cold)
   log_reopen_all();
   conf_handle_tls(cold);
 
-  add_isupport("NICKLEN", NULL, ConfigServerInfo.max_nick_length);
-  add_isupport("NETWORK", ConfigServerInfo.network_name, -1);
+  isupport_add("NICKLEN", NULL, ConfigServerInfo.max_nick_length);
+  isupport_add("NETWORK", ConfigServerInfo.network_name, -1);
 
   snprintf(chanmodes, sizeof(chanmodes), "beI:%d", ConfigChannel.max_bans);
-  add_isupport("MAXLIST", chanmodes, -1);
-  add_isupport("MAXTARGETS", NULL, ConfigGeneral.max_targets);
-  add_isupport("CHANTYPES", "#", -1);
+  isupport_add("MAXLIST", chanmodes, -1);
+  isupport_add("MAXTARGETS", NULL, ConfigGeneral.max_targets);
+  isupport_add("CHANTYPES", "#", -1);
 
   snprintf(chanlimit, sizeof(chanlimit), "#:%d",
            ConfigChannel.max_channels);
-  add_isupport("CHANLIMIT", chanlimit, -1);
+  isupport_add("CHANLIMIT", chanlimit, -1);
   snprintf(chanmodes, sizeof(chanmodes), "%s", "beI,k,l,cimnprstCMORS");
-  add_isupport("CHANNELLEN", NULL, CHANNELLEN);
-  add_isupport("TOPICLEN", NULL, ConfigServerInfo.max_topic_length);
-  add_isupport("CHANMODES", chanmodes, -1);
+  isupport_add("CHANNELLEN", NULL, CHANNELLEN);
+  isupport_add("TOPICLEN", NULL, ConfigServerInfo.max_topic_length);
+  isupport_add("CHANMODES", chanmodes, -1);
 
   /*
    * message_locale may have changed.  rebuild isupport since it relies
    * on strlen(form_str(RPL_ISUPPORT))
    */
-  rebuild_isupport_message_line();
+  isupport_rebuild();
 }
 
 /* conf_add_class_to_conf()
@@ -1347,35 +1317,20 @@ read_conf_files(int cold)
  * side effects - Add a class pointer to a conf
  */
 void
-conf_add_class_to_conf(struct MaskItem *conf, const char *class_name)
+conf_add_class_to_conf(struct MaskItem *conf, const char *name)
 {
-  if (class_name == NULL)
+  if (EmptyString(name) || (conf->class = class_find(name, 1)) == NULL)
   {
     conf->class = class_default;
 
     if (conf->type == CONF_CLIENT || conf->type == CONF_OPER)
-      sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
+      sendto_realops_flags(UMODE_SERVNOTICE, L_ADMIN, SEND_NOTICE,
                            "Warning *** Defaulting to default class for %s@%s",
                            conf->user, conf->host);
     else
-      sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
+      sendto_realops_flags(UMODE_SERVNOTICE, L_ADMIN, SEND_NOTICE,
                            "Warning *** Defaulting to default class for %s",
                            conf->name);
-  }
-  else
-    conf->class = class_find(class_name, 1);
-
-  if (conf->class == NULL)
-  {
-    if (conf->type == CONF_CLIENT || conf->type == CONF_OPER)
-      sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
-                           "Warning *** Defaulting to default class for %s@%s",
-                           conf->user, conf->host);
-    else
-      sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
-                           "Warning *** Defaulting to default class for %s",
-                           conf->name);
-    conf->class = class_default;
   }
 }
 
@@ -1394,7 +1349,7 @@ yyerror(const char *msg)
     return;
 
   strip_tabs(newlinebuf, linebuf, sizeof(newlinebuf));
-  sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
+  sendto_realops_flags(UMODE_SERVNOTICE, L_ADMIN, SEND_NOTICE,
                        "\"%s\", line %u: %s: %s",
                        conffilebuf, lineno + 1, msg, newlinebuf);
   ilog(LOG_TYPE_IRCD, "\"%s\", line %u: %s: %s",
@@ -1407,7 +1362,7 @@ conf_error_report(const char *msg)
   char newlinebuf[IRCD_BUFSIZE];
 
   strip_tabs(newlinebuf, linebuf, sizeof(newlinebuf));
-  sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
+  sendto_realops_flags(UMODE_SERVNOTICE, L_ADMIN, SEND_NOTICE,
                        "\"%s\", line %u: %s: %s",
                        conffilebuf, lineno + 1, msg, newlinebuf);
   ilog(LOG_TYPE_IRCD, "\"%s\", line %u: %s: %s",
@@ -1474,7 +1429,7 @@ valid_wild_card_simple(const char *data)
 {
   const unsigned char *p = (const unsigned char *)data;
   unsigned char tmpch = '\0';
-  unsigned int nonwild = 0;
+  unsigned int nonwild = 0, wild = 0;
 
   while ((tmpch = *p++))
   {
@@ -1489,9 +1444,11 @@ valid_wild_card_simple(const char *data)
       if (++nonwild >= ConfigGeneral.min_nonwildcard_simple)
         return 1;
     }
+    else
+      ++wild;
   }
 
-  return 0;
+  return !wild;
 }
 
 /* valid_wild_card()
@@ -1503,7 +1460,7 @@ valid_wild_card_simple(const char *data)
  * side effects - NOTICE is given to source_p if warn is 1
  */
 int
-valid_wild_card(struct Client *source_p, int warn, int count, ...)
+valid_wild_card(struct Client *source_p, int count, ...)
 {
   unsigned char tmpch = '\0';
   unsigned int nonwild = 0;
@@ -1546,7 +1503,7 @@ valid_wild_card(struct Client *source_p, int warn, int count, ...)
     }
   }
 
-  if (warn)
+  if (IsClient(source_p))
     sendto_one_notice(source_p, &me,
                       ":Please include at least %u non-wildcard characters with the mask",
                       ConfigGeneral.min_nonwildcard);
@@ -1565,7 +1522,7 @@ valid_wild_card(struct Client *source_p, int warn, int count, ...)
  */
 static int
 find_user_host(struct Client *source_p, char *user_host_or_nick,
-               char *luser, char *lhost, unsigned int flags)
+               char *luser, char *lhost)
 {
   struct Client *target_p = NULL;
   char *hostp = NULL;
@@ -1610,7 +1567,7 @@ find_user_host(struct Client *source_p, char *user_host_or_nick,
         find_chasing(source_p, user_host_or_nick)) == NULL)
       return 0;  /* find_chasing sends ERR_NOSUCHNICK */
 
-    if (IsExemptKline(target_p))
+    if (HasFlag(target_p, FLAGS_EXEMPTKLINE))
     {
       if (IsClient(source_p))
         sendto_one_notice(source_p, &me, ":%s is E-lined", target_p->name);
@@ -1650,7 +1607,7 @@ find_user_host(struct Client *source_p, char *user_host_or_nick,
  *              - pointer to target_server to parse into if non NULL
  *              - pointer to reason to parse into
  *
- * output       - 1 if valid, -1 if not valid
+ * output       - 1 if valid, 0 if not valid
  * side effects - A generalised k/d/x etc. line parser,
  *               "ALINE [time] user@host|string [ON] target :reason"
  *                will parse returning a parsed user, host if
@@ -1673,7 +1630,7 @@ parse_aline(const char *cmd, struct Client *source_p,
             char **target_server, char **reason)
 {
   int found_tkline_time=0;
-  static char def_reason[] = CONF_NOREASON;
+  static char default_reason[] = CONF_NOREASON;
   static char user[USERLEN*4+1];
   static char host[HOSTLEN*4+1];
 
@@ -1692,22 +1649,22 @@ parse_aline(const char *cmd, struct Client *source_p,
     else
     {
       sendto_one_notice(source_p, &me, ":temp_line not supported by %s", cmd);
-      return -1;
+      return 0;
     }
   }
 
   if (parc == 0)
   {
     sendto_one_numeric(source_p, &me, ERR_NEEDMOREPARAMS, cmd);
-    return -1;
+    return 0;
   }
 
   if (h_p == NULL)
     *up_p = *parv;
   else
   {
-    if (find_user_host(source_p, *parv, user, host, parse_flags) == 0)
-      return -1;
+    if (find_user_host(source_p, *parv, user, host) == 0)
+      return 0;
 
     *up_p = user;
     *h_p = host;
@@ -1723,22 +1680,16 @@ parse_aline(const char *cmd, struct Client *source_p,
       parc--;
       parv++;
 
-      if (target_server == NULL)
-      {
-        sendto_one_notice(source_p, &me, ":ON server not supported by %s", cmd);
-        return -1;
-      }
-
       if (!HasOFlag(source_p, OPER_FLAG_REMOTEBAN))
       {
         sendto_one_numeric(source_p, &me, ERR_NOPRIVS, "remoteban");
-        return -1;
+        return 0;
       }
 
       if (parc == 0 || EmptyString(*parv))
       {
         sendto_one_numeric(source_p, &me, ERR_NEEDMOREPARAMS, cmd);
-        return -1;
+        return 0;
       }
 
       *target_server = *parv;
@@ -1760,45 +1711,23 @@ parse_aline(const char *cmd, struct Client *source_p,
     if (strchr(user, '!'))
     {
       sendto_one_notice(source_p, &me, ":Invalid character '!' in kline");
-      return -1;
+      return 0;
     }
 
-    if ((parse_flags & AWILD) && !valid_wild_card(source_p, 1, 2, *up_p, *h_p))
-      return -1;
+    if ((parse_flags & AWILD) && !valid_wild_card(source_p, 2, *up_p, *h_p))
+      return 0;
   }
   else
-    if ((parse_flags & AWILD) && !valid_wild_card(source_p, 1, 1, *up_p))
-      return -1;
+    if ((parse_flags & AWILD) && !valid_wild_card(source_p, 1, *up_p))
+      return 0;
 
   if (reason)
   {
     if (parc && !EmptyString(*parv))
-    {
       *reason = *parv;
-
-      if (!valid_comment(source_p, *reason, 1))
-        return -1;
-    }
     else
-      *reason = def_reason;
+      *reason = default_reason;
   }
-
-  return 1;
-}
-
-/* valid_comment()
- *
- * inputs	- pointer to client
- *              - pointer to comment
- * output       - 0 if no valid comment,
- *              - 1 if valid
- * side effects - truncates reason where necessary
- */
-int
-valid_comment(struct Client *source_p, char *comment, int warn)
-{
-  if (strlen(comment) > REASONLEN)
-    comment[REASONLEN-1] = '\0';
 
   return 1;
 }
@@ -1831,7 +1760,7 @@ match_conf_password(const char *password, const struct MaskItem *conf)
  *
  * inputs	- client sending the cluster
  *		- command name "KLINE" "XLINE" etc.
- *		- capab -- CAP_KLN etc. from server.h
+ *		- capab -- CAPAB_KLN etc. from server.h
  *		- cluster type -- CLUSTER_KLINE etc. from conf.h
  *		- pattern and args to send along
  * output	- none
@@ -1855,7 +1784,7 @@ cluster_a_line(struct Client *source_p, const char *command, unsigned int capab,
     const struct MaskItem *conf = node->data;
 
     if (conf->flags & cluster_type)
-      sendto_match_servs(source_p, conf->name, CAP_CLUSTER | capab,
+      sendto_match_servs(source_p, conf->name, CAPAB_CLUSTER | capab,
                          "%s %s %s", command, conf->name, buffer);
   }
 }

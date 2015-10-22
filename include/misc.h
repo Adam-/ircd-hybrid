@@ -28,8 +28,9 @@
 #define INCLUDED_misc_h
 
 extern const char *date(time_t);
-extern const char *smalldate(time_t);
-extern const char *myctime(time_t);
+extern const char *date_iso8601(time_t);
+extern const char *date_ctime(time_t);
+extern const char *time_dissect(time_t);
 
 /* Just blindly define our own MIN/MAX macro */
 #define IRCD_MAX(a, b)  ((a) > (b) ? (a) : (b))

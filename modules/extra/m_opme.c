@@ -94,7 +94,7 @@ mo_opme(struct Client *source_p, int parc, char *parv[])
 
   ilog(LOG_TYPE_IRCD, "%s used OPME to gain channel operator status on opless channel %s",
        get_oper_name(source_p), chptr->name);
-  sendto_realops_flags(UMODE_ALL, L_ALL, SEND_GLOBAL, "from %s: %s used OPME to gain channel operator status on opless channel %s",
+  sendto_realops_flags(UMODE_SERVNOTICE, L_ALL, SEND_GLOBAL, "from %s: %s used OPME to gain channel operator status on opless channel %s",
                        me.name, get_oper_name(source_p), chptr->name);
   sendto_server(NULL, 0, 0, ":%s GLOBOPS :%s used OPME to gain channel operator status on opless channel %s",
                 me.id, get_oper_name(source_p), chptr->name);
@@ -108,8 +108,14 @@ mo_opme(struct Client *source_p, int parc, char *parv[])
 
 static struct Message opme_msgtab =
 {
-  "OPME", NULL, 0, 0, 2, MAXPARA, MFLG_SLOW, 0,
-  { m_unregistered, m_not_oper, m_ignore, m_ignore, mo_opme, m_ignore }
+  .cmd = "OPME",
+  .args_min = 2,
+  .args_max = MAXPARA,
+  .handlers[UNREGISTERED_HANDLER] = m_unregistered,
+  .handlers[CLIENT_HANDLER] = m_not_oper,
+  .handlers[SERVER_HANDLER] = m_ignore,
+  .handlers[ENCAP_HANDLER] = m_ignore,
+  .handlers[OPER_HANDLER] = mo_opme
 };
 
 static void
@@ -126,11 +132,7 @@ module_exit(void)
 
 struct module module_entry =
 {
-  .node    = { NULL, NULL, NULL },
-  .name    = NULL,
   .version = "$Revision$",
-  .handle  = NULL,
   .modinit = module_init,
   .modexit = module_exit,
-  .flags   = 0
 };

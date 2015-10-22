@@ -27,7 +27,6 @@
 
 #ifndef INCLUDED_motd_h
 #define INCLUDED_motd_h
-struct Client;
 
 /** Type of MOTD. */
 enum MotdType
@@ -55,9 +54,9 @@ struct Motd
 };
 
 /** Length of one MOTD line(80 chars + '\\0'). */
-#define MOTD_LINESIZE   81
+enum { MOTD_LINESIZE  =  81 };
 /** Maximum number of lines for MOTD */
-#define MOTD_MAXLINES   100
+enum { MOTD_MAXLINES  = 100 };
 
 
 /** Cache entry for the contents of a MOTD file. */
@@ -68,7 +67,7 @@ struct MotdCache
   unsigned int ref;      /**< Number of references to this entry. */
   unsigned int maxcount; /**< Number of lines allocated for message. */
   unsigned int count;    /**< Actual number of lines used in message. */
-  struct tm    modtime;  /**< Last modification time from file. */
+  time_t       modtime;  /**< Last modification time from file. */
   char         motd[][MOTD_LINESIZE]; /**< Message body. */
 };
 

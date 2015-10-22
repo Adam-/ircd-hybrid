@@ -32,6 +32,8 @@
 #include "config.h"
 
 
+enum { NICKNAMEHISTORYLENGTH = 32768 };
+
 struct Whowas
 {
   int hashv;

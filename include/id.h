@@ -19,44 +19,23 @@
  *  USA
  */
 
-/*! \file gline.h
- * \brief A header for the gline functions.
+/*! \file id.h
+ * \brief Contains functions pertaining to SID/UID generation.
  * \version $Id$
  */
 
-#ifndef INCLUDED_gline_h
-#define INCLUDED_gline_h
+#ifndef INCLUDED_id_h
+#define INCLUDED_id_h
 
-#include "ircd_defs.h"
-
-#define GLINE_PENDING_DEL_TYPE 0
-#define GLINE_PENDING_ADD_TYPE 1
-
-#define CLEANUP_GLINES_TIME  300
-
-struct MaskItem;
-
-extern void cleanup_glines(void *);
-extern struct MaskItem *find_is_glined(const char *, const char *);
-
-struct gline_pending
+enum
 {
-  dlink_node node;
-
-  struct
-  {
-    char oper_nick[NICKLEN + 1];
-    char oper_user[USERLEN + 1];
-    char oper_host[HOSTLEN + 1];
-    char oper_server[HOSTLEN + 1];
-    char reason[REASONLEN + 1];
-    time_t time_request;
-  } vote_1, vote_2;
-
-  time_t last_gline_time;       /* for expiring entry */
-  char user[USERLEN * 2 + 2];
-  char host[HOSTLEN * 2 + 2];
+  IRC_MAXSID  = 3,
+  IRC_MAXUID  = 6,
+  TOTALSIDUID = IRC_MAXSID + IRC_MAXUID
 };
 
-extern dlink_list pending_glines[];
+extern int valid_sid(const char *);
+extern void init_uid(void);
+extern const char *uid_get(void);
+extern void generate_sid(void);
 #endif
