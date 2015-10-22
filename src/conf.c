@@ -1231,7 +1231,7 @@ conf_handle_tls(int cold)
     else
     {
       /* failed to load new settings/certs, old ones remain active */
-      sendto_realops_flags(UMODE_ALL, L_ALL, SEND_NOTICE,
+      sendto_realops_flags(UMODE_SERVNOTICE, L_ALL, SEND_NOTICE,
                            "Error reloading TLS settings, check the ircd log"); // report_crypto_errors logs this
     }
   }

@@ -68,4 +68,3 @@ binary_to_hex(const unsigned char *bin, char *hex, unsigned int length)
 
   *hex = '\0';
 }
-#endif
