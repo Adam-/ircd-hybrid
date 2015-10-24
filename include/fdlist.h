@@ -30,7 +30,6 @@
 
 #include "ircd_defs.h"
 #include "tls.h"
-#define FD_DESC_SZ 128  /* hostlen + comment */
 
 
 enum { FD_DESC_SIZE = 128 };  /* hostlen + comment */

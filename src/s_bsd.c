@@ -312,7 +312,7 @@ add_connection(struct Listener *listener, struct irc_ssaddr *irn, int fd)
 #ifdef HAVE_TLS
   if (listener->flags & LISTENER_SSL)
   {
-  	if (!tls_new(&client_p->connection->fd.ssl, fd, TLS_ROLE_SERVER))
+    if (!tls_new(&client_p->connection->fd.ssl, fd, TLS_ROLE_SERVER))
     {
       SetDead(client_p);
       exit_client(client_p, "TLS context initialization failed");
