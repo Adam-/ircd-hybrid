@@ -135,21 +135,15 @@ tls_new_cred()
   return 1;
 }
 
-inline static const char *
-UnknownIfNULL(const char* str)
-{
-  return str ? str : "UNKNOWN";
-}
-
 const char *
 tls_get_cipher(const tls_data_t *tls_data)
 {
   static char buffer[IRCD_BUFSIZE];
 
   snprintf(buffer, sizeof(buffer), "%s-%s-%s",
-           UnknownIfNULL(gnutls_kx_get_name(gnutls_kx_get(tls_data->session))),
-           UnknownIfNULL(gnutls_cipher_get_name(gnutls_cipher_get(tls_data->session))),
-           UnknownIfNULL(gnutls_mac_get_name(gnutls_mac_get(tls_data->session))));
+           gnutls_kx_get_name(gnutls_kx_get(tls_data->session)),
+           gnutls_cipher_get_name(gnutls_cipher_get(tls_data->session)),
+           gnutls_mac_get_name(gnutls_mac_get(tls_data->session)));
 
   return buffer;
 }
